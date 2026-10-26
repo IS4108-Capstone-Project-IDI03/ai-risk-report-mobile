@@ -1,0 +1,146 @@
+# A2603 — Site Capture (mobile)
+
+The risk engineer's phone app for the AI Risk Report Generator, Capstone Project
+A2603 for Marsh Singapore (commercial property insurance broker). Engineers use it on
+site to capture what they see: notes, voice recordings, photos and handwritten pages,
+filed by location and tagged by COPE category (Construction, Occupancy, Protection,
+Exposure).
+
+Writing, reviewing and exporting the report stays on the web app
+([ai-risk-report-generator](../ai-risk-report-generator)), because engineers don't
+write reports on site. The same goes for the knowledge base and admin screens.
+
+## Architecture
+
+The app is a client of the web repo's API gateway (`server`, port 4000) and nothing
+else. It never calls MongoDB, S3 or an AI service directly. Transcription, photo
+reading and the chatbot all run behind the gateway, so its privacy masking and cost
+logging still apply.
+
+| Piece | Choice |
+| --- | --- |
+| Framework | Expo SDK 58, React Native 0.88, TypeScript |
+| Navigation | Expo Router: each file in `src/app/` is a screen |
+| UI | [React Native Reusables](https://reactnativereusables.com) (the shadcn/ui port for React Native) styled with NativeWind v4 (Tailwind for React Native) |
+| Look | The web app's design system: ink-600 `#2c5488` primary, Marsh navy `#000f47`, IBM Plex Sans and Mono bundled so iOS and Android match |
+| Icons | `lucide-react-native` (the web app uses Lucide too) |
+| Sign-in | The gateway's `session` cookie, which React Native's `fetch` stores on both platforms |
+| Tests | Jest (`jest-expo`) and React Native Testing Library, with the gateway mocked |
+
+## What's built
+
+**MB-01: sign in, my assessments, bottom tabs** (branch `MB-01`)
+
+- **Sign in** with the gateway (`POST /api/auth/login`). The session is reused on
+  launch (`GET /api/auth/me`), and any later 401 returns to sign-in with a "session
+  ended" notice. No signal, a Wi-Fi login page or a missing `.env` each say what failed.
+- **Home:** the engineer's assessments (`GET /api/assessments`), every status except
+  archived, with pull to refresh. Rows aren't tappable yet.
+- **Chatbot:** a placeholder. It makes no calls.
+- **Profile:** the engineer's name and role, and Sign out.
+
+## What to build next
+
+The MVP order, agreed 27 Oct 2026. Each is its own story (`MB-0n`). The web stories it
+mirrors are in the web repo's `docs/USER_STORIES.md`.
+
+| Order | Story | Mirrors | Gateway support |
+| --- | --- | --- | --- |
+| 1 | Pre-survey checklist to tick off on site | CP-11, CP-12 (Could) | **None yet.** Teammates are building CP-11 in the web repo. Until then, use a dummy checklist (see below). |
+| 2 | Location picker: Site, Building, Level, Location. The last location carries over between captures. | CP-15, CP-16 | `GET` and `POST /api/assessments/:reference/locations` |
+| 3 | Quick capture from an assessment, within 2 taps: photo, voice, note or handwritten page | CP-02, CP-03, CP-04, CP-19 | `POST /api/assessments/:reference/observations`, multipart: a `details` JSON part (`note`, `copeDimensions`, `severity`, `locationId`) plus `recording`, `photo` and `page` files. Needs an active session from `POST /api/assessments/:reference/capture-session`. |
+| 4 | COPE category and severity tags (optional; "Uncategorised" is `null`, never `[]`) | CP-02, CP-08 | Set on capture, changed with `PATCH /api/observations/:id` |
+| 5 | Chatbot: ask the knowledge base and get cited answers | CB-01 | `POST /api/chat` (a paid LLM call per answer) |
+
+Later, outside the MVP: an offline capture queue, editing my captures (CP-08), and
+completing an assessment (CP-14).
+
+Things to know before building these:
+
+- **The checklist starts as a dummy** (Miya, 27 Oct). Groupmates own CP-11 (generating
+  the checklist) in the web repo. Build the screen against sample items kept in one
+  file, behind one function (for example `getChecklist(reference)`). Then swapping in
+  the real gateway route later changes only that function. Mark the sample data
+  clearly as sample in the UI, so nobody mistakes it for a real checklist.
+
+- **Opening capture can reopen a completed assessment.** `POST /capture-session` starts
+  a new session when the last one is complete, which turns the status back to
+  "capturing". So call it when the first observation is saved, not when an assessment
+  is opened.
+- **Archived assessments refuse capture** (409), which is why Home hides them.
+- **Upload limits:** recordings are up to 25 MB (WebM, Ogg, MP4, M4A, MP3, WAV or FLAC).
+  Photos and pages are JPG or PNG, up to 20 MB each.
+- **The 15-minute inactivity logout** (the web app's F-07) applies here too. Decide how
+  it should work before the offline queue, since an engineer may be offline longer.
+- **Real AI calls cost money.** Transcription, photo reading and chat answers each
+  make one. Tests mock every gateway call.
+
+## Project structure
+
+```
+src/
+  app/                    Expo Router routes only; each re-exports a screen
+    _layout.tsx           fonts, session check, sign-in vs tabs
+    sign-in.tsx
+    (tabs)/               bottom tabs: index (Home), chat, profile
+  features/
+    auth/                 session.tsx, screens/SignIn
+    assessments/          format.ts, components/AssessmentRow, screens/AssessmentList
+    chat/                 screens/Chat
+    profile/              screens/Profile
+  components/ui/          React Native Reusables components, adjusted
+  lib/                    api.ts (every gateway call), utils.ts (cn), nav.ts (header styles)
+__tests__/                tests; never put them inside src/app/
+tailwind.config.js        design tokens (exact hex from the web app)
+```
+
+## Running locally
+
+You need Node 22, Xcode with an iOS simulator (or Expo Go on a phone), and the web
+repo's stack running.
+
+1. In `../ai-risk-report-generator`, start the stack: `docker compose up`. The gateway
+   runs on port 4000.
+2. Here, install dependencies: `npm install`.
+3. Copy `.env.example` to `.env`, and set `EXPO_PUBLIC_API_URL` to your computer's
+   Wi-Fi IP address (`ipconfig getifaddr en0`), not `localhost`. On a phone,
+   `localhost` means the phone itself.
+4. Start the app: `npx expo start`, then press `i` for the iOS simulator, or scan the
+   QR code with Expo Go on a phone on the same Wi-Fi.
+5. Sign in with a seeded account: `alex.rowe@example.com` / `password123`. To create
+   these accounts, run `npm --prefix server run seed` in the web repo.
+
+If the app can't load, check whether your IP address changed. Update `.env`, then
+restart with `npx expo start --clear`, because the address is built in when the app
+bundles.
+
+## Checks
+
+```
+npx jest            # tests, gateway mocked
+npx tsc --noEmit    # type-check
+npx expo lint       # lint
+npx expo-doctor     # Expo config and dependency versions
+```
+
+There's no CI yet, so run all four before committing.
+
+## Conventions
+
+- **Add packages with `npx expo install <pkg>`**, not `npm install`, so versions match
+  the SDK. Expo changes every SDK, so check the versioned docs
+  (`docs.expo.dev/versions/v58.0.0/`) before using an Expo or React Native API. See
+  `AGENTS.md`.
+- **UI:** add a component by copying it from React Native Reusables into
+  `src/components/ui/`, then adjust it. Use the colour names in `tailwind.config.js`.
+  Touch targets are at least 48px. Copy follows the web design system: sentence case,
+  buttons are verbs, errors state the cause and then the next step, no emoji.
+- **Fonts:** weight classes (`font-medium`, `font-semibold`, `font-bold`) choose the
+  IBM Plex family of that weight. Don't set `fontWeight` directly: a custom font
+  ignores it on iOS and fakes it on Android.
+- **Stories and branches:** `MB-0n` IDs, one branch per story
+  (`git switch -c MB-0n --no-track`), and one commit per finished behaviour with its
+  test.
+- **Gateway changes** an MB story needs go in the web repo, on their own branch,
+  following that repo's CLAUDE.md.
+- **Never commit `.env`.**
