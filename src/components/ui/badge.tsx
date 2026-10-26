@@ -1,0 +1,77 @@
+// From React Native Reusables (shadcn/ui for React Native), badge component.
+// Changed for Site Capture: no sm: breakpoints, 48px controls, IBM Plex weights, web Badge tones.
+import { TextClassContext } from '@/components/ui/text';
+import { cn } from '@/lib/utils';
+import { Slot } from '@rn-primitives/slot';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { Platform, View } from 'react-native';
+
+const badgeVariants = cva(
+  cn(
+    'border-border group shrink-0 flex-row items-center justify-center gap-1 overflow-hidden rounded-full border px-2 py-0.5',
+    Platform.select({
+      web: 'focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive w-fit whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] [&>svg]:pointer-events-none [&>svg]:size-3',
+    })
+  ),
+  {
+    variants: {
+      variant: {
+        default: cn(
+          'bg-primary border-transparent',
+          Platform.select({ web: '[a&]:hover:bg-primary/90' })
+        ),
+        secondary: cn(
+          'bg-secondary border-transparent',
+          Platform.select({ web: '[a&]:hover:bg-secondary/90' })
+        ),
+        destructive: cn(
+          'bg-destructive border-transparent',
+          Platform.select({ web: '[a&]:hover:bg-destructive/90' })
+        ),
+        outline: Platform.select({ web: '[a&]:hover:bg-accent [a&]:hover:text-accent-foreground' }),
+        // Status tones from the web app's Badge (design-system/components/display/Badge.tsx).
+        neutral: 'bg-muted border-transparent',
+        info: 'bg-info border-transparent',
+        success: 'bg-success border-transparent',
+        warning: 'bg-warning border-transparent',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+    },
+  }
+);
+
+const badgeTextVariants = cva('text-sm font-medium', {
+  variants: {
+    variant: {
+      default: 'text-primary-foreground',
+      secondary: 'text-secondary-foreground',
+      destructive: 'text-white',
+      outline: 'text-foreground',
+      neutral: 'text-muted-foreground',
+      info: 'text-info-foreground',
+      success: 'text-success-foreground',
+      warning: 'text-warning-foreground',
+    },
+  },
+  defaultVariants: {
+    variant: 'default',
+  },
+});
+
+type BadgeProps = React.ComponentProps<typeof View> & React.RefAttributes<View> & {
+  asChild?: boolean;
+} & VariantProps<typeof badgeVariants>;
+
+function Badge({ className, variant, asChild, ...props }: BadgeProps) {
+  const Component = asChild ? Slot : View;
+  return (
+    <TextClassContext.Provider value={badgeTextVariants({ variant })}>
+      <Component className={cn(badgeVariants({ variant }), className)} {...props} />
+    </TextClassContext.Provider>
+  );
+}
+
+export { Badge, badgeTextVariants, badgeVariants };
+export type { BadgeProps };
