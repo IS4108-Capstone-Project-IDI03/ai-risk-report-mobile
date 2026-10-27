@@ -2,11 +2,13 @@
 // session and the screens. The gateway's `session` cookie is stored and sent by
 // the phone's own HTTP stack, so no token is handled here.
 
-// A non-2xx reply, carrying the gateway's `{ error }` text to show the engineer.
+// A non-2xx reply, carrying the gateway's `{ error }` text to show the engineer,
+// and its `fields` (field name → problem) for a form to show under each field.
 export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    public fields: Record<string, string> = {},
   ) {
     super(message)
   }
@@ -53,7 +55,11 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
     // A 401 from /api/auth/ isn't an expiry: login's means wrong credentials
     // (AC2), and the launch /me check's means not signed in yet.
     if (response.status === 401 && !path.startsWith('/api/auth/')) onSessionExpired()
-    throw new ApiError(response.status, body?.error ?? `The server replied ${response.status}.`)
+    throw new ApiError(
+      response.status,
+      body?.error ?? `The server replied ${response.status}.`,
+      body?.fields,
+    )
   }
   return body as T
 }

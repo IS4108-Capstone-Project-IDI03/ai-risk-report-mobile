@@ -15,6 +15,7 @@ import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { ActivityIndicator, View } from 'react-native'
 import { SessionProvider, useSession } from '@/features/auth/session'
+import { CurrentLocationProvider } from '@/features/locations/current'
 import { colors, headerOptions } from '@/lib/nav'
 
 function Screens() {
@@ -34,6 +35,12 @@ function Screens() {
       <Stack.Protected guard={status === 'signedIn'}>
         {/* The tabs draw their own headers (src/app/(tabs)/_layout.tsx). */}
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        {/* Pushed over the tabs; the back button shows only its arrow. */}
+        <Stack.Screen
+          name="assessment/[reference]/index"
+          options={{ headerBackButtonDisplayMode: 'minimal' }}
+        />
+        <Stack.Screen name="assessment/[reference]/locations" options={{ presentation: 'modal' }} />
       </Stack.Protected>
       <Stack.Protected guard={status === 'signedOut'}>
         <Stack.Screen name="sign-in" options={{ headerShown: false }} />
@@ -59,7 +66,9 @@ export default function Layout() {
     <SessionProvider>
       {/* Light icons on the navy header and sign-in page. */}
       <StatusBar style="light" />
-      <Screens />
+      <CurrentLocationProvider>
+        <Screens />
+      </CurrentLocationProvider>
     </SessionProvider>
   )
 }

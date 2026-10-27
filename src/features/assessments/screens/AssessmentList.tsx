@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { FlatList, RefreshControl, View } from 'react-native'
 import { Text } from '@/components/ui/text'
-import { request } from '@/lib/api'
+import { listAssessments } from '../api'
 import { AssessmentRow } from '../components/AssessmentRow'
 import type { Assessment } from '../format'
 
@@ -16,7 +16,7 @@ export default function AssessmentList() {
   // State is set in the promise's callbacks, once the reply arrives.
   const load = useCallback(
     () =>
-      request<Assessment[]>('/api/assessments').then(
+      listAssessments().then(
         (all) => {
           setAssessments(all.filter((a) => a.status !== 'archived'))
           setError(null)

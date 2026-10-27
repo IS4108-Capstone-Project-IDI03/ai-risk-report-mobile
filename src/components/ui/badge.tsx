@@ -34,6 +34,8 @@ const badgeVariants = cva(
         info: 'bg-info border-transparent',
         success: 'bg-success border-transparent',
         warning: 'bg-warning border-transparent',
+        critical: 'bg-critical border-transparent',
+        high: 'bg-high border-transparent',
       },
     },
     defaultVariants: {
@@ -53,6 +55,8 @@ const badgeTextVariants = cva('text-sm font-medium', {
       info: 'text-info-foreground',
       success: 'text-success-foreground',
       warning: 'text-warning-foreground',
+      critical: 'text-critical-foreground',
+      high: 'text-high-foreground',
     },
   },
   defaultVariants: {

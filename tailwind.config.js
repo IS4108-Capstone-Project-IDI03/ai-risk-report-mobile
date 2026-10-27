@@ -37,6 +37,9 @@ module.exports = {
         info: { DEFAULT: '#e9f2fe', foreground: '#2c5488' },
         success: { DEFAULT: '#e2f6ea', foreground: '#2f7049' },
         warning: { DEFAULT: '#fdf1d8', foreground: '#8f5f13' },
+        // Severity: critical red, high oxblood (moderate and low reuse warning and success).
+        critical: { DEFAULT: '#fdeae8', foreground: '#ad2e2d' },
+        high: { DEFAULT: '#fdeae7', foreground: '#9e3e3b' },
       },
       borderRadius: { md: '5px', lg: '8px' }, // web radius-md and radius-lg
     },

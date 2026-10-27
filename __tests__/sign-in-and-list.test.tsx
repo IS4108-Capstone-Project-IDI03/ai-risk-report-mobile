@@ -1,76 +1,17 @@
 // MB-01: sign in and see my assessments. Renders the real routes through Expo
 // Router with the gateway's responses mocked, so no test reaches a server.
 import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library'
-import Layout from '../src/app/_layout'
-import Chat from '../src/app/(tabs)/chat'
-import Home from '../src/app/(tabs)/index'
-import TabsLayout from '../src/app/(tabs)/_layout'
-import Profile from '../src/app/(tabs)/profile'
-import SignIn from '../src/app/sign-in'
+import {
+  assessment,
+  mockGateway,
+  openTab,
+  pointAtTestGateway,
+  routes,
+  signedIn,
+  signedOut,
+} from '../test/gateway'
 
-// Tailwind source, compiled by Metro at build time; Jest can't read it and
-// the tests don't check styles.
-jest.mock('../global.css', () => ({}))
-
-type Reply = { status: number; body?: unknown; html?: boolean } | Error
-
-// Mocks `fetch` from a table of "METHOD /path" → reply. A function reply lets a
-// test change its answer between calls; `html: true` replies with a page that
-// isn't JSON. Unlisted routes fail the test loudly.
-function mockGateway(routes: Record<string, Reply | (() => Reply)>) {
-  const fetchMock = jest.fn(async (url: string, init?: RequestInit) => {
-    const key = `${init?.method ?? 'GET'} ${new URL(url).pathname}`
-    const route = routes[key]
-    if (!route) throw new Error(`Unexpected request: ${key}`)
-    const reply = typeof route === 'function' ? route() : route
-    if (reply instanceof Error) throw reply
-    return {
-      ok: reply.status >= 200 && reply.status < 300,
-      status: reply.status,
-      json: async () => {
-        if (reply.html) throw new SyntaxError('Unexpected token <')
-        return reply.body
-      },
-    } as Response
-  })
-  globalThis.fetch = fetchMock as unknown as typeof fetch
-  return fetchMock
-}
-
-const engineer = { id: 'u1', role: 'risk_engineer', name: 'Ava Tan' }
-const signedIn = { status: 200, body: { user: engineer, permissions: [], notifications: {} } }
-const signedOut = { status: 401, body: { error: 'Sign in required.' } }
-
-// One assessment in the gateway's AssessmentDto shape (fields this story reads).
-function assessment(reference: string, status: string, overrides: object = {}) {
-  return {
-    id: reference,
-    reference,
-    client: 'Harbour Malls',
-    siteVisitDate: '2026-04-11',
-    status,
-    site: { id: 's1', code: 'S-001', name: 'Marina Point', address: null },
-    ...overrides,
-  }
-}
-
-const routes = {
-  _layout: Layout,
-  'sign-in': SignIn,
-  '(tabs)/_layout': TabsLayout,
-  '(tabs)/index': Home,
-  '(tabs)/chat': Chat,
-  '(tabs)/profile': Profile,
-}
-
-// Taps a bottom tab by its label.
-async function openTab(label: string) {
-  await fireEvent.press(await screen.findByRole('button', { name: new RegExp(label) }))
-}
-
-beforeAll(() => {
-  process.env.EXPO_PUBLIC_API_URL = 'http://gateway.test:4000'
-})
+pointAtTestGateway()
 
 async function signInWith(email: string, password: string) {
   await fireEvent.changeText(await screen.findByLabelText('Work email'), email)
