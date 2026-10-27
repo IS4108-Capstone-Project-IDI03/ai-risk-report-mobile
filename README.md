@@ -51,17 +51,35 @@ logging still apply.
 - **The chosen location** is kept per assessment while the app is open. It belongs to
   the engineer who chose it, so another engineer on a shared phone starts fresh.
 
+**MB-03: capture an observation** (branch `MB-03`)
+
+- **New observation** (one button in the workspace) opens one form, with a section for
+  each kind of content an observation can hold: a note, photos (camera or library),
+  voice notes (tap to start and stop) and scanned handwritten notes.
+- COPE categories are optional (none is saved as `null`). Severity is required, and
+  Save says what's missing.
+- Saving starts the capture session (`POST .../capture-session`), then uploads the
+  observation as multipart (`POST .../observations`). Saved voice notes and scans are
+  transcribed by the gateway, which costs money.
+
+**MB-04: find assessments on Home** (branch `MB-04`)
+
+- A search box (site, client or report ID), date chips (Overdue, Due soon, Site visits
+  within 7 days, with counts) and status chips. Each card shows its report deadline.
+- Filtering happens on the phone. The date rules are copied from the web dashboard.
+
 ## What to build next
 
-The MVP order, agreed 27 Oct 2026 (workspace and locations first, then capture, then
-the checklist). Each is its own story (`MB-0n`). The web stories it
+The MVP order, agreed 27 Oct 2026 (MB-01 to MB-04 are built). Each is its own story (`MB-0n`). The web stories it
 mirrors are in the web repo's `docs/USER_STORIES.md`.
 
 | Order | Story | Mirrors | Gateway support |
 | --- | --- | --- | --- |
-| MB-03 | Capture bar at the bottom of the workspace (Photo, Voice, Note, Page), opening straight into each, then a short form to tag and save. Severity becomes optional. | CP-02, CP-03, CP-04, CP-19 | `POST /api/assessments/:reference/observations`, multipart: a `details` JSON part (`note`, `copeDimensions`, `severity`, `locationId`) plus `recording`, `photo` and `page` files. Needs an active session from `POST /api/assessments/:reference/capture-session`. **Severity is required today**: making it optional is a web repo change, on its own branch. |
-| MB-04 | Pre-survey checklist in the workspace, to tick off on site | CP-11, CP-12 (Could) | **None yet.** Teammates are building CP-11 in the web repo. Until then, use a dummy checklist (see below). |
-| MB-05 | Chatbot: ask the knowledge base and get cited answers | CB-01 | `POST /api/chat` (a paid LLM call per answer) |
+| MB-05 | Pre-survey checklist in the workspace, to tick off on site | CP-11, CP-12 (Could) | **None yet.** Teammates are building CP-11 in the web repo. Until then, use a dummy checklist (see below). |
+| MB-06 | Chatbot: ask the knowledge base and get cited answers | CB-01 | `POST /api/chat` (a paid LLM call per answer) |
+
+Separate web story for the team: make severity optional. It's required in the gateway
+model, the save rule and `report_sections` evidence, and the web UI assumes it.
 
 Later, outside the MVP: an offline capture queue, editing my captures (CP-08), and
 completing an assessment (CP-14).
@@ -94,19 +112,22 @@ src/
     _layout.tsx           fonts, session check, sign-in vs tabs, workspace screens
     sign-in.tsx
     (tabs)/               bottom tabs: index (Home), chat, profile
-    assessment/[reference]/  index (workspace), locations (picker modal)
+    assessment/[reference]/  index (workspace), locations (picker modal), capture (sheet)
   features/
     auth/                 session.tsx, screens/SignIn
-    assessments/          api, format, components/AssessmentRow, screens/AssessmentList, Workspace
+    assessments/          api, format, filters (search, date rules), components/, screens/AssessmentList, Workspace
     locations/            api, locations.ts (grouping, copied from web), current.tsx (chosen
                           location), components/, screens/LocationPicker
     observations/         api, format, components/ObservationCard
+    capture/              draft (upload format), media (camera, library), useVoiceNote, api,
+                          components/ (sections, chips), screens/CaptureSheet
     chat/                 screens/Chat
     profile/              screens/Profile
   components/ui/          React Native Reusables components, adjusted
   lib/                    api.ts (every gateway call), utils.ts (cn), nav.ts (header styles)
 __tests__/                tests; never put them inside src/app/
 test/gateway.tsx          shared test helpers: mocked gateway, sample data, route map
+test/setup.ts             default mocks for the camera and recorder (Jest has no phone)
 tailwind.config.js        design tokens (exact hex from the web app)
 ```
 
@@ -122,7 +143,9 @@ repo's stack running.
    Wi-Fi IP address (`ipconfig getifaddr en0`), not `localhost`. On a phone,
    `localhost` means the phone itself.
 4. Start the app: `npx expo start`, then press `i` for the iOS simulator, or scan the
-   QR code with Expo Go on a phone on the same Wi-Fi.
+   QR code with Expo Go on a phone on the same Wi-Fi. Don't set `CI=1`: it turns off
+   reloading, so the app keeps showing old code. The simulator has no camera, so use
+   From library for photos there.
 5. Sign in with a seeded account: `alex.rowe@example.com` / `password123`. To create
    these accounts, run `npm --prefix server run seed` in the web repo.
 
