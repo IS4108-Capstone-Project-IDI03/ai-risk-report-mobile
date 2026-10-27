@@ -159,18 +159,6 @@ describe('tabs', () => {
     expect(await screen.findByText('Ava Tan')).toBeTruthy()
     expect(screen.getByText('Risk engineer')).toBeTruthy()
   })
-
-  it('says the chatbot is coming, without calling it', async () => {
-    const fetchMock = mockGateway({
-      'GET /api/auth/me': signedIn,
-      'GET /api/assessments': { status: 200, body: [] },
-    })
-    await renderRouter(routes)
-    await openTab('Chatbot')
-
-    expect(await screen.findByText('Ask the knowledge base')).toBeTruthy()
-    expect(fetchMock.mock.calls.some(([url]) => url.includes('/api/chat'))).toBe(false)
-  })
 })
 
 describe('assessments', () => {

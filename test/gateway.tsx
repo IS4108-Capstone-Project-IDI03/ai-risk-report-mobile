@@ -16,11 +16,31 @@ import SignIn from '../src/app/sign-in'
 // the tests don't check styles.
 jest.mock('../global.css', () => ({}))
 
-export type Reply = { status: number; body?: unknown; html?: boolean } | Error
+export type Reply =
+  | { status: number; body?: unknown; html?: boolean; stream?: ReadableStream<Uint8Array> }
+  | Error
+
+// A reply body that arrives in pieces, as the chat's event stream does (MB-06).
+// Each chunk is sent when the test calls `next()`, or all at once with `rest()`;
+// `close()` ends it. Lets a test look at the screen mid-answer.
+export function chunkedStream() {
+  const encoder = new TextEncoder()
+  let controller!: ReadableStreamDefaultController<Uint8Array>
+  const stream = new ReadableStream<Uint8Array>({ start: (c) => void (controller = c) })
+  return {
+    stream,
+    send: (text: string) => controller.enqueue(encoder.encode(text)),
+    close: () => controller.close(),
+  }
+}
+
+// One server-sent event, as the gateway writes them.
+export const sse = (event: object) => `data: ${JSON.stringify(event)}\n\n`
 
 // Mocks `fetch` from a table of "METHOD /path" → reply. A function reply lets a
 // test change its answer between calls, or read the request; `html: true`
-// replies with a page that isn't JSON. Unlisted routes fail the test loudly.
+// replies with a page that isn't JSON; `stream` replies with a body to read in
+// pieces. Unlisted routes fail the test loudly.
 export function mockGateway(
   routes: Record<string, Reply | ((init?: RequestInit) => Reply)>,
 ) {
@@ -33,6 +53,8 @@ export function mockGateway(
     return {
       ok: reply.status >= 200 && reply.status < 300,
       status: reply.status,
+      body: reply.stream ?? null,
+      headers: new Headers({ 'content-type': reply.stream ? 'text/event-stream' : 'application/json' }),
       json: async () => {
         if (reply.html) throw new SyntaxError('Unexpected token <')
         return reply.body
