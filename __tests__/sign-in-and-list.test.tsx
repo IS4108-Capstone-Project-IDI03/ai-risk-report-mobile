@@ -1,6 +1,6 @@
 // MB-01: sign in and see my assessments. Renders the real routes through Expo
 // Router with the gateway's responses mocked, so no test reaches a server.
-import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library'
+import { act, fireEvent, renderRouter, screen, within } from 'expo-router/testing-library'
 import {
   assessment,
   mockGateway,
@@ -185,7 +185,9 @@ describe('assessments', () => {
     expect(screen.getByText('Marina Point')).toBeTruthy()
     expect(screen.getByText('RPT-2026-0411')).toBeTruthy()
     expect(screen.getByText('11 Apr 2026')).toBeTruthy()
-    expect(screen.getByText('Ready to generate')).toBeTruthy()
+    // On the card itself: since MB-04 the status chips repeat each label.
+    const card = within(screen.getByRole('button', { name: /RPT-2026-0411/ }))
+    expect(card.getByText('Ready to generate')).toBeTruthy()
   })
 
   it('lists every status but archived (AC9)', async () => {
@@ -203,9 +205,12 @@ describe('assessments', () => {
     await renderRouter(routes)
 
     expect(await screen.findByText('RPT-2026-0000')).toBeTruthy()
-    for (const label of ['Not started', 'Capturing', 'Ready to generate', 'Draft', 'Under review', 'Finalised']) {
-      expect(screen.getByText(label)).toBeTruthy()
-    }
+    // Each on its own card: since MB-04 the status chips repeat each label.
+    const labels = ['Not started', 'Capturing', 'Ready to generate', 'Draft', 'Under review', 'Finalised']
+    labels.forEach((label, i) => {
+      const card = within(screen.getByRole('button', { name: new RegExp(`RPT-2026-000${i}`) }))
+      expect(card.getByText(label)).toBeTruthy()
+    })
     expect(screen.queryByText('RPT-2026-0099')).toBeNull()
   })
 

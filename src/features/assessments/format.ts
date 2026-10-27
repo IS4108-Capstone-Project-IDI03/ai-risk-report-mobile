@@ -16,7 +16,8 @@ export type Assessment = {
   id: string
   reference: string
   client: string
-  siteVisitDate: string | null
+  siteVisitDate: string | null // YYYY-MM-DD
+  reportDueDate: string | null // YYYY-MM-DD (MB-04)
   status: AssessmentStatus
   site: { name: string }
 }
