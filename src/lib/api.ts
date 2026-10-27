@@ -36,12 +36,15 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
   // off to debug Wi-Fi.
   if (!base) throw new Error('EXPO_PUBLIC_API_URL is not set. Copy .env.example to .env.')
   const url = `${base}${path}`
+  // An upload (MB-03) sets no Content-Type, so the phone adds the multipart
+  // boundary itself; one set here would leave the gateway unable to read the files.
+  const json = !(init.body instanceof FormData)
   let response: Response
   try {
     response = await fetch(url, {
       ...init,
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json', ...init.headers },
+      headers: { ...(json && { 'Content-Type': 'application/json' }), ...init.headers },
     })
   } catch {
     throw new NetworkError()

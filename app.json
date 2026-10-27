@@ -26,7 +26,20 @@
       "expo-router",
       "expo-status-bar",
       "expo-font",
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Site Capture uses the camera to photograph site conditions and handwritten notes.",
+          "photosPermission": "Site Capture adds photos you took earlier to an observation."
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Site Capture records voice notes about what you see on site."
+        }
+      ]
     ]
   }
 }

@@ -1,11 +1,15 @@
-// Assessment workspace (MB-02 AC1-AC6): opened from Home. Shows the
-// assessment, where the engineer is, and what's been captured there. Opening it
-// never starts a capture session (AC6): that reopens a completed assessment,
-// so MB-03 starts one only when the first observation is saved.
-import { router, Stack, useLocalSearchParams } from 'expo-router'
-import { useCallback, useEffect, useState } from 'react'
+// Assessment workspace (MB-02 AC1-AC6, MB-03 AC1-AC2): opened from Home. Shows
+// the assessment, where the engineer is, what's been captured there, and the
+// New observation button. Opening it never starts a capture session (MB-02
+// AC6): that reopens a completed assessment, so saving the first one starts it.
+import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router'
+import { Plus } from 'lucide-react-native'
+import { useCallback, useState } from 'react'
 import { FlatList, RefreshControl, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { Eyebrow } from '@/components/Eyebrow'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Text } from '@/components/ui/text'
 import { CurrentLocationCard } from '@/features/locations/components/CurrentLocationCard'
@@ -15,13 +19,6 @@ import { ObservationCard } from '@/features/observations/components/ObservationC
 import type { Observation } from '@/features/observations/format'
 import { listAssessments } from '../api'
 import { formatDate, STATUS, type Assessment } from '../format'
-
-// The 11px letterspaced structural label from the design system.
-function Eyebrow({ children }: { children: string }) {
-  return (
-    <Text className="text-xs font-semibold uppercase tracking-[1px] text-muted-foreground">{children}</Text>
-  )
-}
 
 export default function Workspace() {
   const { reference } = useLocalSearchParams<{ reference: string }>()
@@ -47,9 +44,19 @@ export default function Workspace() {
     [reference],
   )
 
-  useEffect(() => {
-    load()
-  }, [load])
+  // On open, and again on returning from the capture sheet, so a new
+  // observation shows straight away (MB-03 AC11).
+  useFocusEffect(
+    useCallback(() => {
+      load()
+    }, [load]),
+  )
+
+  // Capture needs a location (CP-15 AC1), so without one the picker comes first.
+  function newObservation() {
+    const pathname = location ? '/assessment/[reference]/capture' : '/assessment/[reference]/locations'
+    router.push({ pathname, params: { reference } })
+  }
 
   async function refresh() {
     setRefreshing(true)
@@ -127,6 +134,14 @@ export default function Workspace() {
           ) : undefined
         }
       />
+      {/* One way in, in thumb reach, below the list rather than over it: one
+          observation holds a note, photos, voice notes and scans together. */}
+      <SafeAreaView edges={['bottom']} className="border-t border-border bg-card px-4 pt-3">
+        <Button size="lg" accessibilityLabel="New observation" onPress={newObservation} className="mb-2">
+          <Plus color="#ffffff" size={20} />
+          <Text>New observation</Text>
+        </Button>
+      </SafeAreaView>
     </>
   )
 }

@@ -7,6 +7,7 @@ import Chat from '../src/app/(tabs)/chat'
 import Home from '../src/app/(tabs)/index'
 import TabsLayout from '../src/app/(tabs)/_layout'
 import Profile from '../src/app/(tabs)/profile'
+import Capture from '../src/app/assessment/[reference]/capture'
 import Workspace from '../src/app/assessment/[reference]/index'
 import LocationPicker from '../src/app/assessment/[reference]/locations'
 import SignIn from '../src/app/sign-in'
@@ -89,6 +90,7 @@ export const routes = {
   '(tabs)/profile': Profile,
   'assessment/[reference]/index': Workspace,
   'assessment/[reference]/locations': LocationPicker,
+  'assessment/[reference]/capture': Capture,
 }
 
 // Taps a bottom tab by its label.

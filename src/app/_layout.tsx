@@ -41,6 +41,11 @@ function Screens() {
           options={{ headerBackButtonDisplayMode: 'minimal' }}
         />
         <Stack.Screen name="assessment/[reference]/locations" options={{ presentation: 'modal' }} />
+        {/* Full screen, no swipe to dismiss: closing goes through Discard? (MB-03 AC13). */}
+        <Stack.Screen
+          name="assessment/[reference]/capture"
+          options={{ presentation: 'fullScreenModal', gestureEnabled: false }}
+        />
       </Stack.Protected>
       <Stack.Protected guard={status === 'signedOut'}>
         <Stack.Screen name="sign-in" options={{ headerShown: false }} />
