@@ -68,15 +68,24 @@ logging still apply.
   within 7 days, with counts) and status chips. Each card shows its report deadline.
 - Filtering happens on the phone. The date rules are copied from the web dashboard.
 
+**MB-06: ask the knowledge base** (branch `MB-06`)
+
+- The Chatbot tab asks the gateway's `POST /api/chat` and shows each answer as it
+  streams in (server-sent events, parsed with OpenUI's `@openuidev/lang-core`, the same
+  answer format as the web). The loader and search step follow the web.
+- Numbered citations open their passage (`GET /api/chat/passages/:id`), with the
+  document's name from `GET /api/knowledge-documents/ingested`. Also: starter
+  questions, follow-ups, Stop, Try again and New chat.
+- Every answer is a paid model call. The conversation lasts while the app is open.
+
 ## What to build next
 
-The MVP order, agreed 27 Oct 2026 (MB-01 to MB-04 are built). Each is its own story (`MB-0n`). The web stories it
+The MVP order, agreed 27 Oct 2026 (MB-01 to MB-04 and MB-06 are built). Each is its own story (`MB-0n`). The web stories it
 mirrors are in the web repo's `docs/USER_STORIES.md`.
 
 | Order | Story | Mirrors | Gateway support |
 | --- | --- | --- | --- |
 | MB-05 | Pre-survey checklist in the workspace, to tick off on site | CP-11, CP-12 (Could) | **None yet.** Teammates are building CP-11 in the web repo. Until then, use a dummy checklist (see below). |
-| MB-06 | Chatbot: ask the knowledge base and get cited answers | CB-01 | `POST /api/chat` (a paid LLM call per answer) |
 
 Separate web story for the team: make severity optional. It's required in the gateway
 model, the save rule and `report_sections` evidence, and the web UI assumes it.
@@ -121,7 +130,8 @@ src/
     observations/         api, format, components/ObservationCard
     capture/              draft (upload format), media (camera, library), useVoiceNote, api,
                           components/ (sections, chips), screens/CaptureSheet
-    chat/                 screens/Chat
+    chat/                 library (answer format), events (stream), answer (citations),
+                          useConversation, components/, screens/Chat
     profile/              screens/Profile
   components/ui/          React Native Reusables components, adjusted
   lib/                    api.ts (every gateway call), utils.ts (cn), nav.ts (header styles)
