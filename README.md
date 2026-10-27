@@ -39,18 +39,29 @@ logging still apply.
 - **Chatbot:** a placeholder. It makes no calls.
 - **Profile:** the engineer's name and role, and Sign out.
 
+**MB-02: assessment workspace and locations** (branch `MB-02`)
+
+- **Workspace:** tap an assessment on Home to see its summary, where you are, and what's
+  been captured at that location (`GET /api/assessments/:reference/observations`).
+  Opening it never starts a capture session.
+- **Location picker:** locations grouped by building, then level (lowest first), then
+  "Elsewhere on site" (logic copied from the web client's `locations.ts`). **Add
+  location** takes a building, optional level and name, with tap-to-fill chips
+  (`POST /api/assessments/:reference/locations`).
+- **The chosen location** is kept per assessment while the app is open. It belongs to
+  the engineer who chose it, so another engineer on a shared phone starts fresh.
+
 ## What to build next
 
-The MVP order, agreed 27 Oct 2026. Each is its own story (`MB-0n`). The web stories it
+The MVP order, agreed 27 Oct 2026 (workspace and locations first, then capture, then
+the checklist). Each is its own story (`MB-0n`). The web stories it
 mirrors are in the web repo's `docs/USER_STORIES.md`.
 
 | Order | Story | Mirrors | Gateway support |
 | --- | --- | --- | --- |
-| 1 | Pre-survey checklist to tick off on site | CP-11, CP-12 (Could) | **None yet.** Teammates are building CP-11 in the web repo. Until then, use a dummy checklist (see below). |
-| 2 | Location picker: Site, Building, Level, Location. The last location carries over between captures. | CP-15, CP-16 | `GET` and `POST /api/assessments/:reference/locations` |
-| 3 | Quick capture from an assessment, within 2 taps: photo, voice, note or handwritten page | CP-02, CP-03, CP-04, CP-19 | `POST /api/assessments/:reference/observations`, multipart: a `details` JSON part (`note`, `copeDimensions`, `severity`, `locationId`) plus `recording`, `photo` and `page` files. Needs an active session from `POST /api/assessments/:reference/capture-session`. |
-| 4 | COPE category and severity tags (optional; "Uncategorised" is `null`, never `[]`) | CP-02, CP-08 | Set on capture, changed with `PATCH /api/observations/:id` |
-| 5 | Chatbot: ask the knowledge base and get cited answers | CB-01 | `POST /api/chat` (a paid LLM call per answer) |
+| MB-03 | Capture bar at the bottom of the workspace (Photo, Voice, Note, Page), opening straight into each, then a short form to tag and save. Severity becomes optional. | CP-02, CP-03, CP-04, CP-19 | `POST /api/assessments/:reference/observations`, multipart: a `details` JSON part (`note`, `copeDimensions`, `severity`, `locationId`) plus `recording`, `photo` and `page` files. Needs an active session from `POST /api/assessments/:reference/capture-session`. **Severity is required today**: making it optional is a web repo change, on its own branch. |
+| MB-04 | Pre-survey checklist in the workspace, to tick off on site | CP-11, CP-12 (Could) | **None yet.** Teammates are building CP-11 in the web repo. Until then, use a dummy checklist (see below). |
+| MB-05 | Chatbot: ask the knowledge base and get cited answers | CB-01 | `POST /api/chat` (a paid LLM call per answer) |
 
 Later, outside the MVP: an offline capture queue, editing my captures (CP-08), and
 completing an assessment (CP-14).
@@ -80,17 +91,22 @@ Things to know before building these:
 ```
 src/
   app/                    Expo Router routes only; each re-exports a screen
-    _layout.tsx           fonts, session check, sign-in vs tabs
+    _layout.tsx           fonts, session check, sign-in vs tabs, workspace screens
     sign-in.tsx
     (tabs)/               bottom tabs: index (Home), chat, profile
+    assessment/[reference]/  index (workspace), locations (picker modal)
   features/
     auth/                 session.tsx, screens/SignIn
-    assessments/          format.ts, components/AssessmentRow, screens/AssessmentList
+    assessments/          api, format, components/AssessmentRow, screens/AssessmentList, Workspace
+    locations/            api, locations.ts (grouping, copied from web), current.tsx (chosen
+                          location), components/, screens/LocationPicker
+    observations/         api, format, components/ObservationCard
     chat/                 screens/Chat
     profile/              screens/Profile
   components/ui/          React Native Reusables components, adjusted
   lib/                    api.ts (every gateway call), utils.ts (cn), nav.ts (header styles)
 __tests__/                tests; never put them inside src/app/
+test/gateway.tsx          shared test helpers: mocked gateway, sample data, route map
 tailwind.config.js        design tokens (exact hex from the web app)
 ```
 
