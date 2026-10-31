@@ -159,3 +159,57 @@ describe('Location picker', () => {
     expect(screen.getByText('No location matches. Add it below.')).toBeTruthy()
   })
 })
+
+describe('New observation', () => {
+  async function openSheet() {
+    await openWorkspace('Pump room')
+    await fireEvent.press(await screen.findByRole('button', { name: 'New observation' }))
+    await screen.findByTestId('capture-sheet')
+  }
+  const sheet = () => within(screen.getByTestId('capture-sheet'))
+
+  it('says how to add evidence while the tray is empty (AC10)', async () => {
+    gateway()
+    await openSheet()
+
+    expect(sheet().getByText('Evidence · 0')).toBeTruthy()
+    expect(sheet().getByText(/Nothing added yet/)).toBeTruthy()
+  })
+
+  it('puts photos and voice notes in one tray, and counts them on their buttons (AC9, AC10)', async () => {
+    gateway()
+    await openSheet()
+    await fireEvent.press(sheet().getByRole('button', { name: 'Take photo' }))
+    await sheet().findByTestId('evidence-photo')
+    await fireEvent.press(sheet().getByRole('button', { name: 'Record voice note' }))
+    await fireEvent.press(await sheet().findByRole('button', { name: 'Stop recording' }))
+    await sheet().findByTestId('evidence-voice-note')
+
+    expect(sheet().getByText('Evidence · 2')).toBeTruthy()
+    expect(sheet().queryByText(/Nothing added yet/)).toBeNull()
+    expect(within(sheet().getByRole('button', { name: 'Take photo' })).getByText('1')).toBeTruthy()
+    expect(within(sheet().getByRole('button', { name: 'Record voice note' })).getByText('1')).toBeTruthy()
+  })
+
+  it('turns the Voice button into Stop with the timer while recording (AC12)', async () => {
+    gateway()
+    await openSheet()
+    await fireEvent.press(sheet().getByRole('button', { name: 'Record voice note' }))
+
+    const stop = await sheet().findByRole('button', { name: 'Stop recording' })
+    expect(within(stop).getByText('Stop 0:42')).toBeTruthy()
+    expect(sheet().queryByRole('button', { name: 'Record voice note' })).toBeNull()
+  })
+
+  it('adds scans from the library with their own link (AC11)', async () => {
+    picker.launchImageLibraryAsync.mockResolvedValue({
+      canceled: false,
+      assets: [{ uri: 'file:///lib/page.jpg' }],
+    } as never)
+    gateway()
+    await openSheet()
+    await fireEvent.press(sheet().getByRole('button', { name: 'Add scan from library' }))
+
+    expect(await sheet().findAllByTestId('evidence-page')).toHaveLength(1)
+  })
+})

@@ -1,5 +1,6 @@
 // The capture sheet's COPE categories (MB-03 AC9): toggle chips, any number,
-// none = uncategorised. 48px tall, for gloves.
+// none = uncategorised. 48px tall, for gloves. Two by two (MB-07), so all
+// four show without wrapping unevenly.
 import { Pressable, View } from 'react-native'
 import { Text } from '@/components/ui/text'
 import { cn } from '@/lib/utils'
@@ -18,7 +19,7 @@ export function CopeChips({ value, onChange }: { value: Cope[]; onChange(next: C
             accessibilityState={{ selected: on }}
             onPress={() => onChange(on ? value.filter((v) => v !== c) : [...value, c])}
             className={cn(
-              'h-12 justify-center rounded-full border px-4',
+              'h-12 grow basis-[45%] items-center justify-center rounded-md border px-4',
               on ? 'border-primary bg-primary' : 'border-input bg-card active:bg-muted',
             )}
           >

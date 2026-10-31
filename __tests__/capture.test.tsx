@@ -107,7 +107,8 @@ describe('starting', () => {
     await openSheet()
 
     expect(sheet().getByText('Block A · Level 2 · Staircase')).toBeTruthy()
-    for (const section of ['Note', 'Photos · 0', 'Voice notes · 0', 'Scanned notes · 0']) {
+    // Since MB-07 (AC10) photos, voice notes and scans share one Evidence tray.
+    for (const section of ['Note', 'Evidence · 0']) {
       expect(sheet().getByText(section)).toBeTruthy()
     }
   })
@@ -134,7 +135,8 @@ describe('in the sheet', () => {
     await tap('Add photo from library')
 
     expect(await sheet().findAllByTestId('evidence-photo')).toHaveLength(3)
-    expect(sheet().getByText('Photos · 3')).toBeTruthy()
+    // Since MB-07 (AC9) the count is a badge on the Take photo button.
+    expect(within(sheet().getByRole('button', { name: 'Take photo' })).getByText('3')).toBeTruthy()
   })
 
   it('records a voice note and shows it with its length (AC4)', async () => {

@@ -1,9 +1,11 @@
 // Capture sheet (MB-03 AC3-AC13): a full-screen modal over the workspace where
 // one observation is put together and saved. One observation can hold a note,
 // any number of photos, voice notes and scanned handwritten notes, so the
-// sheet is one form with a section for each, every section adding its own.
+// sheet is one form. MB-07: everything added sits in one Evidence tray at the
+// top, and the Photo, Voice and Scan buttons sit at the bottom, in thumb reach,
+// above Save.
 import { router, Stack, useLocalSearchParams } from 'expo-router'
-import { MapPin, ScanText } from 'lucide-react-native'
+import { MapPin } from 'lucide-react-native'
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import {
   ActivityIndicator,
@@ -24,10 +26,10 @@ import { useCurrentLocation } from '@/features/locations/current'
 import { locationLabel } from '@/features/locations/locations'
 import { ApiError } from '@/lib/api'
 import { saveObservation } from '../api'
+import { CaptureButtons } from '../components/CaptureButtons'
 import { CopeChips } from '../components/CopeChips'
-import { ImageSection } from '../components/ImageSection'
+import { EvidenceTray } from '../components/EvidenceTray'
 import { SeverityPicker } from '../components/SeverityPicker'
-import { VoiceNotesSection } from '../components/VoiceNotesSection'
 import { emptyDraft, isBlank, missing, type Draft } from '../draft'
 import { choosePhotos, takePhoto } from '../media'
 import { useVoiceNote, type RecordingProblem } from '../useVoiceNote'
@@ -115,8 +117,8 @@ export default function CaptureSheet() {
       <Stack.Screen
         options={{
           title: 'New observation',
-          headerLeft: () => null,
-          headerRight: () => (
+          // Close on the left, where a sheet's cancel goes; Save is at the bottom.
+          headerLeft: () => (
             <Button
               variant="ghost"
               accessibilityLabel="Close"
@@ -128,18 +130,20 @@ export default function CaptureSheet() {
               <Text className="text-white">Close</Text>
             </Button>
           ),
+          headerRight: () => null,
         }}
       />
       <SafeAreaView testID="capture-sheet" edges={['bottom']} className="flex-1 bg-background">
         <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          {/* Read-only here: changing it means closing the sheet, so a picker on
+              top can't catch Android's back button meant for the sheet. */}
+          {location && (
+            <View className="min-h-12 flex-row items-center gap-2 border-b border-border bg-card px-4">
+              <MapPin color="#2c5488" size={18} />
+              <Text className="flex-1 font-medium">{locationLabel(location)}</Text>
+            </View>
+          )}
           <ScrollView contentContainerClassName="gap-6 p-4 pb-8" keyboardShouldPersistTaps="handled">
-            {location && (
-              <View className="flex-row items-center gap-2">
-                <MapPin color="#2c5488" size={18} />
-                <Text className="flex-1 font-medium">{locationLabel(location)}</Text>
-              </View>
-            )}
-
             {problem && (
               <View className="gap-3 rounded-md bg-warning p-3">
                 <Text className="text-warning-foreground">{problem.message}</Text>
@@ -151,6 +155,8 @@ export default function CaptureSheet() {
               </View>
             )}
 
+            <EvidenceTray draft={draft} onRemove={remove} />
+
             <View className="gap-2">
               <Eyebrow>Note</Eyebrow>
               <Input
@@ -161,59 +167,49 @@ export default function CaptureSheet() {
                 multiline
                 maxLength={5000} // the gateway's limit (newObservationSchema)
                 textAlignVertical="top"
-                className="h-28 py-3"
+                className="h-24 py-3"
               />
             </View>
 
-            <ImageSection
-              title="Photos"
-              uris={draft.photos}
-              testID="evidence-photo"
-              addLabel="Take photo"
-              libraryLabel="Add photo from library"
-              noun="photo"
-              onTake={() => addImages('photos', 'camera')}
-              onLibrary={() => addImages('photos', 'library')}
-              onRemove={(i) => remove('photos', i)}
-            />
-
-            <VoiceNotesSection
-              recordings={draft.recordings}
-              recording={voice.recording}
-              durationMillis={voice.durationMillis}
-              onRecord={record}
-              onStop={voice.stop}
-              onRemove={(i) => remove('recordings', i)}
-            />
-
-            {/* Handwritten pages: transcribed by the gateway (CP-19), not shown as site photos. */}
-            <ImageSection
-              title="Scanned notes"
-              uris={draft.pages}
-              testID="evidence-page"
-              addLabel="Scan handwritten notes"
-              libraryLabel="Add scan from library"
-              noun="scan"
-              Icon={ScanText}
-              onTake={() => addImages('pages', 'camera')}
-              onLibrary={() => addImages('pages', 'library')}
-              onRemove={(i) => remove('pages', i)}
-            />
-
+            {/* Severity first: it's required to save, COPE isn't. */}
             <View className="gap-2">
-              <Eyebrow>COPE category</Eyebrow>
-              <CopeChips value={draft.cope} onChange={(cope) => update({ cope })} />
+              <View className="flex-row items-baseline justify-between">
+                <Eyebrow>Severity</Eyebrow>
+                <Text className={draft.severity ? 'text-sm font-semibold text-success-foreground' : 'text-sm font-semibold text-warning-foreground'}>
+                  Required
+                </Text>
+              </View>
+              <SeverityPicker value={draft.severity} onChange={(severity) => update({ severity })} />
             </View>
 
             <View className="gap-2">
-              <Eyebrow>Severity</Eyebrow>
-              <SeverityPicker value={draft.severity} onChange={(severity) => update({ severity })} />
+              <View className="flex-row items-baseline justify-between">
+                <Eyebrow>COPE category</Eyebrow>
+                <Text className="text-sm text-muted-foreground">Optional, any number</Text>
+              </View>
+              <CopeChips value={draft.cope} onChange={(cope) => update({ cope })} />
             </View>
           </ScrollView>
 
           {/* Pinned in thumb reach; says what's missing when it can't save yet (AC9). */}
-          <View className="gap-2 border-t border-border bg-card p-4">
-            {error ? (
+          <View className="gap-2 border-t border-border bg-card px-4 pt-3">
+            <CaptureButtons
+              draft={draft}
+              recording={voice.recording}
+              durationMillis={voice.durationMillis}
+              busy={saving}
+              onPhoto={() => addImages('photos', 'camera')}
+              onRecord={record}
+              onStop={voice.stop}
+              onScan={() => addImages('pages', 'camera')}
+              onPhotoLibrary={() => addImages('photos', 'library')}
+              onScanLibrary={() => addImages('pages', 'library')}
+            />
+            {voice.recording ? (
+              <Text className="text-center text-sm font-medium text-destructive" accessibilityLiveRegion="polite">
+                Recording…
+              </Text>
+            ) : error ? (
               <Text className="text-destructive">{error}</Text>
             ) : (
               blocker && <Text className="text-center text-sm text-muted-foreground">{blocker}</Text>
@@ -224,8 +220,9 @@ export default function CaptureSheet() {
               accessibilityState={{ disabled: Boolean(blocker) || saving || voice.recording }}
               disabled={Boolean(blocker) || saving || voice.recording}
               onPress={save}
+              className="mb-2"
             >
-              {saving ? <ActivityIndicator color="#ffffff" /> : <Text>Save observation</Text>}
+              {saving ? <ActivityIndicator color="#ffffff" /> : <Text className="text-lg">Save observation</Text>}
             </Button>
           </View>
         </KeyboardAvoidingView>
