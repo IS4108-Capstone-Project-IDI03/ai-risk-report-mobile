@@ -41,7 +41,8 @@ function gateway(overrides: Record<string, Reply | ((init?: RequestInit) => Repl
   })
 }
 
-const workspace = () => within(screen.getByTestId('workspace'))
+// The whole screen: since MB-07 (AC5, AC6) the location bar sits below the list.
+const workspace = () => within(screen.getByTestId('workspace-screen'))
 
 // Signs in (session mocked), then taps the assessment on Home.
 async function openWorkspace() {

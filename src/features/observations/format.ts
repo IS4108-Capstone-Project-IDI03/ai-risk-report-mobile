@@ -13,7 +13,8 @@ export type Observation = {
   severity: Severity | null
   location: { id: string } | null
   recordings: unknown[]
-  photos: unknown[]
+  // Each served by the gateway behind the session cookie (MB-07 thumbnails).
+  photos: { url: string }[]
   pages: unknown[]
   recordedAt: string
 }

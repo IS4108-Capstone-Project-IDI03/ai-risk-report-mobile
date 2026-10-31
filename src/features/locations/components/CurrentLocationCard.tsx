@@ -1,5 +1,6 @@
-// The workspace's LOCATION block (MB-02 AC2, AC8): where the engineer says
-// they are, tappable to change, or a prompt to choose one before capturing.
+// The workspace's location row (MB-02 AC2, AC8): where the engineer says they
+// are, tappable to change, or a prompt to choose one before capturing. Sits in
+// the workspace's bottom bar, right above New observation (MB-07 AC5, AC6).
 // Used by the assessments Workspace screen; opens the location picker.
 import { ChevronRight, MapPin } from 'lucide-react-native'
 import { Pressable, View } from 'react-native'
@@ -12,15 +13,13 @@ type Props = { location: Location | undefined; onChange(): void }
 export function CurrentLocationCard({ location, onChange }: Props) {
   if (!location) {
     return (
-      <View className="gap-3 rounded-lg border border-primary bg-secondary p-4">
-        <View className="gap-1">
-          <Text className="text-lg font-semibold text-secondary-foreground">Choose where you are</Text>
-          <Text className="text-secondary-foreground">
-            Observations are filed by location. Choose one before capturing.
-          </Text>
+      <View className="min-h-14 flex-row items-center gap-3 py-1">
+        <MapPin color="#2c5488" size={20} />
+        <View className="flex-1">
+          <Text className="font-semibold">Choose where you are</Text>
+          <Text className="text-sm text-muted-foreground">Observations are filed by location.</Text>
         </View>
-        <Button size="lg" accessibilityLabel="Choose location" onPress={onChange}>
-          <MapPin color="#ffffff" size={20} />
+        <Button variant="secondary" accessibilityLabel="Choose location" onPress={onChange} className="px-4">
           <Text>Choose location</Text>
         </Button>
       </View>
@@ -31,13 +30,14 @@ export function CurrentLocationCard({ location, onChange }: Props) {
       accessibilityRole="button"
       accessibilityLabel={`Location, ${locationLabel(location)}. Change`}
       onPress={onChange}
-      className="min-h-16 flex-row items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 active:bg-muted"
+      className="-mx-2 min-h-14 flex-row items-center gap-3 rounded-md px-2 active:bg-muted"
     >
-      <View className="h-10 w-10 items-center justify-center rounded-full bg-secondary">
-        <MapPin color="#2c5488" size={20} />
+      <MapPin color="#2c5488" size={20} />
+      <View className="flex-1">
+        <Text className="text-xs text-muted-foreground">You are at</Text>
+        <Text className="text-base font-semibold">{locationLabel(location)}</Text>
       </View>
-      <Text className="flex-1 text-base font-semibold">{locationLabel(location)}</Text>
-      <Text className="text-sm font-medium text-primary">Change</Text>
+      <Text className="font-semibold text-primary">Change</Text>
       <ChevronRight color="#2c5488" size={20} />
     </Pressable>
   )

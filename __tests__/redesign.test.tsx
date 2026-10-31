@@ -123,3 +123,23 @@ describe('Home', () => {
     expect(screen.getByText(REF)).toBeTruthy()
   })
 })
+
+describe('Workspace', () => {
+  it('shows the first photo as a thumbnail, else an icon (AC7)', async () => {
+    gateway({
+      [`GET /api/assessments/${REF}/observations`]: {
+        status: 200,
+        body: [
+          observation('o1', 'l1', { photos: [{ url: '/api/observations/o1/photos/p1/image' }] }),
+          observation('o2', 'l1', { recordings: [{ url: '/api/observations/o2/recordings/r1/audio' }] }),
+        ],
+      },
+    })
+    await openWorkspace('Pump room')
+
+    const thumb = await screen.findByTestId('observation-photo')
+    expect(thumb.props.source.uri).toBe('http://gateway.test:4000/api/observations/o1/photos/p1/image')
+    expect(screen.getAllByTestId('observation-photo')).toHaveLength(1)
+    expect(screen.getByLabelText('Voice note')).toBeTruthy()
+  })
+})

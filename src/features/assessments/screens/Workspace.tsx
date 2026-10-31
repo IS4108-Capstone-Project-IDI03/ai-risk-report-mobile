@@ -2,6 +2,8 @@
 // the assessment, where the engineer is, what's been captured there, and the
 // New observation button. Opening it never starts a capture session (MB-02
 // AC6): that reopens a completed assessment, so saving the first one starts it.
+// MB-07: the assessment's details sit in a navy band under the header, and the
+// location bar and New observation sit together at the bottom, in thumb reach.
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { Plus } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
@@ -10,7 +12,6 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Eyebrow } from '@/components/Eyebrow'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { Text } from '@/components/ui/text'
 import { CurrentLocationCard } from '@/features/locations/components/CurrentLocationCard'
 import { useCurrentLocation } from '@/features/locations/current'
@@ -85,47 +86,45 @@ export default function Workspace() {
   const status = assessment && STATUS[assessment.status]
 
   return (
-    <>
-      <Stack.Screen options={{ title: assessment?.site.name ?? '' }} />
+    <View testID="workspace-screen" className="flex-1">
+      {/* The site name is in the band below, so the header carries only Back. */}
+      <Stack.Screen options={{ title: '' }} />
       <FlatList
         testID="workspace"
         data={here}
         keyExtractor={(o) => o.id}
-        renderItem={({ item }) => <ObservationCard observation={item} />}
-        contentContainerClassName="gap-3 p-4 pb-10"
+        renderItem={({ item, index }) => (
+          <ObservationCard observation={item} first={index === 0} last={index === here.length - 1} />
+        )}
+        contentContainerClassName="pb-6"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
         ListHeaderComponent={
-          <View className="gap-5 pb-1">
-            {error && (
-              <View className="rounded-md bg-destructive/10 p-3">
-                <Text className="text-destructive">{error}</Text>
-              </View>
-            )}
+          <View className="gap-4 pb-2">
             {assessment && status && (
-              <Card className="gap-1 px-4 py-4">
-                <Text className="text-xl font-semibold">{assessment.client}</Text>
-                <Text className="text-muted-foreground">{assessment.site.name}</Text>
-                <View className="mt-2 flex-row flex-wrap items-center gap-x-3 gap-y-2">
-                  <Text className="font-mono text-sm text-muted-foreground">{assessment.reference}</Text>
-                  <Text className="font-mono text-sm text-muted-foreground">
-                    {formatDate(assessment.siteVisitDate)}
-                  </Text>
+              <View className="gap-1.5 bg-navy px-4 pb-5">
+                <Text className="text-2xl font-bold text-white">{assessment.site.name}</Text>
+                <View className="flex-row flex-wrap items-center gap-x-3 gap-y-1">
+                  <Text className="text-[#d6dde8]">{assessment.client}</Text>
                   <Badge variant={status.tone}>
                     <Text>{status.label}</Text>
                   </Badge>
                 </View>
-              </Card>
+                <View className="flex-row flex-wrap gap-x-4">
+                  <Text className="font-mono text-sm text-[#b9c4d6]">{assessment.reference}</Text>
+                  <Text className="font-mono text-sm text-[#b9c4d6]">{formatDate(assessment.siteVisitDate)}</Text>
+                </View>
+              </View>
             )}
-            <View className="gap-2">
-              <Eyebrow>Location</Eyebrow>
-              <CurrentLocationCard
-                location={location}
-                onChange={() =>
-                  router.push({ pathname: '/assessment/[reference]/locations', params: { reference } })
-                }
-              />
-            </View>
-            {location && <Eyebrow>{`Captured here · ${here.length}`}</Eyebrow>}
+            {error && (
+              <View className="mx-4 rounded-md bg-destructive/10 p-3">
+                <Text className="text-destructive">{error}</Text>
+              </View>
+            )}
+            {location && (
+              <View className="px-4">
+                <Eyebrow>{`Captured here · ${here.length}`}</Eyebrow>
+              </View>
+            )}
           </View>
         }
         ListEmptyComponent={
@@ -134,14 +133,19 @@ export default function Workspace() {
           ) : undefined
         }
       />
-      {/* One way in, in thumb reach, below the list rather than over it: one
-          observation holds a note, photos, voice notes and scans together. */}
-      <SafeAreaView edges={['bottom']} className="border-t border-border bg-card px-4 pt-3">
+      {/* One way in, in thumb reach, below the list rather than over it, with the
+          location it files to right above: one observation holds a note,
+          photos, voice notes and scans together. */}
+      <SafeAreaView edges={['bottom']} className="gap-2 border-t border-border bg-card px-4 pt-2">
+        <CurrentLocationCard
+          location={location}
+          onChange={() => router.push({ pathname: '/assessment/[reference]/locations', params: { reference } })}
+        />
         <Button size="lg" accessibilityLabel="New observation" onPress={newObservation} className="mb-2">
           <Plus color="#ffffff" size={20} />
-          <Text>New observation</Text>
+          <Text className="text-lg">New observation</Text>
         </Button>
       </SafeAreaView>
-    </>
+    </View>
   )
 }
