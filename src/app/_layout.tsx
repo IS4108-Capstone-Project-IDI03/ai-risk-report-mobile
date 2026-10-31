@@ -16,6 +16,7 @@ import { StatusBar } from 'expo-status-bar'
 import { ActivityIndicator, View } from 'react-native'
 import { SessionProvider, useSession } from '@/features/auth/session'
 import { CurrentLocationProvider } from '@/features/locations/current'
+import { orientation } from '@/lib/device'
 import { colors, headerOptions } from '@/lib/nav'
 
 function Screens() {
@@ -30,7 +31,9 @@ function Screens() {
   }
   return (
     <Stack
-      screenOptions={{ ...headerOptions, contentStyle: { backgroundColor: colors.page } }}
+      // Tablets turn; phones stay portrait (MB-08). app.json allows every
+      // orientation, so this is what keeps a phone upright.
+      screenOptions={{ ...headerOptions, contentStyle: { backgroundColor: colors.page }, orientation: orientation() }}
     >
       <Stack.Protected guard={status === 'signedIn'}>
         {/* The tabs draw their own headers (src/app/(tabs)/_layout.tsx). */}
