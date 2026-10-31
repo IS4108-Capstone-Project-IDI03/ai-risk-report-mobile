@@ -1,4 +1,5 @@
-// Capture sheet (MB-03 AC3-AC13): a full-screen modal over the workspace where
+// Capture sheet (MB-03 AC3-AC13): a full-screen modal over the workspace (on a
+// tablet, a centred sheet with two columns once it's wide enough, MB-09) where
 // one observation is put together and saved. One observation can hold a note,
 // any number of photos, voice notes and scanned handwritten notes, so the
 // sheet is one form. MB-07: everything added sits in one Evidence tray at the
@@ -11,6 +12,7 @@ import {
   ActivityIndicator,
   Alert,
   BackHandler,
+  Dimensions,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -22,6 +24,7 @@ import { Eyebrow } from '@/components/Eyebrow'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Text } from '@/components/ui/text'
+import { isTablet } from '@/lib/device'
 import { cn, readable } from '@/lib/utils'
 import { useCurrentLocation } from '@/features/locations/current'
 import { locationLabel } from '@/features/locations/locations'
@@ -46,6 +49,10 @@ export default function CaptureSheet() {
   const [problem, setProblem] = useState<RecordingProblem | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Whether the sheet is 640pt or wider (the `readable` column's width,
+  // src/lib/utils.ts), measured, as on iPad the sheet isn't the window's width.
+  // A tablet starts wide, so its form doesn't open in one column then reflow.
+  const [wide, setWide] = useState(() => isTablet(Dimensions.get('screen')))
   // False once closed, so a late save doesn't navigate twice and pop the workspace too.
   const open = useRef(true)
   const voice = useVoiceNote((note) => setDraft((d) => ({ ...d, recordings: [...d.recordings, note] })))
@@ -146,7 +153,12 @@ export default function CaptureSheet() {
               </View>
             </View>
           )}
-          <ScrollView contentContainerClassName={cn('gap-6 p-4 pb-8', readable)} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            onLayout={(e) => setWide(e.nativeEvent.layout.width >= 640)}
+            // Wide, the two columns use the sheet's width; else the readable column (MB-08).
+            contentContainerClassName={cn('gap-6 p-4 pb-8', wide ? 'w-full max-w-[960px] self-center' : readable)}
+            keyboardShouldPersistTaps="handled"
+          >
             {problem && (
               <View className="gap-3 rounded-md bg-warning p-3">
                 <Text className="text-warning-foreground">{problem.message}</Text>
@@ -158,39 +170,46 @@ export default function CaptureSheet() {
               </View>
             )}
 
-            <EvidenceTray draft={draft} onRemove={remove} />
+            {/* Two columns once the sheet is wide (a centred sheet on iPad, MB-09):
+                what was captured on the left, how to file it on the right. */}
+            <View className={wide ? 'flex-row gap-7' : 'gap-6'}>
+              <View className={cn('gap-6', wide && 'flex-1')}>
+                <EvidenceTray draft={draft} onRemove={remove} />
 
-            <View className="gap-2">
-              <Eyebrow>Note</Eyebrow>
-              <Input
-                accessibilityLabel="Note"
-                value={draft.note}
-                onChangeText={(note) => update({ note })}
-                placeholder="What did you see?"
-                multiline
-                maxLength={5000} // the gateway's limit (newObservationSchema)
-                textAlignVertical="top"
-                className="h-24 py-3"
-              />
-            </View>
-
-            {/* Severity first: it's required to save, COPE isn't. */}
-            <View className="gap-2">
-              <View className="flex-row items-baseline justify-between">
-                <Eyebrow>Severity</Eyebrow>
-                <Text className={draft.severity ? 'text-sm font-semibold text-success-foreground' : 'text-sm font-semibold text-warning-foreground'}>
-                  Required
-                </Text>
+                <View className="gap-2">
+                  <Eyebrow>Note</Eyebrow>
+                  <Input
+                    accessibilityLabel="Note"
+                    value={draft.note}
+                    onChangeText={(note) => update({ note })}
+                    placeholder="What did you see?"
+                    multiline
+                    maxLength={5000} // the gateway's limit (newObservationSchema)
+                    textAlignVertical="top"
+                    className="h-24 py-3"
+                  />
+                </View>
               </View>
-              <SeverityPicker value={draft.severity} onChange={(severity) => update({ severity })} />
-            </View>
+              <View className={cn('gap-6', wide && 'flex-1')}>
+                {/* Severity first: it's required to save, COPE isn't. */}
+                <View className="gap-2">
+                  <View className="flex-row items-baseline justify-between">
+                    <Eyebrow>Severity</Eyebrow>
+                    <Text className={draft.severity ? 'text-sm font-semibold text-success-foreground' : 'text-sm font-semibold text-warning-foreground'}>
+                      Required
+                    </Text>
+                  </View>
+                  <SeverityPicker value={draft.severity} onChange={(severity) => update({ severity })} />
+                </View>
 
-            <View className="gap-2">
-              <View className="flex-row items-baseline justify-between">
-                <Eyebrow>COPE category</Eyebrow>
-                <Text className="text-sm text-muted-foreground">Optional, any number</Text>
+                <View className="gap-2">
+                  <View className="flex-row items-baseline justify-between">
+                    <Eyebrow>COPE category</Eyebrow>
+                    <Text className="text-sm text-muted-foreground">Optional, any number</Text>
+                  </View>
+                  <CopeChips value={draft.cope} onChange={(cope) => update({ cope })} />
+                </View>
               </View>
-              <CopeChips value={draft.cope} onChange={(cope) => update({ cope })} />
             </View>
           </ScrollView>
 

@@ -13,10 +13,10 @@ import {
 } from '@expo-google-fonts/ibm-plex-sans'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
-import { ActivityIndicator, View } from 'react-native'
+import { ActivityIndicator, Dimensions, View } from 'react-native'
 import { SessionProvider, useSession } from '@/features/auth/session'
 import { CurrentLocationProvider } from '@/features/locations/current'
-import { orientation } from '@/lib/device'
+import { isTablet, orientation } from '@/lib/device'
 import { colors, headerOptions } from '@/lib/nav'
 
 function Screens() {
@@ -44,10 +44,14 @@ function Screens() {
           options={{ headerBackButtonDisplayMode: 'minimal' }}
         />
         <Stack.Screen name="assessment/[reference]/locations" options={{ presentation: 'modal' }} />
-        {/* Full screen, no swipe to dismiss: closing goes through Discard? (MB-03 AC13). */}
+        {/* Full screen on a phone; a centred sheet on a tablet (MB-09). No swipe
+            to dismiss: closing goes through Discard? (MB-03 AC13). */}
         <Stack.Screen
           name="assessment/[reference]/capture"
-          options={{ presentation: 'fullScreenModal', gestureEnabled: false }}
+          options={{
+            presentation: isTablet(Dimensions.get('screen')) ? 'modal' : 'fullScreenModal',
+            gestureEnabled: false,
+          }}
         />
       </Stack.Protected>
       <Stack.Protected guard={status === 'signedOut'}>
