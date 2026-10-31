@@ -90,15 +90,20 @@ logging still apply.
 - **Corners are rounder than the web's** (8 to 20px; the web caps them at 8px). A
   deliberate mobile-only choice; the web design system is unchanged.
 
+**MB-08: tablets, light** (branch `MB-08`)
+
+- Tablets (shortest side 600pt or more) turn with the device; phones stay portrait.
+- The site screens keep a 640pt column, centred, so nothing stretches on an iPad.
+
 ## What to build next
 
-The MVP order, agreed 27 Oct 2026 (MB-01 to MB-04, MB-06 and MB-07 are built). Each is its own story (`MB-0n`). The web stories it
+The MVP order, agreed 27 Oct 2026 (MB-01 to MB-04 and MB-06 to MB-08 are built). Each is its own story (`MB-0n`). The web stories it
 mirrors are in the web repo's `docs/USER_STORIES.md`.
 
 | Order | Story | Mirrors | Gateway support |
 | --- | --- | --- | --- |
 | MB-05 | Pre-survey checklist in the workspace, to tick off on site | CP-11, CP-12 (Could) | **None yet.** Teammates are building CP-11 in the web repo. Until then, use a dummy checklist (see below). |
-| MB-08 | Tablets: the app rotates, and the site screens keep a readable width on an iPad | None | None needed |
+| MB-09 | iPad split view: assessments beside the open workspace in landscape | None | None needed |
 
 Separate web story for the team: make severity optional. It's required in the gateway
 model, the save rule and `report_sections` evidence, and the web UI assumes it.
