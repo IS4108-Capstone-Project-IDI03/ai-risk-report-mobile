@@ -120,14 +120,14 @@ export default function CaptureSheet() {
           // Close on the left, where a sheet's cancel goes; Save is at the bottom.
           headerLeft: () => (
             <Button
-              variant="ghost"
+              variant="header"
               accessibilityLabel="Close"
               accessibilityState={{ disabled: saving }}
               disabled={saving}
               onPress={close}
               className="px-2"
             >
-              <Text className="text-white">Close</Text>
+              <Text>Close</Text>
             </Button>
           ),
           headerRight: () => null,

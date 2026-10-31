@@ -40,6 +40,9 @@ const buttonVariants = cva(
           Platform.select({ web: 'hover:bg-accent dark:hover:bg-accent/50' })
         ),
         link: '',
+        // On the navy header (MB-07): no pale pressed fill, which hid the white
+        // text; the text just dims while pressed.
+        header: 'active:opacity-60',
       },
       size: {
         default: cn('h-12 px-5 py-2', Platform.select({ web: 'has-[>svg]:px-3' })),
@@ -75,6 +78,7 @@ const buttonTextVariants = cva(
           'text-primary group-active:underline',
           Platform.select({ web: 'underline-offset-4 hover:underline group-hover:underline' })
         ),
+        header: 'text-white',
       },
       size: {
         default: '',

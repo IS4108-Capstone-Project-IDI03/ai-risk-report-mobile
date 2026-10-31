@@ -85,14 +85,14 @@ export default function LocationPicker() {
           gestureEnabled: !adding,
           headerLeft: adding
             ? () => (
-                <Button variant="ghost" accessibilityLabel="Back to locations" onPress={() => setAdding(false)} className="px-2">
-                  <Text className="text-white">Back</Text>
+                <Button variant="header" accessibilityLabel="Back to locations" onPress={() => setAdding(false)} className="px-2">
+                  <Text>Back</Text>
                 </Button>
               )
             : undefined,
           headerRight: () => (
-            <Button variant="ghost" accessibilityLabel="Close" onPress={() => router.back()} className="px-2">
-              <Text className="text-white">Close</Text>
+            <Button variant="header" accessibilityLabel="Close" onPress={() => router.back()} className="px-2">
+              <Text>Close</Text>
             </Button>
           ),
         }}

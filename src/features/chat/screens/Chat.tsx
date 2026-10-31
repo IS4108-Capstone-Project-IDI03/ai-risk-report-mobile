@@ -50,8 +50,8 @@ export default function Chat() {
         options={{
           headerRight: turns.length
             ? () => (
-                <Button variant="ghost" accessibilityLabel="New chat" onPress={reset} className="px-3">
-                  <Text className="text-white">New chat</Text>
+                <Button variant="header" accessibilityLabel="New chat" onPress={reset} className="px-3">
+                  <Text>New chat</Text>
                 </Button>
               )
             : undefined,
