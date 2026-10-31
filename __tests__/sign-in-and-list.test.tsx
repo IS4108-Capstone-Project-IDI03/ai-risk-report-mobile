@@ -194,11 +194,14 @@ describe('assessments', () => {
 
     expect(await screen.findByText('RPT-2026-0000')).toBeTruthy()
     // Each on its own card: since MB-04 the status chips repeat each label.
-    const labels = ['Not started', 'Capturing', 'Ready to generate', 'Draft', 'Under review', 'Finalised']
+    // Since MB-07 (AC1) the capturing one is in the Capturing now card instead.
+    const labels = ['Not started', null, 'Ready to generate', 'Draft', 'Under review', 'Finalised']
     labels.forEach((label, i) => {
+      if (!label) return
       const card = within(screen.getByRole('button', { name: new RegExp(`RPT-2026-000${i}`) }))
       expect(card.getByText(label)).toBeTruthy()
     })
+    expect(within(screen.getByTestId('capturing-now')).getByText('RPT-2026-0001')).toBeTruthy()
     expect(screen.queryByText('RPT-2026-0099')).toBeNull()
   })
 
