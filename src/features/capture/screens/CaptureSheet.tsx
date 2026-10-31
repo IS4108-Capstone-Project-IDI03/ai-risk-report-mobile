@@ -22,6 +22,7 @@ import { Eyebrow } from '@/components/Eyebrow'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Text } from '@/components/ui/text'
+import { cn, readable } from '@/lib/utils'
 import { useCurrentLocation } from '@/features/locations/current'
 import { locationLabel } from '@/features/locations/locations'
 import { ApiError } from '@/lib/api'
@@ -138,12 +139,14 @@ export default function CaptureSheet() {
           {/* Read-only here: changing it means closing the sheet, so a picker on
               top can't catch Android's back button meant for the sheet. */}
           {location && (
-            <View className="min-h-12 flex-row items-center gap-2 border-b border-border bg-card px-4">
-              <MapPin color="#2c5488" size={18} />
-              <Text className="flex-1 font-medium">{locationLabel(location)}</Text>
+            <View className="border-b border-border bg-card px-4">
+              <View className={cn('min-h-12 flex-row items-center gap-2', readable)}>
+                <MapPin color="#2c5488" size={18} />
+                <Text className="flex-1 font-medium">{locationLabel(location)}</Text>
+              </View>
             </View>
           )}
-          <ScrollView contentContainerClassName="gap-6 p-4 pb-8" keyboardShouldPersistTaps="handled">
+          <ScrollView contentContainerClassName={cn('gap-6 p-4 pb-8', readable)} keyboardShouldPersistTaps="handled">
             {problem && (
               <View className="gap-3 rounded-md bg-warning p-3">
                 <Text className="text-warning-foreground">{problem.message}</Text>
@@ -192,38 +195,40 @@ export default function CaptureSheet() {
           </ScrollView>
 
           {/* Pinned in thumb reach; says what's missing when it can't save yet (AC9). */}
-          <View className="gap-2 border-t border-border bg-card px-4 pt-3">
-            <CaptureButtons
-              draft={draft}
-              recording={voice.recording}
-              durationMillis={voice.durationMillis}
-              busy={saving}
-              onPhoto={() => addImages('photos', 'camera')}
-              onRecord={record}
-              onStop={voice.stop}
-              onScan={() => addImages('pages', 'camera')}
-              onPhotoLibrary={() => addImages('photos', 'library')}
-              onScanLibrary={() => addImages('pages', 'library')}
-            />
-            {voice.recording ? (
-              <Text className="text-center text-sm font-medium text-destructive" accessibilityLiveRegion="polite">
-                Recording…
-              </Text>
-            ) : error ? (
-              <Text className="text-destructive">{error}</Text>
-            ) : (
-              blocker && <Text className="text-center text-sm text-muted-foreground">{blocker}</Text>
-            )}
-            <Button
-              size="lg"
-              accessibilityLabel="Save observation"
-              accessibilityState={{ disabled: Boolean(blocker) || saving || voice.recording }}
-              disabled={Boolean(blocker) || saving || voice.recording}
-              onPress={save}
-              className="mb-2"
-            >
-              {saving ? <ActivityIndicator color="#ffffff" /> : <Text className="text-lg">Save observation</Text>}
-            </Button>
+          <View className="border-t border-border bg-card px-4 pt-3">
+            <View className={cn('gap-2', readable)}>
+              <CaptureButtons
+                draft={draft}
+                recording={voice.recording}
+                durationMillis={voice.durationMillis}
+                busy={saving}
+                onPhoto={() => addImages('photos', 'camera')}
+                onRecord={record}
+                onStop={voice.stop}
+                onScan={() => addImages('pages', 'camera')}
+                onPhotoLibrary={() => addImages('photos', 'library')}
+                onScanLibrary={() => addImages('pages', 'library')}
+              />
+              {voice.recording ? (
+                <Text className="text-center text-sm font-medium text-destructive" accessibilityLiveRegion="polite">
+                  Recording…
+                </Text>
+              ) : error ? (
+                <Text className="text-destructive">{error}</Text>
+              ) : (
+                blocker && <Text className="text-center text-sm text-muted-foreground">{blocker}</Text>
+              )}
+              <Button
+                size="lg"
+                accessibilityLabel="Save observation"
+                accessibilityState={{ disabled: Boolean(blocker) || saving || voice.recording }}
+                disabled={Boolean(blocker) || saving || voice.recording}
+                onPress={save}
+                className="mb-2"
+              >
+                {saving ? <ActivityIndicator color="#ffffff" /> : <Text className="text-lg">Save observation</Text>}
+              </Button>
+            </View>
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>

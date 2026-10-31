@@ -8,6 +8,7 @@ import { FlatList, RefreshControl, ScrollView, View } from 'react-native'
 import { Eyebrow } from '@/components/Eyebrow'
 import { Button } from '@/components/ui/button'
 import { Text } from '@/components/ui/text'
+import { cn, readable } from '@/lib/utils'
 import { listAssessments } from '../api'
 import { AssessmentRow } from '../components/AssessmentRow'
 import { CapturingNowCard } from '../components/CapturingNowCard'
@@ -71,7 +72,9 @@ export default function AssessmentList() {
       {/* Search sits in the navy band, out of the list, so it stays put while scrolling. */}
       {all.length > 0 && (
         <View className="bg-navy px-4 pb-4">
-          <SearchBar value={filters.search} onChange={(search) => set({ search })} />
+          <View className={readable}>
+            <SearchBar value={filters.search} onChange={(search) => set({ search })} />
+          </View>
         </View>
       )}
       <FlatList
@@ -81,7 +84,8 @@ export default function AssessmentList() {
         renderItem={({ item, index }) => (
           <AssessmentRow assessment={item} first={index === 0} last={index === rest.length - 1} />
         )}
-        contentContainerClassName="p-4 pb-8"
+        // On a tablet, the list keeps to the readable column (MB-08).
+        contentContainerClassName={cn('p-4 pb-8', readable)}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}

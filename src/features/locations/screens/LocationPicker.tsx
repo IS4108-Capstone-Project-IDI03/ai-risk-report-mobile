@@ -17,6 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Button } from '@/components/ui/button'
 import { Text } from '@/components/ui/text'
+import { cn, readable } from '@/lib/utils'
 import { SearchBar } from '@/features/assessments/components/SearchBar'
 import { addLocation, listLocations } from '../api'
 import { AddLocationForm, type NewLocation } from '../components/AddLocationForm'
@@ -99,7 +100,7 @@ export default function LocationPicker() {
       />
       <SafeAreaView edges={['bottom']} className="flex-1 bg-background">
         <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <ScrollView contentContainerClassName="gap-4 p-4" keyboardShouldPersistTaps="handled">
+          <ScrollView contentContainerClassName={cn('gap-4 p-4', readable)} keyboardShouldPersistTaps="handled">
             {error ? (
               <View className="gap-3 rounded-md bg-destructive/10 p-3">
                 <Text className="text-destructive">{error}</Text>
@@ -132,10 +133,12 @@ export default function LocationPicker() {
           {/* In thumb reach at the bottom, under the list. */}
           {locations && !adding && (
             <View className="border-t border-border bg-card p-4">
-              <Button size="lg" variant="secondary" accessibilityLabel="Add location" onPress={() => setAdding(true)}>
-                <Plus color="#22406c" size={20} />
-                <Text>Add location</Text>
-              </Button>
+              <View className={readable}>
+                <Button size="lg" variant="secondary" accessibilityLabel="Add location" onPress={() => setAdding(true)}>
+                  <Plus color="#22406c" size={20} />
+                  <Text>Add location</Text>
+                </Button>
+              </View>
             </View>
           )}
         </KeyboardAvoidingView>
