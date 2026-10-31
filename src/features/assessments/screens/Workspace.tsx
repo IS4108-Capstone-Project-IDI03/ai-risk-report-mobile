@@ -4,6 +4,8 @@
 // AC6): that reopens a completed assessment, so saving the first one starts it.
 // MB-07: the assessment's details sit in a navy band under the header, and the
 // location bar and New observation sit together at the bottom, in thumb reach.
+// MB-09: WorkspaceView is also Home's right-hand pane in the iPad split view;
+// the route below renders it for the reference in the URL.
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { Plus } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
@@ -24,6 +26,11 @@ import { formatDate, STATUS, type Assessment } from '../format'
 
 export default function Workspace() {
   const { reference } = useLocalSearchParams<{ reference: string }>()
+  return <WorkspaceView reference={reference} />
+}
+
+// `embedded`: inside Home's split view, where there's no stack header to set.
+export function WorkspaceView({ reference, embedded = false }: { reference: string; embedded?: boolean }) {
   const [location] = useCurrentLocation(reference)
   // undefined while loading; null once the list arrives without it.
   const [assessment, setAssessment] = useState<Assessment | null | undefined>(undefined)
@@ -76,7 +83,9 @@ export default function Workspace() {
       <View className="flex-1 items-center justify-center gap-2 px-8">
         <Text className="text-lg font-semibold">{"This assessment isn't available"}</Text>
         <Text className="text-center text-muted-foreground">
-          It may have been archived or assigned to someone else. Go back to Home to refresh your list.
+          {embedded
+            ? 'It may have been archived or assigned to someone else. Pull down on your list to refresh it.'
+            : 'It may have been archived or assigned to someone else. Go back to Home to refresh your list.'}
         </Text>
       </View>
     )
@@ -85,11 +94,12 @@ export default function Workspace() {
   // Only what was captured at the chosen location (AC4); the gateway sends newest first.
   const here = location && observations ? observations.filter((o) => o.location?.id === location.id) : []
   const status = assessment && STATUS[assessment.status]
+  const Bar = embedded ? View : SafeAreaView
 
   return (
     <View testID="workspace-screen" className="flex-1">
       {/* The site name is in the band below, so the header carries only Back. */}
-      <Stack.Screen options={{ title: '' }} />
+      {!embedded && <Stack.Screen options={{ title: '' }} />}
       <FlatList
         testID="workspace"
         data={here}
@@ -140,7 +150,8 @@ export default function Workspace() {
       {/* One way in, in thumb reach, below the list rather than over it, with the
           location it files to right above: one observation holds a note,
           photos, voice notes and scans together. */}
-      <SafeAreaView edges={['bottom']} className="border-t border-border bg-card px-4 pt-2">
+      {/* Embedded, the tab bar below already clears the home indicator. */}
+      <Bar edges={['bottom']} className="border-t border-border bg-card px-4 pt-2">
         <View className={cn('gap-2', readable)}>
           <CurrentLocationCard
             location={location}
@@ -151,7 +162,7 @@ export default function Workspace() {
             <Text className="text-lg">New observation</Text>
           </Button>
         </View>
-      </SafeAreaView>
+      </Bar>
     </View>
   )
 }

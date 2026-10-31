@@ -1,8 +1,9 @@
 // One card in the assessment list (MB-01 AC8). Used by screens/AssessmentList.
 // Tapping it opens the assessment's workspace (MB-02 AC1). Shows how long
 // until its report is due, or that it's overdue (MB-04 AC8). MB-07: the rows
-// join into one rounded card, so `first` and `last` round its ends.
-import { router } from 'expo-router'
+// join into one rounded card, so `first` and `last` round its ends. MB-09:
+// `onOpen` opens it (Home pushes the workspace, or shows it beside the list in
+// the split view), and `chosen` marks the one shown there.
 import { ChevronRight } from 'lucide-react-native'
 import { Pressable, View } from 'react-native'
 import { Badge } from '@/components/ui/badge'
@@ -11,9 +12,9 @@ import { cn } from '@/lib/utils'
 import { dueNote } from '../filters'
 import { formatDate, STATUS, type Assessment } from '../format'
 
-type Props = { assessment: Assessment; first: boolean; last: boolean }
+type Props = { assessment: Assessment; first: boolean; last: boolean; chosen?: boolean; onOpen(reference: string): void }
 
-export function AssessmentRow({ assessment, first, last }: Props) {
+export function AssessmentRow({ assessment, first, last, chosen = false, onOpen }: Props) {
   const status = STATUS[assessment.status]
   const due = dueNote(assessment)
   return (
@@ -23,13 +24,14 @@ export function AssessmentRow({ assessment, first, last }: Props) {
       accessibilityLabel={[assessment.client, assessment.site.name, assessment.reference, status.label, due?.text]
         .filter(Boolean)
         .join(', ')}
-      onPress={() =>
-        router.push({ pathname: '/assessment/[reference]', params: { reference: assessment.reference } })
-      }
+      accessibilityState={{ selected: chosen }}
+      onPress={() => onOpen(assessment.reference)}
       className={cn(
         'flex-row items-center gap-3 border-x border-b border-border bg-card px-4 py-3.5 active:bg-muted',
         first && 'rounded-t-lg border-t',
         last && 'rounded-b-lg',
+        // As the picker's chosen location: ink-50 with an ink rule on the left.
+        chosen && 'border-l-4 border-l-primary bg-secondary',
       )}
     >
       <View className="flex-1 gap-1">

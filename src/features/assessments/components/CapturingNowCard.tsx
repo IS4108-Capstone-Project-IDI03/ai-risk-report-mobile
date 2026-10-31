@@ -2,7 +2,6 @@
 // captured, above the list. The whole card is one big button back into its
 // workspace, so any tap on it works with gloves on.
 // Used by screens/AssessmentList.
-import { router } from 'expo-router'
 import { ChevronRight } from 'lucide-react-native'
 import { Pressable, View } from 'react-native'
 import { Eyebrow } from '@/components/Eyebrow'
@@ -12,7 +11,9 @@ import { cn } from '@/lib/utils'
 import { dueNote } from '../filters'
 import type { Assessment } from '../format'
 
-export function CapturingNowCard({ assessment }: { assessment: Assessment }) {
+type Props = { assessment: Assessment; onOpen(reference: string): void }
+
+export function CapturingNowCard({ assessment, onOpen }: Props) {
   const due = dueNote(assessment)
   return (
     <View testID="capturing-now" className="gap-2">
@@ -23,9 +24,7 @@ export function CapturingNowCard({ assessment }: { assessment: Assessment }) {
         accessibilityLabel={['Continue capturing', assessment.site.name, assessment.client, assessment.reference, due?.text]
           .filter(Boolean)
           .join(', ')}
-        onPress={() =>
-          router.push({ pathname: '/assessment/[reference]', params: { reference: assessment.reference } })
-        }
+        onPress={() => onOpen(assessment.reference)}
         className="gap-3 rounded-lg border border-border bg-card p-4 active:bg-muted"
       >
         <View className="flex-row items-start justify-between gap-3">
