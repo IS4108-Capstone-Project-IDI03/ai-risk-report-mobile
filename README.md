@@ -95,21 +95,27 @@ logging still apply.
 - Tablets (shortest side 600pt or more) turn with the device; phones stay portrait.
 - The site screens keep a 640pt column, centred, so nothing stretches on an iPad.
 
+**MB-09: iPad split view** (branch `MB-09`)
+
+- On a window 900pt or wider, Home shows the list beside the chosen assessment's
+  workspace. It opens on the latest capturing assessment; tapping a row switches it.
+- On a tablet, New observation is a centred sheet, in two columns at 640pt or wider.
+
 ## What to build next
 
-The MVP order, agreed 27 Oct 2026 (MB-01 to MB-04 and MB-06 to MB-08 are built). Each is its own story (`MB-0n`). The web stories it
+The MVP order, agreed 27 Oct 2026 (MB-01 to MB-04 and MB-06 to MB-09 are built). Each is its own story (`MB-0n`). The web stories it
 mirrors are in the web repo's `docs/USER_STORIES.md`.
 
 | Order | Story | Mirrors | Gateway support |
 | --- | --- | --- | --- |
 | MB-05 | Pre-survey checklist in the workspace, to tick off on site | CP-11, CP-12 (Could) | **None yet.** Teammates are building CP-11 in the web repo. Until then, use a dummy checklist (see below). |
-| MB-09 | iPad split view: assessments beside the open workspace in landscape | None | None needed |
+| MB-10 | Offline capture: save observations and new locations with no signal; they upload when it's back | None | Existing routes. No duplicate guard or capture time yet (web story for the team). |
 
 Separate web story for the team: make severity optional. It's required in the gateway
 model, the save rule and `report_sections` evidence, and the web UI assumes it.
 
-Later, outside the MVP: an offline capture queue, editing my captures (CP-08), and
-completing an assessment (CP-14).
+Later, outside the MVP: editing my captures (CP-08). Completing an assessment (CP-14)
+was dropped on the web.
 
 Things to know before building these:
 
