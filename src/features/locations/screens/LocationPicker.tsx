@@ -1,6 +1,8 @@
 // Location picker (MB-02 AC7-AC12): a modal over the workspace with two views,
 // the list to choose from and the Add location form. Choosing or saving sets
 // the assessment's current location (current.tsx) and closes the modal.
+// MB-07 AC8: a search box narrows the list by name. iOS shows the modal as a
+// sheet from the bottom, which swipes down to close.
 import { router, Stack, useLocalSearchParams } from 'expo-router'
 import { Plus } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -15,6 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Button } from '@/components/ui/button'
 import { Text } from '@/components/ui/text'
+import { SearchBar } from '@/features/assessments/components/SearchBar'
 import { addLocation, listLocations } from '../api'
 import { AddLocationForm, type NewLocation } from '../components/AddLocationForm'
 import { LocationList } from '../components/LocationList'
@@ -27,6 +30,7 @@ export default function LocationPicker() {
   const [locations, setLocations] = useState<Location[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
+  const [search, setSearch] = useState('')
   // False once the modal has closed, so a save that finishes late doesn't
   // navigate back a second time and pop the workspace too.
   const open = useRef(true)
@@ -69,11 +73,15 @@ export default function LocationPicker() {
     choose(await addLocation(reference, details))
   }
 
+  // By name, any case (AC8). The groups are kept, so a match shows its building.
+  const text = search.trim().toLowerCase()
+  const shown = (locations ?? []).filter((l) => l.name.toLowerCase().includes(text))
+
   return (
     <>
       <Stack.Screen
         options={{
-          title: adding ? 'Add location' : 'Choose location',
+          title: adding ? 'Add location' : 'Where are you?',
           gestureEnabled: !adding,
           headerLeft: adding
             ? () => (
@@ -104,7 +112,21 @@ export default function LocationPicker() {
             ) : adding ? (
               <AddLocationForm locations={locations} onSave={save} />
             ) : (
-              <LocationList locations={locations} chosenId={chosen?.id} onChoose={choose} />
+              <>
+                {locations.length > 0 && (
+                  <SearchBar
+                    label="Search locations"
+                    placeholder={`Search ${locations.length} ${locations.length === 1 ? 'location' : 'locations'}`}
+                    value={search}
+                    onChange={setSearch}
+                  />
+                )}
+                {search.trim() && !shown.length ? (
+                  <Text className="px-4 py-6 text-center text-muted-foreground">No location matches. Add it below.</Text>
+                ) : (
+                  <LocationList locations={shown} chosenId={chosen?.id} onChoose={choose} />
+                )}
+              </>
             )}
           </ScrollView>
           {/* In thumb reach at the bottom, under the list. */}

@@ -143,3 +143,19 @@ describe('Workspace', () => {
     expect(screen.getByLabelText('Voice note')).toBeTruthy()
   })
 })
+
+describe('Location picker', () => {
+  it('narrows the list as I type, and says when nothing matches (AC8)', async () => {
+    gateway()
+    await openWorkspace()
+    await fireEvent.press(await screen.findByRole('button', { name: 'Choose location' }))
+    const search = await screen.findByLabelText('Search locations')
+
+    await fireEvent.changeText(search, 'pump')
+    expect(screen.getByRole('button', { name: 'Pump room' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Loading bay' })).toBeNull()
+
+    await fireEvent.changeText(search, 'roof')
+    expect(screen.getByText('No location matches. Add it below.')).toBeTruthy()
+  })
+})

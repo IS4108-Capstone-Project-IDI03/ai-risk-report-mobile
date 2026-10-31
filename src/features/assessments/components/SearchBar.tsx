@@ -1,20 +1,23 @@
 // Home's search box (MB-04 AC1-AC2): site, client or report ID, with a clear
-// button while there's text. Used by screens/AssessmentList.
+// button while there's text. Used by screens/AssessmentList, and with its own
+// label by the location picker (MB-07 AC8).
 import { Search, X } from 'lucide-react-native'
 import { Pressable, View } from 'react-native'
 import { Input } from '@/components/ui/input'
 
 const LABEL = 'Search site, client or report ID' // the web dashboard's wording
 
-export function SearchBar({ value, onChange }: { value: string; onChange(text: string): void }) {
+type Props = { value: string; onChange(text: string): void; label?: string; placeholder?: string }
+
+export function SearchBar({ value, onChange, label = LABEL, placeholder = label }: Props) {
   return (
     <View className="justify-center">
       <View className="absolute left-3 z-10" pointerEvents="none">
         <Search color="#545e6b" size={20} />
       </View>
       <Input
-        accessibilityLabel={LABEL}
-        placeholder={LABEL}
+        accessibilityLabel={label}
+        placeholder={placeholder}
         value={value}
         onChangeText={onChange}
         autoCorrect={false}
