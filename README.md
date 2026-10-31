@@ -22,7 +22,7 @@ logging still apply.
 | Framework | Expo SDK 58, React Native 0.88, TypeScript |
 | Navigation | Expo Router: each file in `src/app/` is a screen |
 | UI | [React Native Reusables](https://reactnativereusables.com) (the shadcn/ui port for React Native) styled with NativeWind v4 (Tailwind for React Native) |
-| Look | The web app's design system: ink-600 `#2c5488` primary, Marsh navy `#000f47`, IBM Plex Sans and Mono bundled so iOS and Android match |
+| Look | The web app's design system: ink-600 `#2c5488` primary, Marsh navy `#000f47`, IBM Plex Sans and Mono bundled so iOS and Android match. Corners are rounder than the web's (MB-07) |
 | Icons | `lucide-react-native` (the web app uses Lucide too) |
 | Sign-in | The gateway's `session` cookie, which React Native's `fetch` stores on both platforms |
 | Tests | Jest (`jest-expo`) and React Native Testing Library, with the gateway mocked |
@@ -78,14 +78,27 @@ logging still apply.
   questions, follow-ups, Stop, Try again and New chat.
 - Every answer is a paid model call. The conversation lasts while the app is open.
 
+**MB-07: site flow redesign** (branch `MB-07`)
+
+- **Home:** a "Capturing now" card for the latest capturing assessment, one tap back
+  into it. Search in a navy band, and one scrolling row of date and status chips.
+- **Workspace:** the assessment's details in a navy band, and a bottom bar with where
+  you are right above New observation. Observations show their first photo.
+- **Location picker:** "Where are you?", with search by name.
+- **New observation:** Take photo, Record and Scan page as big buttons at the bottom,
+  with counts; everything added in one Evidence tray; severity before COPE.
+- **Corners are rounder than the web's** (8 to 20px; the web caps them at 8px). A
+  deliberate mobile-only choice; the web design system is unchanged.
+
 ## What to build next
 
-The MVP order, agreed 27 Oct 2026 (MB-01 to MB-04 and MB-06 are built). Each is its own story (`MB-0n`). The web stories it
+The MVP order, agreed 27 Oct 2026 (MB-01 to MB-04, MB-06 and MB-07 are built). Each is its own story (`MB-0n`). The web stories it
 mirrors are in the web repo's `docs/USER_STORIES.md`.
 
 | Order | Story | Mirrors | Gateway support |
 | --- | --- | --- | --- |
 | MB-05 | Pre-survey checklist in the workspace, to tick off on site | CP-11, CP-12 (Could) | **None yet.** Teammates are building CP-11 in the web repo. Until then, use a dummy checklist (see below). |
+| MB-08 | Tablets: the app rotates, and the site screens keep a readable width on an iPad | None | None needed |
 
 Separate web story for the team: make severity optional. It's required in the gateway
 model, the save rule and `report_sections` evidence, and the web UI assumes it.
