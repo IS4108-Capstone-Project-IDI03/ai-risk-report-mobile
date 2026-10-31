@@ -41,7 +41,9 @@ module.exports = {
         critical: { DEFAULT: '#fdeae8', foreground: '#ad2e2d' },
         high: { DEFAULT: '#fdeae7', foreground: '#9e3e3b' },
       },
-      borderRadius: { md: '5px', lg: '8px' }, // web radius-md and radius-lg
+      // Rounder than the web's 5px and 8px (MB-07, Miya 31 Oct): softer for a phone.
+      // The web design system caps radius at 8px; the app departs on purpose.
+      borderRadius: { sm: '8px', md: '12px', lg: '16px', xl: '20px' },
     },
   },
   plugins: [],

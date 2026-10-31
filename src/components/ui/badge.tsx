@@ -1,5 +1,6 @@
 // From React Native Reusables (shadcn/ui for React Native), badge component.
-// Changed for Site Capture: no sm: breakpoints, 48px controls, IBM Plex weights, web Badge tones.
+// Changed for Site Capture: no sm: breakpoints, 48px controls, IBM Plex weights, web Badge tones,
+// 8px corners rather than a pill (MB-07).
 import { TextClassContext } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
 import { Slot } from '@rn-primitives/slot';
@@ -8,7 +9,7 @@ import { Platform, View } from 'react-native';
 
 const badgeVariants = cva(
   cn(
-    'border-border group shrink-0 flex-row items-center justify-center gap-1 overflow-hidden rounded-full border px-2 py-0.5',
+    'border-border group shrink-0 flex-row items-center justify-center gap-1 overflow-hidden rounded-sm border px-2 py-0.5',
     Platform.select({
       web: 'focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive w-fit whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] [&>svg]:pointer-events-none [&>svg]:size-3',
     })
