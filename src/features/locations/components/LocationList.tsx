@@ -1,6 +1,6 @@
 // The picker's list of locations (MB-02 AC7-AC9): building groups, level
 // subheadings, one 56px row per location with a check on the chosen one.
-// Used by screens/LocationPicker.
+// Used by screens/LocationPicker. MB-10: one added offline says it's waiting.
 import { Check } from 'lucide-react-native'
 import { Pressable, View } from 'react-native'
 import { Text } from '@/components/ui/text'
@@ -10,10 +10,12 @@ import { groupLocations, type Location } from '../locations'
 type Props = {
   locations: Location[]
   chosenId: string | undefined
+  // IDs of locations queued offline, not yet on the gateway.
+  waiting?: string[]
   onChoose(location: Location): void
 }
 
-export function LocationList({ locations, chosenId, onChoose }: Props) {
+export function LocationList({ locations, chosenId, waiting = [], onChoose }: Props) {
   if (!locations.length) {
     return (
       <Text className="px-4 py-8 text-center text-muted-foreground">
@@ -39,6 +41,7 @@ export function LocationList({ locations, chosenId, onChoose }: Props) {
                       key={l.id}
                       accessibilityRole="button"
                       accessibilityLabel={l.name}
+                      accessibilityHint={waiting.includes(l.id) ? 'Waiting to upload' : undefined}
                       accessibilityState={{ selected: chosen }}
                       onPress={() => onChoose(l)}
                       className={cn(
@@ -47,12 +50,17 @@ export function LocationList({ locations, chosenId, onChoose }: Props) {
                         chosen && 'bg-secondary',
                       )}
                     >
-                      <Text
-                        testID="location-name"
-                        className={cn('flex-1 text-base', chosen && 'font-semibold text-secondary-foreground')}
-                      >
-                        {l.name}
-                      </Text>
+                      <View className="flex-1 py-2">
+                        <Text
+                          testID="location-name"
+                          className={cn('text-base', chosen && 'font-semibold text-secondary-foreground')}
+                        >
+                          {l.name}
+                        </Text>
+                        {waiting.includes(l.id) && (
+                          <Text className="text-sm text-muted-foreground">Waiting to upload</Text>
+                        )}
+                      </View>
                       {chosen && <Check color="#2c5488" size={22} />}
                     </Pressable>
                   )

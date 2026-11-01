@@ -1,6 +1,7 @@
 // Calls the gateway (ai-risk-report-generator/server) for MB-01. Used by the
 // session and the screens. The gateway's `session` cookie is stored and sent by
 // the phone's own HTTP stack, so no token is handled here.
+import { read, write } from './store'
 
 // A non-2xx reply, carrying the gateway's `{ error }` text to show the engineer,
 // and its `fields` (field name → problem) for a form to show under each field.
@@ -14,6 +15,12 @@ export class ApiError extends Error {
   }
 }
 
+// What to tell the engineer about a failure: the field's problem first when
+// the gateway names one, else its message. Used by the capture sheet and the
+// offline queue (MB-10), so a refusal reads the same online and queued.
+export const errorText = (e: unknown) =>
+  (e instanceof ApiError && Object.values(e.fields)[0]) || (e instanceof Error ? e.message : String(e))
+
 // `fetch` itself failed: no signal, wrong IP or the gateway is down (AC4).
 export class NetworkError extends Error {
   constructor() {
@@ -26,6 +33,19 @@ export class NetworkError extends Error {
 let onSessionExpired = () => {}
 export function setOnSessionExpired(handler: () => void) {
   onSessionExpired = handler
+}
+
+// Told whether each call reached the gateway (MB-10), so the offline provider
+// can show the offline note and upload the queue once the signal is back.
+let onReach = (_reached: boolean) => {}
+export function setOnReach(handler: (reached: boolean) => void) {
+  onReach = handler
+}
+
+// The gateway couldn't be reached: tells onReach, then throws.
+function unreachable(): never {
+  onReach(false)
+  throw new NetworkError()
 }
 
 // Sends one request to the gateway. Throws NetworkError when it can't be reached.
@@ -46,7 +66,7 @@ async function send(path: string, init: RequestInit): Promise<Response> {
       headers: { ...(json && { 'Content-Type': 'application/json' }), ...init.headers },
     })
   } catch {
-    throw new NetworkError()
+    unreachable()
   }
 }
 
@@ -64,7 +84,8 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
   const body = await response.json().catch(() => null)
   // A 200 that isn't JSON is a Wi-Fi login page (captive portal), not the
   // gateway: treat it as no connection.
-  if (response.ok && body === null) throw new NetworkError()
+  if (response.ok && body === null) unreachable()
+  onReach(true)
   if (!response.ok) throw refused(path, response.status, body)
   return body as T
 }
@@ -77,6 +98,23 @@ export async function stream(path: string, init: RequestInit = {}): Promise<Resp
   // A 200 that isn't an event stream (or has no body) is a Wi-Fi login page,
   // not the gateway: treat it as no connection, as request() does.
   const type = response.headers?.get('content-type') ?? ''
-  if (!response.body || !type.includes('text/event-stream')) throw new NetworkError()
+  if (!response.body || !type.includes('text/event-stream')) unreachable()
+  onReach(true)
   return response
+}
+
+// A GET whose reply is kept on the phone (MB-10 AC1). With no signal it returns
+// the last copy, so Home, the workspace and the picker still open offline. With
+// no copy, or any other failure, it throws as request() does.
+export async function cached<T>(path: string): Promise<T> {
+  const key = `cache${path}`
+  try {
+    const body = await request<T>(path)
+    write(key, body)
+    return body
+  } catch (error) {
+    const copy = error instanceof NetworkError ? read<T>(key) : undefined
+    if (copy === undefined) throw error
+    return copy
+  }
 }

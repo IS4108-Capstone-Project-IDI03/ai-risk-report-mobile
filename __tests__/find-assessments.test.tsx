@@ -142,6 +142,7 @@ it('words the countdown for today, one day and later, amber within 3 days (AC8)'
   expect((await note('RPT-IN-FOUR', 'Due in 4 days')).props.className).toContain('text-muted-foreground')
 })
 
+// MB-10 AC1: with no signal, the refresh shows the last copy and says so.
 it('keeps the filters on screen when a refresh fails', async () => {
   let calls = 0
   mockGateway({
@@ -156,6 +157,6 @@ it('keeps the filters on screen when a refresh fails', async () => {
     await screen.getByTestId('assessment-list').props.refreshControl.props.onRefresh()
   })
 
-  expect(await screen.findByText("Can't reach the server. Check your connection, then try again.")).toBeTruthy()
+  expect(await screen.findByText("You're offline. Showing what was saved on this device.")).toBeTruthy()
   expect(screen.getByLabelText('Search site, client or report ID').props.value).toBe('leeds')
 })

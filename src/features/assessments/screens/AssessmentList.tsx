@@ -5,6 +5,7 @@
 // the latest capturing assessment in its own card above the list.
 // MB-09: on a wide window (iPad), the list sits on the left and the chosen
 // assessment's workspace on the right, so switching sites never leaves Home.
+// MB-10: opens offline from the last copy, and says what's waiting to upload.
 import { router, useFocusEffect } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { FlatList, RefreshControl, ScrollView, View } from 'react-native'
@@ -13,6 +14,8 @@ import { Button } from '@/components/ui/button'
 import { Text } from '@/components/ui/text'
 import { useSplitView } from '@/lib/device'
 import { cn, readable } from '@/lib/utils'
+import { OfflineNote } from '@/features/offline/components/OfflineNote'
+import { UploadStatus } from '@/features/offline/components/UploadStatus'
 import { listAssessments } from '../api'
 import { AssessmentRow } from '../components/AssessmentRow'
 import { CapturingNowCard } from '../components/CapturingNowCard'
@@ -125,6 +128,8 @@ export default function AssessmentList() {
           // The filters stay on screen with an error (e.g. a failed refresh), so a
           // filtered list is never shown without the controls that filtered it.
           <View className="gap-5 pb-2">
+            <OfflineNote />
+            <UploadStatus />
             {error && (
               <View className="rounded-md bg-destructive/10 p-3">
                 <Text className="text-destructive">{error}</Text>

@@ -4,7 +4,7 @@
 // any number of photos, voice notes and scanned handwritten notes, so the
 // sheet is one form. MB-07: everything added sits in one Evidence tray at the
 // top, and the Photo, Voice and Scan buttons sit at the bottom, in thumb reach,
-// above Save.
+// above Save. MB-10: with no signal, Save queues it on the phone instead.
 import { router, Stack, useLocalSearchParams } from 'expo-router'
 import { MapPin } from 'lucide-react-native'
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
@@ -28,7 +28,9 @@ import { isTablet } from '@/lib/device'
 import { cn, readable } from '@/lib/utils'
 import { useCurrentLocation } from '@/features/locations/current'
 import { locationLabel } from '@/features/locations/locations'
-import { ApiError } from '@/lib/api'
+import { errorText, NetworkError } from '@/lib/api'
+import { useOffline } from '@/features/offline/provider'
+import { isLocal } from '@/features/offline/queue'
 import { saveObservation } from '../api'
 import { CaptureButtons } from '../components/CaptureButtons'
 import { CopeChips } from '../components/CopeChips'
@@ -55,6 +57,7 @@ export default function CaptureSheet() {
   const [wide, setWide] = useState(() => isTablet(Dimensions.get('screen')))
   // False once closed, so a late save doesn't navigate twice and pop the workspace too.
   const open = useRef(true)
+  const { queueObservation } = useOffline()
   const voice = useVoiceNote((note) => setDraft((d) => ({ ...d, recordings: [...d.recordings, note] })))
 
   const update = (change: Partial<Draft>) => setDraft((d) => ({ ...d, ...change }))
@@ -106,14 +109,21 @@ export default function CaptureSheet() {
     setSaving(true)
     setError(null)
     try {
-      await saveObservation(reference, draft, location.id)
+      // a. A location added offline has no gateway ID yet, so it queues behind
+      //    it. b. Online, as before. c. No signal: queued (MB-10 AC2, AC8).
+      if (isLocal(location.id)) await queueObservation(reference, draft, location.id)
+      else {
+        await saveObservation(reference, draft, location.id).catch((e) => {
+          if (!(e instanceof NetworkError)) throw e
+          return queueObservation(reference, draft, location.id)
+        })
+      }
       if (open.current) router.back()
       open.current = false
     } catch (e) {
-      // The gateway's own words, the field's problem first when it names one;
-      // the sheet keeps everything, so the engineer can fix it and save (AC11).
-      const fields = e instanceof ApiError ? Object.values(e.fields) : []
-      setError(fields[0] ?? (e instanceof Error ? e.message : String(e)))
+      // The gateway's own words; the sheet keeps everything, so the engineer
+      // can fix it and save (AC11).
+      setError(errorText(e))
       setSaving(false)
     }
   }

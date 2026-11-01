@@ -2,7 +2,8 @@
 // the list to choose from and the Add location form. Choosing or saving sets
 // the assessment's current location (current.tsx) and closes the modal.
 // MB-07 AC8: a search box narrows the list by name. iOS shows the modal as a
-// sheet from the bottom, which swipes down to close.
+// sheet from the bottom, which swipes down to close. MB-10: opens offline from
+// the last copy, and a location added with no signal is queued and listed.
 import { router, Stack, useLocalSearchParams } from 'expo-router'
 import { Plus } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -17,8 +18,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Button } from '@/components/ui/button'
 import { Text } from '@/components/ui/text'
+import { NetworkError } from '@/lib/api'
 import { cn, readable } from '@/lib/utils'
 import { SearchBar } from '@/features/assessments/components/SearchBar'
+import { OfflineNote } from '@/features/offline/components/OfflineNote'
+import { useOffline } from '@/features/offline/provider'
 import { addLocation, listLocations } from '../api'
 import { AddLocationForm, type NewLocation } from '../components/AddLocationForm'
 import { LocationList } from '../components/LocationList'
@@ -32,6 +36,7 @@ export default function LocationPicker() {
   const [error, setError] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [search, setSearch] = useState('')
+  const { items, uploads, queueLocation } = useOffline()
   // False once the modal has closed, so a save that finishes late doesn't
   // navigate back a second time and pop the workspace too.
   const open = useRef(true)
@@ -49,9 +54,11 @@ export default function LocationPicker() {
       ),
     [reference],
   )
+  // Again after an upload, so a queued location shows as the gateway saved it
+  // (MB-10).
   useEffect(() => {
     load()
-  }, [load])
+  }, [load, uploads])
 
   // Android's back button leaves the form for the list rather than closing the
   // picker and losing what was typed. (iOS: swipe-down is off while adding.)
@@ -70,13 +77,22 @@ export default function LocationPicker() {
   }
 
   // Errors are left to the form to show; it stays open so nothing typed is lost.
+  // No signal: queued, and chosen as if saved (MB-10 AC3).
   async function save(details: NewLocation) {
-    choose(await addLocation(reference, details))
+    try {
+      choose(await addLocation(reference, details))
+    } catch (e) {
+      if (!(e instanceof NetworkError)) throw e
+      choose(queueLocation(reference, details))
+    }
   }
 
+  // The gateway's list, plus those still waiting to upload (MB-10 AC3).
+  const queued = items.flatMap((i) => (i.kind === 'location' && i.reference === reference ? [i.location] : []))
+  const all = locations && [...locations, ...queued]
   // By name, any case (AC8). The groups are kept, so a match shows its building.
   const text = search.trim().toLowerCase()
-  const shown = (locations ?? []).filter((l) => l.name.toLowerCase().includes(text))
+  const shown = (all ?? []).filter((l) => l.name.toLowerCase().includes(text))
 
   return (
     <>
@@ -101,6 +117,7 @@ export default function LocationPicker() {
       <SafeAreaView edges={['bottom']} className="flex-1 bg-background">
         <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView contentContainerClassName={cn('gap-4 p-4', readable)} keyboardShouldPersistTaps="handled">
+            <OfflineNote />
             {error ? (
               <View className="gap-3 rounded-md bg-destructive/10 p-3">
                 <Text className="text-destructive">{error}</Text>
@@ -108,16 +125,16 @@ export default function LocationPicker() {
                   <Text>Try again</Text>
                 </Button>
               </View>
-            ) : !locations ? (
+            ) : !all ? (
               <ActivityIndicator className="mt-8" color="#2c5488" />
             ) : adding ? (
-              <AddLocationForm locations={locations} onSave={save} />
+              <AddLocationForm locations={all} onSave={save} />
             ) : (
               <>
-                {locations.length > 0 && (
+                {all.length > 0 && (
                   <SearchBar
                     label="Search locations"
-                    placeholder={`Search ${locations.length} ${locations.length === 1 ? 'location' : 'locations'}`}
+                    placeholder={`Search ${all.length} ${all.length === 1 ? 'location' : 'locations'}`}
                     value={search}
                     onChange={setSearch}
                   />
@@ -125,7 +142,12 @@ export default function LocationPicker() {
                 {search.trim() && !shown.length ? (
                   <Text className="px-4 py-6 text-center text-muted-foreground">No location matches. Add it below.</Text>
                 ) : (
-                  <LocationList locations={shown} chosenId={chosen?.id} onChoose={choose} />
+                  <LocationList
+                    locations={shown}
+                    chosenId={chosen?.id}
+                    waiting={queued.map((l) => l.id)}
+                    onChoose={choose}
+                  />
                 )}
               </>
             )}

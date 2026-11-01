@@ -58,6 +58,17 @@ function standardLevel(level: string): string | null {
   return null
 }
 
+// A level as the gateway will save it, e.g. for a location queued offline
+// (MB-10): "L2" becomes "Level 2"; a name it doesn't know stays as typed.
+export const savedLevel = (level: string) => standardLevel(level) ?? level.trim()
+
+// The same building, level and name: the gateway's duplicate rule (409), used
+// to find a queued location that turned out to be listed already (MB-10 AC6).
+export const samePlace = (a: Place, b: Place) =>
+  sameName(a.building, b.building) &&
+  sameName(a.floor && savedLevel(a.floor), b.floor && savedLevel(b.floor)) &&
+  sameName(a.name, b.name)
+
 const RANKS: Record<string, number> = {
   Basement: -1,
   'Lower ground': -0.5,

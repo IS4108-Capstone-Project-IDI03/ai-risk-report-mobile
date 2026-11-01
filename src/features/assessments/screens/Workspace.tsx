@@ -5,11 +5,12 @@
 // MB-07: the assessment's details sit in a navy band under the header, and the
 // location bar and New observation sit together at the bottom, in thumb reach.
 // MB-09: WorkspaceView is also Home's right-hand pane in the iPad split view;
-// the route below renders it for the reference in the URL.
+// the route below renders it for the reference in the URL. MB-10: opens
+// offline from the last copy, and lists observations waiting to upload first.
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { Plus } from 'lucide-react-native'
-import { useCallback, useState } from 'react'
-import { FlatList, RefreshControl, View } from 'react-native'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Alert, FlatList, RefreshControl, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Eyebrow } from '@/components/Eyebrow'
 import { Badge } from '@/components/ui/badge'
@@ -17,7 +18,11 @@ import { Button } from '@/components/ui/button'
 import { Text } from '@/components/ui/text'
 import { cn, readable } from '@/lib/utils'
 import { CurrentLocationCard } from '@/features/locations/components/CurrentLocationCard'
+import { listLocations } from '@/features/locations/api'
 import { useCurrentLocation } from '@/features/locations/current'
+import { OfflineNote } from '@/features/offline/components/OfflineNote'
+import { useOffline } from '@/features/offline/provider'
+import { asObservation, type QueuedObservation } from '@/features/offline/queue'
 import { listObservations } from '@/features/observations/api'
 import { ObservationCard } from '@/features/observations/components/ObservationCard'
 import type { Observation } from '@/features/observations/format'
@@ -37,6 +42,7 @@ export function WorkspaceView({ reference, embedded = false }: { reference: stri
   const [observations, setObservations] = useState<Observation[] | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { items, uploads, discard } = useOffline()
 
   // Both together, so one failing isn't hidden by the other succeeding, and
   // pull to refresh retries both. State is set once the replies arrive.
@@ -53,6 +59,12 @@ export function WorkspaceView({ reference, embedded = false }: { reference: stri
     [reference],
   )
 
+  // Its locations too, once, unused here: that keeps a copy on the phone, so
+  // the picker opens offline even if it wasn't opened online (MB-10 AC1).
+  useEffect(() => {
+    listLocations(reference).catch(() => {})
+  }, [reference])
+
   // On open, and again on returning from the capture sheet, so a new
   // observation shows straight away (MB-03 AC11).
   useFocusEffect(
@@ -60,11 +72,27 @@ export function WorkspaceView({ reference, embedded = false }: { reference: stri
       load()
     }, [load]),
   )
+  // After each upload, so one that was waiting shows from the gateway (MB-10
+  // AC4). Not on open: the focus effect above has that.
+  const seenUploads = useRef(uploads)
+  useEffect(() => {
+    if (uploads === seenUploads.current) return
+    seenUploads.current = uploads
+    load()
+  }, [uploads, load])
 
   // Capture needs a location (CP-15 AC1), so without one the picker comes first.
   function newObservation() {
     const pathname = location ? '/assessment/[reference]/capture' : '/assessment/[reference]/locations'
     router.push({ pathname, params: { reference } })
+  }
+
+  // Asks first: it never reached the gateway, so it's gone for good (MB-10 AC6).
+  function confirmDiscard(id: string) {
+    Alert.alert('Discard this observation?', "It wasn't uploaded, so its photos, voice notes, scans and note are deleted.", [
+      { text: 'Keep', style: 'cancel' },
+      { text: 'Discard', style: 'destructive', onPress: () => discard(id) },
+    ])
   }
 
   async function refresh() {
@@ -93,6 +121,13 @@ export function WorkspaceView({ reference, embedded = false }: { reference: stri
 
   // Only what was captured at the chosen location (AC4); the gateway sends newest first.
   const here = location && observations ? observations.filter((o) => o.location?.id === location.id) : []
+  // Waiting to upload from here, newest first, above the gateway's (MB-10 AC2).
+  // Refused ones show from any location, so each can be found and discarded.
+  const queued = items.filter(
+    (i): i is QueuedObservation =>
+      i.kind === 'observation' && i.reference === reference && (!!i.error || i.locationId === location?.id),
+  )
+  const rows = [...queued.map(asObservation).reverse(), ...here]
   const status = assessment && STATUS[assessment.status]
   const Bar = embedded ? View : SafeAreaView
 
@@ -102,14 +137,23 @@ export function WorkspaceView({ reference, embedded = false }: { reference: stri
       {!embedded && <Stack.Screen options={{ title: '' }} />}
       <FlatList
         testID="workspace"
-        data={here}
+        data={rows}
         keyExtractor={(o) => o.id}
-        renderItem={({ item, index }) => (
-          // On a tablet, rows keep to the readable column (MB-08).
-          <View className={readable}>
-            <ObservationCard observation={item} first={index === 0} last={index === here.length - 1} />
-          </View>
-        )}
+        renderItem={({ item, index }) => {
+          const waiting = queued.find((q) => q.id === item.id)
+          return (
+            // On a tablet, rows keep to the readable column (MB-08).
+            <View className={readable}>
+              <ObservationCard
+                observation={item}
+                first={index === 0}
+                last={index === rows.length - 1}
+                upload={waiting && { refused: waiting.error }}
+                onDiscard={waiting && (() => confirmDiscard(waiting.id))}
+              />
+            </View>
+          )
+        }}
         contentContainerClassName="pb-6"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
         ListHeaderComponent={
@@ -132,12 +176,13 @@ export function WorkspaceView({ reference, embedded = false }: { reference: stri
               </View>
             )}
             <View className={cn('gap-4 px-4', readable)}>
+              <OfflineNote />
               {error && (
                 <View className="rounded-md bg-destructive/10 p-3">
                   <Text className="text-destructive">{error}</Text>
                 </View>
               )}
-              {location && <Eyebrow>{`Captured here · ${here.length}`}</Eyebrow>}
+              {location && <Eyebrow>{`Captured here · ${rows.length}`}</Eyebrow>}
             </View>
           </View>
         }

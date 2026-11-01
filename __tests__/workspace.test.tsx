@@ -216,10 +216,12 @@ describe('choosing a location', () => {
   })
 
   it('offers Try again when the locations fail to load', async () => {
+    // The first two fail: MB-10's workspace loads them once to keep a copy,
+    // then the picker does.
     let calls = 0
     gateway({
       [`GET /api/assessments/${REF}/locations`]: () =>
-        calls++ ? { status: 200, body: LOCATIONS } : new TypeError('Network request failed'),
+        calls++ > 1 ? { status: 200, body: LOCATIONS } : new TypeError('Network request failed'),
     })
     await openWorkspace()
     await fireEvent.press(await workspace().findByRole('button', { name: 'Choose location' }))

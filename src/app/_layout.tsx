@@ -16,6 +16,7 @@ import { StatusBar } from 'expo-status-bar'
 import { ActivityIndicator, Dimensions, View } from 'react-native'
 import { SessionProvider, useSession } from '@/features/auth/session'
 import { CurrentLocationProvider } from '@/features/locations/current'
+import { OfflineProvider } from '@/features/offline/provider'
 import { isTablet, orientation } from '@/lib/device'
 import { colors, headerOptions } from '@/lib/nav'
 
@@ -79,7 +80,11 @@ export default function Layout() {
       {/* Light icons on the navy header and sign-in page. */}
       <StatusBar style="light" />
       <CurrentLocationProvider>
-        <Screens />
+        {/* Inside the location provider: an uploaded location replaces the
+            queued one the engineer is at (MB-10). */}
+        <OfflineProvider>
+          <Screens />
+        </OfflineProvider>
       </CurrentLocationProvider>
     </SessionProvider>
   )

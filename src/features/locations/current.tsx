@@ -9,6 +9,8 @@ import type { Location } from './locations'
 type CurrentLocations = {
   get(reference: string): Location | undefined
   set(reference: string, location: Location): void
+  // A queued location got its real ID (MB-10): the engineer stays there.
+  replace(reference: string, local: Location, saved: Location): void
 }
 
 const Context = createContext<CurrentLocations | null>(null)
@@ -36,7 +38,21 @@ export function CurrentLocationProvider({ children }: { children: ReactNode }) {
       })),
     [owner],
   )
-  return <Context.Provider value={{ get, set }}>{children}</Context.Provider>
+  const replace = useCallback(
+    (reference: string, local: Location, saved: Location) =>
+      setState((s) =>
+        s.chosen[reference]?.id === local.id ? { ...s, chosen: { ...s.chosen, [reference]: saved } } : s,
+      ),
+    [],
+  )
+  return <Context.Provider value={{ get, set, replace }}>{children}</Context.Provider>
+}
+
+// For the offline provider, which hands over a queued location's real ID.
+export function useReplaceLocation() {
+  const context = useContext(Context)
+  if (!context) throw new Error('useReplaceLocation must be used inside CurrentLocationProvider')
+  return context.replace
 }
 
 // The chosen location for one assessment, and a setter for it.
