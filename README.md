@@ -101,15 +101,28 @@ logging still apply.
   workspace. It opens on the latest capturing assessment; tapping a row switches it.
 - On a tablet, New observation is a centred sheet, in two columns at 640pt or wider.
 
+**MB-10: offline capture** (branch `MB-10`)
+
+- With no signal, Home, workspaces and the location picker show the last copy the phone
+  saved, with "You're offline. Showing what was saved on this device."
+- Saving an observation or adding a location offline queues it ("Waiting to upload").
+  Photos, voice notes and scans are copied into the app's own storage.
+- The queue uploads when the gateway is reachable again: the app comes to the front, a
+  screen refreshes, or every 30 seconds while items wait. Locations go first.
+- Each engineer has their own folder on the phone. Refused items show "Couldn't upload"
+  with Discard. Home shows how many are waiting.
+- With no signal at launch, the app carries on as the last engineer who signed in.
+- Known gateway gaps (web story for the team): a lost reply can upload one observation
+  twice, and the gateway stamps the upload time, not the capture time.
+
 ## What to build next
 
-The MVP order, agreed 27 Oct 2026 (MB-01 to MB-04 and MB-06 to MB-09 are built). Each is its own story (`MB-0n`). The web stories it
+The MVP order, agreed 27 Oct 2026 (MB-01 to MB-04 and MB-06 to MB-10 are built). Each is its own story (`MB-0n`). The web stories it
 mirrors are in the web repo's `docs/USER_STORIES.md`.
 
 | Order | Story | Mirrors | Gateway support |
 | --- | --- | --- | --- |
 | MB-05 | Pre-survey checklist in the workspace, to tick off on site | CP-11, CP-12 (Could) | **None yet.** Teammates are building CP-11 in the web repo. Until then, use a dummy checklist (see below). |
-| MB-10 | Offline capture: save observations and new locations with no signal; they upload when it's back | None | Existing routes. No duplicate guard or capture time yet (web story for the team). |
 
 Separate web story for the team: make severity optional. It's required in the gateway
 model, the save rule and `report_sections` evidence, and the web UI assumes it.
