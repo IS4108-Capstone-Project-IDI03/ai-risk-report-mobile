@@ -255,12 +255,16 @@ describe('saving', () => {
       severity: 'high',
       locationId: 'l1',
     })
-    expect(part('photo')).toEqual({ uri: 'file:///cache/photo-1.jpg', name: 'Photo 1.jpg', type: 'image/jpeg' })
-    expect(part('page')).toEqual({ uri: 'file:///cache/page-1.jpg', name: 'Page 1.jpg', type: 'image/jpeg' })
-    expect(part('recording')).toEqual({
+    // Expo's fetch (SDK 58) reads a file part through bytes(); a bare { uri } part
+    // fails with "Unsupported FormDataPart implementation".
+    const bytes = expect.any(Function)
+    expect(part('photo')).toMatchObject({ uri: 'file:///cache/photo-1.jpg', name: 'Photo 1.jpg', type: 'image/jpeg', bytes })
+    expect(part('page')).toMatchObject({ uri: 'file:///cache/page-1.jpg', name: 'Page 1.jpg', type: 'image/jpeg', bytes })
+    expect(part('recording')).toMatchObject({
       uri: 'file:///cache/recording-1.m4a',
       name: 'Voice note 1.m4a',
       type: 'audio/m4a',
+      bytes,
     })
   })
 

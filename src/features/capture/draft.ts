@@ -1,6 +1,7 @@
 // An observation being put together in the capture sheet (MB-03), and how it
 // becomes the gateway's multipart upload (POST .../observations in the web
 // repo's assessment.routes.ts: a `details` JSON part plus file parts).
+import { File } from 'expo-file-system'
 import type { Severity } from '@/features/observations/format'
 
 // COPE categories in the gateway's order (COPE_DIMENSIONS in observation.model.ts).
@@ -40,8 +41,10 @@ export function duration(ms: number) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
 
-// The upload. Each file goes as React Native's { uri, name, type }, which the
-// phone streams from disk. Categories go in COPE order, and none is null,
+// The upload. Each file goes as { uri, name, type } plus bytes(). Expo's fetch
+// (SDK 58) reads a part through bytes(), and without it the upload fails with
+// "Unsupported FormDataPart implementation", which the app then shows as offline.
+// Categories go in COPE order, and none is null,
 // never [] (the web repo's CLAUDE.md: [] would count as categorised).
 export function toFormData(d: Draft, locationId: string) {
   const form = new FormData()
@@ -54,7 +57,8 @@ export function toFormData(d: Draft, locationId: string) {
       locationId,
     }),
   )
-  const file = (uri: string, name: string, type: string) => ({ uri, name, type }) as unknown as Blob
+  const file = (uri: string, name: string, type: string) =>
+    ({ uri, name, type, bytes: () => new File(uri).bytes() }) as unknown as Blob
   d.photos.forEach((uri, i) => form.append('photo', file(uri, `Photo ${i + 1}.jpg`, 'image/jpeg')))
   d.pages.forEach((uri, i) => form.append('page', file(uri, `Page ${i + 1}.jpg`, 'image/jpeg')))
   d.recordings.forEach((r, i) =>
