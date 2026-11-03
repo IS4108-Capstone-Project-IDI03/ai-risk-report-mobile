@@ -103,6 +103,17 @@ export async function stream(path: string, init: RequestInit = {}): Promise<Resp
   return response
 }
 
+// A file from the gateway (a voice note's audio, MB-11): the same checks as
+// request(), then the bytes. Without them a Wi-Fi login page would be saved
+// as the audio, and an expired session would show a vague error, not sign-in.
+export async function download(path: string): Promise<Uint8Array> {
+  const response = await send(path, {})
+  if (!response.ok) throw refused(path, response.status, null)
+  if (response.headers?.get('content-type')?.includes('text/html')) unreachable()
+  onReach(true)
+  return new Uint8Array(await response.arrayBuffer())
+}
+
 // A GET whose reply is kept on the phone (MB-10 AC1). With no signal it returns
 // the last copy, so Home, the workspace and the picker still open offline. With
 // no copy, or any other failure, it throws as request() does.

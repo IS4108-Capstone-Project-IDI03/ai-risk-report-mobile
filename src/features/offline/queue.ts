@@ -91,9 +91,9 @@ export function asObservation(item: QueuedObservation): Observation {
     copeDimensions: draft.cope.length ? draft.cope : null,
     severity: draft.severity,
     location: { id: item.locationId },
-    recordings: draft.recordings,
+    recordings: draft.recordings.map((r, i) => ({ id: `${item.id}-${i}`, url: r.uri })),
     photos: draft.photos.map((url) => ({ url })),
-    pages: draft.pages,
+    pages: draft.pages.map((url) => ({ url })),
     recordedAt: item.savedAt,
   }
 }

@@ -44,6 +44,11 @@ function Screens() {
           name="assessment/[reference]/index"
           options={{ headerBackButtonDisplayMode: 'minimal' }}
         />
+        {/* Over the workspace, on the phone and the iPad alike (MB-11). */}
+        <Stack.Screen
+          name="assessment/[reference]/observation/[id]"
+          options={{ title: 'Observation', headerBackButtonDisplayMode: 'minimal' }}
+        />
         <Stack.Screen name="assessment/[reference]/locations" options={{ presentation: 'modal' }} />
         {/* Full screen on a phone; a centred sheet on a tablet (MB-09). No swipe
             to dismiss: closing goes through Discard? (MB-03 AC13). */}

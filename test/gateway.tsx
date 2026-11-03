@@ -9,6 +9,7 @@ import TabsLayout from '../src/app/(tabs)/_layout'
 import Profile from '../src/app/(tabs)/profile'
 import Capture from '../src/app/assessment/[reference]/capture'
 import Workspace from '../src/app/assessment/[reference]/index'
+import ObservationDetail from '../src/app/assessment/[reference]/observation/[id]'
 import LocationPicker from '../src/app/assessment/[reference]/locations'
 import SignIn from '../src/app/sign-in'
 
@@ -54,7 +55,11 @@ export function mockGateway(
       ok: reply.status >= 200 && reply.status < 300,
       status: reply.status,
       body: reply.stream ?? null,
-      headers: new Headers({ 'content-type': reply.stream ? 'text/event-stream' : 'application/json' }),
+      headers: new Headers({
+        'content-type': reply.stream ? 'text/event-stream' : reply.html ? 'text/html' : 'application/json',
+      }),
+      // The audio a voice note plays (MB-11): fetched, then written to a file.
+      arrayBuffer: async () => new TextEncoder().encode('audio').buffer,
       json: async () => {
         if (reply.html) throw new SyntaxError('Unexpected token <')
         return reply.body
@@ -113,6 +118,7 @@ export const routes = {
   'assessment/[reference]/index': Workspace,
   'assessment/[reference]/locations': LocationPicker,
   'assessment/[reference]/capture': Capture,
+  'assessment/[reference]/observation/[id]': ObservationDetail,
 }
 
 // Taps a bottom tab by its label.

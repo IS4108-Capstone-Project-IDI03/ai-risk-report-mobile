@@ -7,6 +7,7 @@
 // MB-09: WorkspaceView is also Home's right-hand pane in the iPad split view;
 // the route below renders it for the reference in the URL. MB-10: opens
 // offline from the last copy, and lists observations waiting to upload first.
+// MB-11: tapping an observation opens its detail.
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { Plus } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -150,6 +151,9 @@ export function WorkspaceView({ reference, embedded = false }: { reference: stri
                 last={index === rows.length - 1}
                 upload={waiting && { refused: waiting.error }}
                 onDiscard={waiting && (() => confirmDiscard(waiting.id))}
+                onOpen={() =>
+                  router.push({ pathname: '/assessment/[reference]/observation/[id]', params: { reference, id: item.id } })
+                }
               />
             </View>
           )

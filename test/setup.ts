@@ -58,6 +58,9 @@ jest.mock('expo-file-system', () => {
     writeSync(text: string) {
       files.set(this.uri, text)
     }
+    write(bytes: Uint8Array) {
+      files.set(this.uri, `${bytes.length} bytes`)
+    }
     delete() {
       files.delete(this.uri)
     }
@@ -69,5 +72,5 @@ jest.mock('expo-file-system', () => {
       files.set(to.uri, files.get(this.uri) ?? '')
     }
   }
-  return { File, Directory, Paths: { document: new Directory('file:///document') }, __files: files }
+  return { File, Directory, Paths: { document: new Directory('file:///document'), cache: new Directory('file:///cache') }, __files: files }
 })
