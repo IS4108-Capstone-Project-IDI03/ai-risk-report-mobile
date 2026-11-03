@@ -4,18 +4,36 @@ import type { BadgeProps } from '@/components/ui/badge'
 
 export type Severity = 'critical' | 'high' | 'moderate' | 'low'
 
+// A transcript's progress, as the gateway reports it (TRANSCRIPTION_STATUSES in
+// the web repo's observation.model.ts).
+export type Transcription = {
+  status: 'transcribing' | 'transcribed' | 'failed'
+  transcript: string | null
+  error: string | null
+  // A voice note's correction made on the web, which replaces the transcript.
+  correction?: { text: string } | null
+}
+
+// Evidence as the detail screen reads it (MB-11). A waiting observation (MB-10)
+// fills `url` with a file on the phone and has no transcription yet.
+export type Photo = { id?: string; url: string; name?: string }
+export type Page = { id?: string; url: string; transcription?: Transcription | null }
+export type Recording = { id: string; url: string; transcription?: Transcription | null }
+
 export type Observation = {
   id: string
+  // Who captured it; a waiting observation doesn't have it.
+  engineer?: string
   note: string | null
   // null until categorised; never [] (the web repo's CLAUDE.md).
   copeDimensions: string[] | null
   // Optional once MB-03's gateway change lands, so null is handled already.
   severity: Severity | null
-  location: { id: string } | null
-  recordings: unknown[]
+  location: { id: string; building?: string | null; floor?: string | null; name?: string } | null
+  recordings: Recording[]
   // Each served by the gateway behind the session cookie (MB-07 thumbnails).
-  photos: { url: string }[]
-  pages: unknown[]
+  photos: Photo[]
+  pages: Page[]
   recordedAt: string
 }
 
@@ -55,3 +73,8 @@ export function capturedAt(iso: string, now = new Date()) {
   const time = `${pad(d.getHours())}:${pad(d.getMinutes())}`
   return d.toDateString() === now.toDateString() ? time : `${d.getDate()} ${MONTHS[d.getMonth()]} ${time}`
 }
+
+// Where a photo, page or voice note loads from. The gateway sends a path
+// ("/api/observations/..."), served behind the session cookie. Anything else is a
+// full address already: a file on the phone while its observation waits (MB-10).
+export const mediaUri = (url: string) => (url?.startsWith('/') ? `${process.env.EXPO_PUBLIC_API_URL}${url}` : url)

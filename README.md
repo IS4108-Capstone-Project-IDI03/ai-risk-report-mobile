@@ -115,9 +115,21 @@ logging still apply.
 - Known gateway gaps (web story for the team): a lost reply can upload one observation
   twice, and the gateway stamps the upload time, not the capture time.
 
+**MB-11: open an observation** (branch `MB-11`)
+
+- Tap an observation in the workspace to read all of it: the full note, severity, COPE
+  tags, location, who captured it and when, photos and handwritten pages at full width
+  (with each page's transcript), and voice notes with Play, Pause and their transcript
+  status. View only; editing is CP-08.
+- Observations waiting to upload open read-only from what is saved on the phone. Offline,
+  media not on the phone says "Not available offline". A removed observation says "This
+  observation isn't available".
+- No new gateway call: the detail finds its observation in the workspace list. It is its
+  own screen on the phone and the iPad.
+
 ## What to build next
 
-The MVP order, agreed 27 Oct 2026 (MB-01 to MB-04 and MB-06 to MB-10 are built). Each is its own story (`MB-0n`). The web stories it
+The MVP order, agreed 27 Oct 2026 (MB-01 to MB-04 and MB-06 to MB-11 are built). Each is its own story (`MB-0n`). The web stories it
 mirrors are in the web repo's `docs/USER_STORIES.md`.
 
 | Order | Story | Mirrors | Gateway support |
@@ -164,7 +176,7 @@ src/
     assessments/          api, format, filters (search, date rules), components/, screens/AssessmentList, Workspace
     locations/            api, locations.ts (grouping, copied from web), current.tsx (chosen
                           location), components/, screens/LocationPicker
-    observations/         api, format, components/ObservationCard
+    observations/         api, format, components/ (ObservationCard, detail pieces), screens/ObservationDetail
     capture/              draft (upload format), media (camera, library), useVoiceNote, api,
                           components/ (sections, chips), screens/CaptureSheet
     chat/                 library (answer format), events (stream), answer (citations),

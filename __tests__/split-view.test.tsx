@@ -1,11 +1,12 @@
 // MB-09: the iPad split view. With a wide window, Home shows the assessments
 // beside the open workspace. The window width is faked through useSplitView;
 // every other test runs at phone width (AC6). Gateway mocked.
-import { fireEvent, renderRouter, screen, within } from 'expo-router/testing-library'
+import { fireEvent, renderRouter, screen, testRouter, within } from 'expo-router/testing-library'
 import {
   assessment,
   location,
   mockGateway,
+  observation,
   pointAtTestGateway,
   routes,
   signedIn,
@@ -78,4 +79,27 @@ it('captures from the right-hand workspace (AC5)', async () => {
   await fireEvent.press(await screen.findByRole('button', { name: 'New observation' }))
 
   expect(await screen.findByTestId('capture-sheet')).toBeTruthy()
+})
+
+// MB-11 AC8: an observation opened from the right-hand pane fills the window,
+// and Back returns to the same split view.
+it('opens an observation over the split view and returns to it (MB-11 AC8)', async () => {
+  gateway({
+    'GET /api/assessments/RPT-2026-0411/observations': {
+      status: 200,
+      body: [observation('o1', 'l1', { note: 'Valve chained open', location: { id: 'l1', building: null, floor: null, name: 'Pump room' } })],
+    },
+  })
+  await renderRouter(routes)
+  await pane().findByText('Northgate Logistics')
+  await fireEvent.press(pane().getByRole('button', { name: 'Choose location' }))
+  await fireEvent.press(await screen.findByRole('button', { name: 'Pump room' }))
+
+  await fireEvent.press(await screen.findByTestId('observation-open'))
+
+  const detail = await screen.findByTestId('observation-detail')
+  expect(within(detail).getByText(/Valve chained open/)).toBeTruthy()
+  await testRouter.back()
+  expect(await screen.findByTestId('assessment-list')).toBeTruthy()
+  expect(await pane().findByText('Northgate Logistics')).toBeTruthy()
 })

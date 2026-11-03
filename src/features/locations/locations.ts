@@ -31,7 +31,7 @@ type Place = Pick<Location, 'building' | 'floor' | 'name'>
 
 // The place as shown on screen, general to specific: "Block A · Level 2 ·
 // Staircase", "Elsewhere on site · Fire access route".
-export function locationLabel(l: Place) {
+export function locationLabel(l: Partial<Place>) {
   return [l.building || (l.floor ? null : ELSEWHERE), l.floor, l.name].filter(Boolean).join(' · ')
 }
 
