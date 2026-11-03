@@ -1,9 +1,10 @@
 {
   "expo": {
-    "name": "ai-risk-site-capture",
-    "slug": "ai-risk-site-capture",
+    "name": "Site Capture",
+    "slug": "ai-risk-report-mobile",
+    "scheme": "sitecapture",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
@@ -20,6 +21,25 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-font",
+      "expo-asset",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Site Capture uses the camera to photograph site conditions and handwritten notes.",
+          "photosPermission": "Site Capture adds photos you took earlier to an observation."
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Site Capture records voice notes about what you see on site."
+        }
+      ]
+    ]
   }
 }

@@ -1,0 +1,145 @@
+// The picker's Add location view (MB-02 AC10-AC12). Building, level and name,
+// each with tap-to-fill chips (48px, for gloves) so the engineer rarely types a
+// building or level twice. Used by screens/LocationPicker, which saves it.
+import { useState } from 'react'
+import { ActivityIndicator, Pressable, View } from 'react-native'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Text } from '@/components/ui/text'
+import { ApiError } from '@/lib/api'
+import { cn } from '@/lib/utils'
+import { LEVEL_SUGGESTIONS, suggestions, type Location } from '../locations'
+
+export type NewLocation = { building: string; floor: string; name: string }
+
+type Props = {
+  locations: Location[]
+  onSave(details: NewLocation): Promise<void>
+}
+
+export function AddLocationForm({ locations, onSave }: Props) {
+  const [building, setBuilding] = useState('')
+  const [floor, setFloor] = useState('')
+  const [name, setName] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<ApiError | Error | null>(null)
+  const hasBuilding = Boolean(building.trim())
+
+  // Clearing the building clears the level too: only a location in a
+  // building has a level (AC12), and the gateway refuses one without.
+  function changeBuilding(value: string) {
+    setBuilding(value)
+    if (!value.trim()) setFloor('')
+  }
+
+  async function save() {
+    if (busy || !name.trim()) return
+    setBusy(true)
+    setError(null)
+    try {
+      await onSave({ building, floor, name })
+    } catch (e) {
+      setError(e instanceof Error ? e : new Error(String(e)))
+      setBusy(false)
+    }
+  }
+
+  // A field's own problem from the gateway's `fields` shows under that field.
+  // Anything else shows above Save, so no problem goes unshown.
+  const fields = error instanceof ApiError ? error.fields : {}
+  const shownUnderField = ['building', 'floor', 'name'].some((key) => fields[key])
+  const general = error && !shownUnderField ? error.message : null
+
+  return (
+    <View className="gap-5">
+      <Field
+        label="Building"
+        hint="Optional. Leave blank for a place outside any building."
+        value={building}
+        onChange={changeBuilding}
+        chips={suggestions(locations.map((l) => l.building))}
+        error={fields.building}
+      />
+      <Field
+        label="Level"
+        hint={hasBuilding ? 'Optional. Leave blank for the whole building.' : 'Add a building first.'}
+        value={floor}
+        onChange={setFloor}
+        editable={hasBuilding}
+        chips={hasBuilding ? suggestions(locations.map((l) => l.floor), LEVEL_SUGGESTIONS) : []}
+        error={fields.floor}
+      />
+      <Field label="Name" value={name} onChange={setName} error={fields.name} onSubmit={save} />
+
+      {general && (
+        <View className="rounded-md bg-destructive/10 p-3">
+          <Text className="text-destructive">{general}</Text>
+        </View>
+      )}
+      <Button
+        size="lg"
+        accessibilityLabel="Save location"
+        accessibilityState={{ disabled: busy || !name.trim() }}
+        disabled={busy || !name.trim()}
+        onPress={save}
+      >
+        {busy ? <ActivityIndicator color="#ffffff" /> : <Text>Save location</Text>}
+      </Button>
+    </View>
+  )
+}
+
+type FieldProps = {
+  label: string
+  hint?: string
+  value: string
+  onChange(value: string): void
+  editable?: boolean
+  chips?: string[]
+  error?: string
+  onSubmit?(): void
+}
+
+// One labelled input with its error and tap-to-fill chips underneath.
+function Field({ label, hint, value, onChange, editable = true, chips = [], error, onSubmit }: FieldProps) {
+  return (
+    <View className="gap-2">
+      <Text className={cn('font-medium', !editable && 'text-muted-foreground')}>{label}</Text>
+      <Input
+        accessibilityLabel={label}
+        value={value}
+        onChangeText={onChange}
+        editable={editable}
+        autoCapitalize="words"
+        returnKeyType={onSubmit ? 'done' : 'next'}
+        onSubmitEditing={onSubmit}
+        className={cn(error && 'border-destructive')}
+      />
+      {error ? (
+        <Text className="text-sm text-destructive">{error}</Text>
+      ) : (
+        hint && <Text className="text-sm text-muted-foreground">{hint}</Text>
+      )}
+      {chips.length > 0 && (
+        <View className="flex-row flex-wrap gap-2">
+          {chips.map((chip) => (
+            <Pressable
+              key={chip}
+              accessibilityRole="button"
+              accessibilityLabel={`Use ${chip}`}
+              onPress={() => onChange(chip)}
+              className={cn(
+                'h-12 justify-center rounded-full border px-4 active:bg-muted',
+                value === chip ? 'border-primary bg-secondary' : 'border-input bg-card',
+              )}
+            >
+              <Text className={cn('text-sm', value === chip && 'font-medium text-secondary-foreground')}>
+                {chip}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+    </View>
+  )
+}

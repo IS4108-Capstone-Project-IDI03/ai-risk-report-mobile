@@ -39,3 +39,8 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# local env and private notes
+.env
+.local-docs/
+CLAUDE.local.md
