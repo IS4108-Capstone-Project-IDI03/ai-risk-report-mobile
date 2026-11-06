@@ -19,7 +19,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// A readable column on a tablet (MB-08): 640pt at most, centred. Wider than a
+// A readable column on a tablet (MB-09): 640pt at most, centred. Wider than a
 // phone, so phones look the same. Used inside the site screens' lists, bands
 // and bottom bars.
 export const readable = 'w-full max-w-[640px] self-center'

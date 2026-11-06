@@ -143,7 +143,7 @@ export function WorkspaceView({ reference, embedded = false }: { reference: stri
         renderItem={({ item, index }) => {
           const waiting = queued.find((q) => q.id === item.id)
           return (
-            // On a tablet, rows keep to the readable column (MB-08).
+            // On a tablet, rows keep to the readable column (MB-09).
             <View className={readable}>
               <ObservationCard
                 observation={item}

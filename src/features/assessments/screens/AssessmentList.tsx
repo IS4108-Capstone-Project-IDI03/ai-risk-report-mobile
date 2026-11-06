@@ -119,7 +119,7 @@ export default function AssessmentList() {
             onOpen={openAssessment}
           />
         )}
-        // On a tablet, the list keeps to the readable column (MB-08).
+        // On a tablet, the list keeps to the readable column (MB-09).
         contentContainerClassName={cn('p-4 pb-8', readable)}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"

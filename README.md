@@ -90,13 +90,10 @@ logging still apply.
 - **Corners are rounder than the web's** (8 to 20px; the web caps them at 8px). A
   deliberate mobile-only choice; the web design system is unchanged.
 
-**MB-08: tablets, light** (branch `MB-08`)
+**MB-09: tablet layout and iPad split view** (branches `MB-08`, `MB-09`)
 
 - Tablets (shortest side 600pt or more) turn with the device; phones stay portrait.
 - The site screens keep a 640pt column, centred, so nothing stretches on an iPad.
-
-**MB-09: iPad split view** (branch `MB-09`)
-
 - On a window 900pt or wider, Home shows the list beside the chosen assessment's
   workspace. It opens on the latest capturing assessment; tapping a row switches it.
 - On a tablet, New observation is a centred sheet, in two columns at 640pt or wider.

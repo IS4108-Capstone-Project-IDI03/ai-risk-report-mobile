@@ -1,6 +1,6 @@
 // MB-09: the iPad split view. With a wide window, Home shows the assessments
 // beside the open workspace. The window width is faked through useSplitView;
-// every other test runs at phone width (AC6). Gateway mocked.
+// every other test runs at phone width. Gateway mocked.
 import { fireEvent, renderRouter, screen, testRouter, within } from 'expo-router/testing-library'
 import {
   assessment,
@@ -39,7 +39,7 @@ function gateway(overrides: Record<string, Reply | ((init?: RequestInit) => Repl
 
 const pane = () => within(screen.getByTestId('workspace-screen'))
 
-it('shows the list beside the capturing assessment’s workspace (AC1, AC2, AC4)', async () => {
+it('shows the list beside the capturing assessment’s workspace (AC1, AC2)', async () => {
   gateway()
   await renderRouter(routes)
 
@@ -69,7 +69,7 @@ it('switches the workspace without leaving Home when a row is tapped (AC3)', asy
   expect(screen.getByRole('button', { name: /RPT-2026-0408/ }).props.accessibilityState).toMatchObject({ selected: true })
 })
 
-it('captures from the right-hand workspace (AC5)', async () => {
+it('captures from the right-hand workspace', async () => {
   gateway()
   await renderRouter(routes)
   await pane().findByText('Northgate Logistics')

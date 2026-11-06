@@ -165,7 +165,7 @@ export default function CaptureSheet() {
           )}
           <ScrollView
             onLayout={(e) => setWide(e.nativeEvent.layout.width >= 640)}
-            // Wide, the two columns use the sheet's width; else the readable column (MB-08).
+            // Wide, the two columns use the sheet's width; else the readable column (MB-09).
             contentContainerClassName={cn('gap-6 p-4 pb-8', wide ? 'w-full max-w-[960px] self-center' : readable)}
             keyboardShouldPersistTaps="handled"
           >

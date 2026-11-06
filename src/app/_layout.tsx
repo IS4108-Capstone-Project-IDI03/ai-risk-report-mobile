@@ -32,7 +32,7 @@ function Screens() {
   }
   return (
     <Stack
-      // Tablets turn; phones stay portrait (MB-08). app.json allows every
+      // Tablets turn; phones stay portrait (MB-09). app.json allows every
       // orientation, so this is what keeps a phone upright.
       screenOptions={{ ...headerOptions, contentStyle: { backgroundColor: colors.page }, orientation: orientation() }}
     >
