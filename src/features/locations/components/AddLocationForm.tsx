@@ -1,4 +1,4 @@
-// The picker's Add location view (MB-02 AC10-AC12). Building, level and name,
+// The picker's Add location view (MB-02 AC10-AC12). Building, level and location,
 // each with tap-to-fill chips (48px, for gloves) so the engineer rarely types a
 // building or level twice. Used by screens/LocationPicker, which saves it.
 import { useState } from 'react'
@@ -69,7 +69,8 @@ export function AddLocationForm({ locations, onSave }: Props) {
         chips={hasBuilding ? suggestions(locations.map((l) => l.floor), LEVEL_SUGGESTIONS) : []}
         error={fields.floor}
       />
-      <Field label="Name" value={name} onChange={setName} error={fields.name} onSubmit={save} />
+      {/* "Location", as on the web's form. The gateway's field is still `name`. */}
+      <Field label="Location" value={name} onChange={setName} error={fields.name} onSubmit={save} />
 
       {general && (
         <View className="rounded-md bg-destructive/10 p-3">

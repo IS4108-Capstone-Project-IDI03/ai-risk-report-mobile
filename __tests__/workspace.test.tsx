@@ -258,7 +258,7 @@ describe('adding a location', () => {
     await openAddForm()
     await fireEvent.changeText(screen.getByLabelText('Building'), 'Block A')
     await fireEvent.changeText(screen.getByLabelText('Level'), 'L2')
-    await fireEvent.changeText(screen.getByLabelText('Name'), 'Staircase')
+    await fireEvent.changeText(screen.getByLabelText('Location'), 'Staircase')
     await fireEvent.press(screen.getByRole('button', { name: 'Save location' }))
 
     expect(sent).toEqual({ building: 'Block A', floor: 'L2', name: 'Staircase' })
@@ -274,7 +274,7 @@ describe('adding a location', () => {
       },
     })
     await openAddForm()
-    await fireEvent.changeText(screen.getByLabelText('Name'), 'Loading bay')
+    await fireEvent.changeText(screen.getByLabelText('Location'), 'Loading bay')
     await fireEvent.press(screen.getByRole('button', { name: 'Save location' }))
 
     expect(sent).toEqual({ name: 'Loading bay' })
@@ -289,11 +289,11 @@ describe('adding a location', () => {
       },
     })
     await openAddForm()
-    await fireEvent.changeText(screen.getByLabelText('Name'), 'Fire access route')
+    await fireEvent.changeText(screen.getByLabelText('Location'), 'Fire access route')
     await fireEvent.press(screen.getByRole('button', { name: 'Save location' }))
 
     expect(await screen.findByText('This location is already on the list.')).toBeTruthy()
-    expect(screen.getByLabelText('Name')).toBeTruthy()
+    expect(screen.getByLabelText('Location')).toBeTruthy()
   })
 
   it('only takes a level once there is a building (AC12)', async () => {
