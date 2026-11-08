@@ -22,7 +22,7 @@ import { CapturingNowCard } from '../components/CapturingNowCard'
 import { DateChips } from '../components/DateChips'
 import { SearchBar } from '../components/SearchBar'
 import { StatusChips } from '../components/StatusChips'
-import { DATE_FILTERS, matches, noFilters, type DateFilter, type Filters } from '../filters'
+import { DATE_FILTERS, latestCapturing, matches, noFilters, type DateFilter, type Filters } from '../filters'
 import type { Assessment } from '../format'
 import { WorkspaceView } from './Workspace'
 
@@ -46,7 +46,7 @@ export default function AssessmentList() {
           // The split view opens on the latest capturing one, then stays on it
           // until another is tapped (MB-09 AC2), so a refresh that changes which
           // is latest never swaps the site the engineer is filing under.
-          setChosen((c) => c ?? shown.find((a) => a.status === 'capturing')?.reference ?? null)
+          setChosen((c) => c ?? latestCapturing(shown)?.reference ?? null)
           setError(null)
         },
         // A 401 has already sent the engineer to sign-in (src/lib/api.ts).
@@ -76,11 +76,11 @@ export default function AssessmentList() {
   const all = assessments ?? []
   const shown = all.filter((a) => matches(a, filters))
   const filtering = filters.search.trim() !== '' || filters.status !== null || filters.date !== null
-  // The latest capturing assessment gets its own card (MB-07 AC1); the list
-  // is newest site visit first, so that's the first one. Not while filtering
-  // (AC2), so every match stays in the list the filters describe.
+  // The latest capturing assessment gets its own card (MB-07 AC1): the one whose
+  // capture started most recently. Not while filtering (AC2), so every match
+  // stays in the list the filters describe.
   // In the split view the right side already shows it, so no card (MB-09 AC4).
-  const current = filtering || split ? undefined : all.find((a) => a.status === 'capturing')
+  const current = filtering || split ? undefined : latestCapturing(all)
   // Only while it's still in the list: one archived or reassigned since closes.
   const open = all.some((a) => a.reference === chosen) ? chosen : null
 

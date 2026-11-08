@@ -4,7 +4,15 @@
 // same assessments as overdue. Keep the two in step.
 import type { Assessment, AssessmentStatus } from './format'
 
-export type DateFilter = 'overdue' | 'due-soon' | 'visit-soon'
+// The capturing assessment whose capture started most recently: where the
+// engineer is working now (MB-07 AC1, changed 6 Nov), not the newest site visit.
+// Ties and missing times keep the list's order, which is newest visit first.
+export const latestCapturing = (all: Assessment[]) =>
+  all
+    .filter((a) => a.status === 'capturing')
+    .sort((a, b) => (b.captureStartedAt ?? '').localeCompare(a.captureStartedAt ?? ''))[0]
+
+export type DateFilter ='overdue' | 'due-soon' | 'visit-soon'
 export type Filters = { search: string; status: AssessmentStatus | null; date: DateFilter | null }
 export const noFilters: Filters = { search: '', status: null, date: null }
 

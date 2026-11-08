@@ -49,6 +49,28 @@ it('shows the list beside the capturing assessment’s workspace (AC1, AC2)', as
   expect(screen.getByRole('button', { name: /RPT-2026-0411/ }).props.accessibilityState).toMatchObject({ selected: true })
 })
 
+it('opens on the assessment whose capture started most recently (AC2)', async () => {
+  const earlier = assessment('RPT-2026-0004', 'capturing', {
+    client: 'Earlier Client',
+    site: { id: 's3', code: 'S-004', name: 'CP26 Test Site', address: null },
+    captureStartedAt: '2026-11-05T09:07:00.000Z',
+  })
+  const startedLast = assessment('RPT-2026-0003', 'capturing', {
+    client: 'Fennick Foods',
+    site: { id: 's4', code: 'S-005', name: 'Leeds Cold Store', address: null },
+    captureStartedAt: '2026-11-06T02:52:00.000Z',
+  })
+  gateway({
+    'GET /api/assessments': { status: 200, body: [earlier, startedLast] },
+    'GET /api/assessments/RPT-2026-0003/observations': { status: 200, body: [] },
+    'GET /api/assessments/RPT-2026-0003/locations': { status: 200, body: [] },
+  })
+  await renderRouter(routes)
+
+  expect(await pane().findByText('Fennick Foods')).toBeTruthy()
+  expect(pane().queryByText('Earlier Client')).toBeNull()
+})
+
 it('asks to choose an assessment when none is capturing (AC2)', async () => {
   gateway({ 'GET /api/assessments': { status: 200, body: [leeds] } })
   await renderRouter(routes)

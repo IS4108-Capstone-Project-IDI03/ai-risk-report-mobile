@@ -113,6 +113,24 @@ describe('Home', () => {
     expect(screen.getByText('Jurong Warehouse')).toBeTruthy()
   })
 
+  it('picks the assessment whose capture started most recently, not the newest visit (AC1)', async () => {
+    // Listed first (newest visit), but its capture started earlier than Leeds'.
+    const newerVisit = assessment('RPT-2026-0004', 'capturing', {
+      site: { id: 's3', code: 'S-004', name: 'CP26 Test Site', address: null },
+      captureStartedAt: '2026-11-05T09:07:00.000Z',
+    })
+    const startedLast = assessment('RPT-2026-0003', 'capturing', {
+      site: { id: 's4', code: 'S-005', name: 'Leeds Cold Store', address: null },
+      captureStartedAt: '2026-11-06T02:52:00.000Z',
+    })
+    gateway({ 'GET /api/assessments': { status: 200, body: [newerVisit, startedLast] } })
+    await renderRouter(routes)
+
+    await screen.findByText('Capturing now')
+    expect(capturingNow().getByText('Leeds Cold Store')).toBeTruthy()
+    expect(capturingNow().queryByText('CP26 Test Site')).toBeNull()
+  })
+
   it('has no card when nothing is capturing, or while filtering (AC2)', async () => {
     gateway()
     await renderRouter(routes)

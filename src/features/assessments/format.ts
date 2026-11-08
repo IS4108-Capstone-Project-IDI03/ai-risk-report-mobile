@@ -19,6 +19,8 @@ export type Assessment = {
   siteVisitDate: string | null // YYYY-MM-DD
   reportDueDate: string | null // YYYY-MM-DD (MB-04)
   status: AssessmentStatus
+  // ISO time the current capture session started; null before any capture.
+  captureStartedAt?: string | null
   site: { name: string }
 }
 
