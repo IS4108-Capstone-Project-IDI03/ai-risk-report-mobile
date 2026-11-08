@@ -16,7 +16,7 @@ export function EvidenceTray({ draft, onRemove }: Props) {
   const count = draft.photos.length + draft.recordings.length + draft.pages.length
   return (
     <View className="gap-2">
-      <Eyebrow>{`Evidence · ${count}`}</Eyebrow>
+      <Eyebrow>{`Media · ${count}`}</Eyebrow>
       {count === 0 ? (
         <Text className="rounded-lg border border-dashed border-input p-4 text-center text-sm text-muted-foreground">
           Nothing added yet. Take a photo, record a voice note or scan a page with the buttons below.

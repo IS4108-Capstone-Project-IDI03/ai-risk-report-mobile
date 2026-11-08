@@ -10,6 +10,7 @@ import Profile from '../src/app/(tabs)/profile'
 import Capture from '../src/app/assessment/[reference]/capture'
 import Workspace from '../src/app/assessment/[reference]/index'
 import ObservationDetail from '../src/app/assessment/[reference]/observation/[id]'
+import ObservationEdit from '../src/app/assessment/[reference]/observation/[id]/edit'
 import LocationPicker from '../src/app/assessment/[reference]/locations'
 import SignIn from '../src/app/sign-in'
 
@@ -43,13 +44,13 @@ export const sse = (event: object) => `data: ${JSON.stringify(event)}\n\n`
 // replies with a page that isn't JSON; `stream` replies with a body to read in
 // pieces. Unlisted routes fail the test loudly.
 export function mockGateway(
-  routes: Record<string, Reply | ((init?: RequestInit) => Reply)>,
+  routes: Record<string, Reply | ((init?: RequestInit, url?: string) => Reply)>,
 ) {
   const fetchMock = jest.fn(async (url: string, init?: RequestInit) => {
     const key = `${init?.method ?? 'GET'} ${new URL(url).pathname}`
     const route = routes[key]
     if (!route) throw new Error(`Unexpected request: ${key}`)
-    const reply = typeof route === 'function' ? route(init) : route
+    const reply = typeof route === 'function' ? route(init, url) : route
     if (reply instanceof Error) throw reply
     return {
       ok: reply.status >= 200 && reply.status < 300,
@@ -119,6 +120,7 @@ export const routes = {
   'assessment/[reference]/locations': LocationPicker,
   'assessment/[reference]/capture': Capture,
   'assessment/[reference]/observation/[id]': ObservationDetail,
+  'assessment/[reference]/observation/[id]/edit': ObservationEdit,
 }
 
 // Taps a bottom tab by its label.

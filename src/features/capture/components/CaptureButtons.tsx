@@ -66,8 +66,9 @@ type BigProps = {
 }
 
 // One 64px button with its icon over its verb, sized for gloves. The badge in
-// its corner says how many it has added (AC9).
-function Big({ label, text, count = 0, Icon, onPress, danger, disabled }: BigProps) {
+// its corner says how many it has added (AC9). Shared with the edit screen's Media
+// section (MB-12), so adding media looks the same in both places.
+export function Big({ label, text, count = 0, Icon, onPress, danger, disabled }: BigProps) {
   return (
     <Pressable
       accessibilityRole="button"

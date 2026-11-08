@@ -7,7 +7,8 @@
 // MB-09: WorkspaceView is also Home's right-hand pane in the iPad split view;
 // the route below renders it for the reference in the URL. MB-10: opens
 // offline from the last copy, and lists observations waiting to upload first.
-// MB-11: tapping an observation opens its detail.
+// MB-11: tapping an observation opens its detail. MB-12: swiping an uploaded one
+// left deletes it, and Show deleted below the list restores.
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { Plus } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -17,6 +18,7 @@ import { Eyebrow } from '@/components/Eyebrow'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Text } from '@/components/ui/text'
+import { errorText } from '@/lib/api'
 import { cn, readable } from '@/lib/utils'
 import { CurrentLocationCard } from '@/features/locations/components/CurrentLocationCard'
 import { listLocations } from '@/features/locations/api'
@@ -24,8 +26,11 @@ import { useCurrentLocation } from '@/features/locations/current'
 import { OfflineNote } from '@/features/offline/components/OfflineNote'
 import { useOffline } from '@/features/offline/provider'
 import { asObservation, type QueuedObservation } from '@/features/offline/queue'
-import { listObservations } from '@/features/observations/api'
+import { deleteObservation, listObservations } from '@/features/observations/api'
+import { confirmDelete } from '@/features/observations/confirmDelete'
+import { DeletedSection } from '@/features/observations/components/DeletedSection'
 import { ObservationCard } from '@/features/observations/components/ObservationCard'
+import { SwipeDelete } from '@/features/observations/components/SwipeDelete'
 import type { Observation } from '@/features/observations/format'
 import { listAssessments } from '../api'
 import { formatDate, STATUS, type Assessment } from '../format'
@@ -43,7 +48,7 @@ export function WorkspaceView({ reference, embedded = false }: { reference: stri
   const [observations, setObservations] = useState<Observation[] | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { items, uploads, discard } = useOffline()
+  const { items, uploads, discard, offline } = useOffline()
 
   // Both together, so one failing isn't hidden by the other succeeding, and
   // pull to refresh retries both. State is set once the replies arrive.
@@ -96,6 +101,27 @@ export function WorkspaceView({ reference, embedded = false }: { reference: stri
     ])
   }
 
+  // Asks, then deletes on the gateway (soft: it is kept). Either way the list is read
+  // again, so one that was already gone, or removed on the web, leaves it. A refusal
+  // is said in an alert, not above the list, which may be scrolled out of view
+  // (MB-12 AC10, AC12).
+  function confirmRemove(id: string) {
+    confirmDelete(() => {
+      deleteObservation(id).then(
+        () => {
+          // Gone at once: if the signal drops now, the reload falls back to the saved
+          // copy, which still has it.
+          setObservations((all) => all && all.filter((o) => o.id !== id))
+          return load()
+        },
+        async (e: unknown) => {
+          await load()
+          Alert.alert("Couldn't delete this observation", errorText(e))
+        },
+      )
+    })
+  }
+
   async function refresh() {
     setRefreshing(true)
     try {
@@ -145,16 +171,23 @@ export function WorkspaceView({ reference, embedded = false }: { reference: stri
           return (
             // On a tablet, rows keep to the readable column (MB-09).
             <View className={readable}>
-              <ObservationCard
-                observation={item}
+              {/* Swipe to delete: only for an uploaded one, and with a signal (MB-12 AC13, AC14). */}
+              <SwipeDelete
                 first={index === 0}
                 last={index === rows.length - 1}
-                upload={waiting && { refused: waiting.error }}
-                onDiscard={waiting && (() => confirmDiscard(waiting.id))}
-                onOpen={() =>
-                  router.push({ pathname: '/assessment/[reference]/observation/[id]', params: { reference, id: item.id } })
-                }
-              />
+                onDelete={waiting || offline ? undefined : () => confirmRemove(item.id)}
+              >
+                <ObservationCard
+                  observation={item}
+                  first={index === 0}
+                  last={index === rows.length - 1}
+                  upload={waiting && { refused: waiting.error }}
+                  onDiscard={waiting && (() => confirmDiscard(waiting.id))}
+                  onOpen={() =>
+                    router.push({ pathname: '/assessment/[reference]/observation/[id]', params: { reference, id: item.id } })
+                  }
+                />
+              </SwipeDelete>
             </View>
           )
         }}
@@ -189,6 +222,13 @@ export function WorkspaceView({ reference, embedded = false }: { reference: stri
               {location && <Eyebrow>{`Captured here · ${rows.length}`}</Eyebrow>}
             </View>
           </View>
+        }
+        ListFooterComponent={
+          location ? (
+            <View className={cn('px-4 pt-4', readable)}>
+              <DeletedSection key={location.id} reference={reference} locationId={location.id} offline={offline} watch={observations} onRestored={load} />
+            </View>
+          ) : undefined
         }
         ListEmptyComponent={
           location && observations ? (

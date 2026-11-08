@@ -96,3 +96,23 @@ jest.mock('expo-crypto', () => {
     randomUUID,
   }
 })
+
+// MB-12: Jest can't swipe, so the swipe row shows its actions beside the row, where a
+// test can press them. The gesture itself is checked by hand.
+jest.mock('react-native-gesture-handler/ReanimatedSwipeable', () => {
+  const { View } = jest.requireActual('react-native')
+  const React = jest.requireActual('react')
+  return {
+    __esModule: true,
+    default: ({
+      children,
+      renderRightActions,
+    }: {
+      children: React.ReactNode
+      renderRightActions?: (...args: unknown[]) => React.ReactNode
+    }) => React.createElement(View, null, children, renderRightActions?.(undefined, undefined, { close: () => {} })),
+  }
+})
+jest.mock('react-native-gesture-handler', () => ({
+  GestureHandlerRootView: jest.requireActual('react-native').View,
+}))

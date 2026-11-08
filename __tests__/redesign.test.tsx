@@ -1,6 +1,6 @@
 // MB-07: the site flow redesign's new behaviours. The Capturing now card on
 // Home, photo thumbnails in the workspace, search in the location picker, and
-// the capture sheet's buttons and evidence tray. Gateway, camera and recorder
+// the capture sheet's buttons and media tray. Gateway, camera and recorder
 // are mocked, so no test reaches a server or a paid service.
 import * as ImagePicker from 'expo-image-picker'
 import { fireEvent, renderRouter, screen, within } from 'expo-router/testing-library'
@@ -186,11 +186,11 @@ describe('New observation', () => {
   }
   const sheet = () => within(screen.getByTestId('capture-sheet'))
 
-  it('says how to add evidence while the tray is empty (AC10)', async () => {
+  it('says how to add media while the tray is empty (AC10)', async () => {
     gateway()
     await openSheet()
 
-    expect(sheet().getByText('Evidence · 0')).toBeTruthy()
+    expect(sheet().getByText('Media · 0')).toBeTruthy()
     expect(sheet().getByText(/Nothing added yet/)).toBeTruthy()
   })
 
@@ -203,7 +203,7 @@ describe('New observation', () => {
     await fireEvent.press(await sheet().findByRole('button', { name: 'Stop recording' }))
     await sheet().findByTestId('evidence-voice-note')
 
-    expect(sheet().getByText('Evidence · 2')).toBeTruthy()
+    expect(sheet().getByText('Media · 2')).toBeTruthy()
     expect(sheet().queryByText(/Nothing added yet/)).toBeNull()
     expect(within(sheet().getByRole('button', { name: 'Take photo' })).getByText('1')).toBeTruthy()
     expect(within(sheet().getByRole('button', { name: 'Record voice note' })).getByText('1')).toBeTruthy()

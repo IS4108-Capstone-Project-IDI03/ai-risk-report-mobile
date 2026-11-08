@@ -23,6 +23,11 @@ export function DetailFacts({ observation, place }: { observation: Observation; 
       <Text className="tabular-nums text-sm text-muted-foreground">
         {[observation.engineer, capturedAt(observation.recordedAt)].filter(Boolean).join(' · ')}
       </Text>
+      {observation.edited && (
+        <Text className="tabular-nums text-sm text-muted-foreground">
+          {`Edited ${capturedAt(observation.edited.at)} by ${observation.edited.by.name}`}
+        </Text>
+      )}
     </View>
   )
 }

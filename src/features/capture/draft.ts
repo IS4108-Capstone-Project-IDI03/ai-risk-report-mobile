@@ -41,6 +41,18 @@ export function duration(ms: number) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
 
+const filePart = (uri: string, name: string, type: string) =>
+  ({ uri, name, type, bytes: () => new File(uri).bytes() }) as unknown as Blob
+
+// The same file parts for adding photos and voice notes to a saved observation
+// (MB-12 AC20): POST /api/observations/:id/media takes `photo` and `recording` parts.
+export function mediaToFormData(photos: string[], recordings: VoiceNote[]) {
+  const form = new FormData()
+  photos.forEach((uri, i) => form.append('photo', filePart(uri, `Photo ${i + 1}.jpg`, 'image/jpeg')))
+  recordings.forEach((r, i) => form.append('recording', filePart(r.uri, `Voice note ${i + 1}.m4a`, 'audio/m4a')))
+  return form
+}
+
 // The upload. Each file goes as { uri, name, type } plus bytes(). Expo's fetch
 // (SDK 58) reads a part through bytes(), and without it the upload fails with
 // "Unsupported FormDataPart implementation", which the app then shows as offline.
@@ -57,12 +69,10 @@ export function toFormData(d: Draft, locationId: string) {
       locationId,
     }),
   )
-  const file = (uri: string, name: string, type: string) =>
-    ({ uri, name, type, bytes: () => new File(uri).bytes() }) as unknown as Blob
-  d.photos.forEach((uri, i) => form.append('photo', file(uri, `Photo ${i + 1}.jpg`, 'image/jpeg')))
-  d.pages.forEach((uri, i) => form.append('page', file(uri, `Page ${i + 1}.jpg`, 'image/jpeg')))
+  d.photos.forEach((uri, i) => form.append('photo', filePart(uri, `Photo ${i + 1}.jpg`, 'image/jpeg')))
+  d.pages.forEach((uri, i) => form.append('page', filePart(uri, `Page ${i + 1}.jpg`, 'image/jpeg')))
   d.recordings.forEach((r, i) =>
-    form.append('recording', file(r.uri, `Voice note ${i + 1}.m4a`, 'audio/m4a')),
+    form.append('recording', filePart(r.uri, `Voice note ${i + 1}.m4a`, 'audio/m4a')),
   )
   return form
 }

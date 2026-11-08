@@ -3,7 +3,7 @@
 // MB-07: the rows join into one rounded card (`first` and `last` round its
 // ends), each led by its first photo, or an icon for what it holds (AC7).
 // MB-10: one queued offline carries its upload status, and Discard if refused.
-// MB-11: tapping a card opens it (onOpen).
+// MB-11: tapping a card opens it (onOpen). MB-12: its side margin comes from SwipeDelete.
 import { Camera, FileText, Mic, NotebookPen } from 'lucide-react-native'
 import { useState } from 'react'
 import { Image, Pressable, View } from 'react-native'
@@ -29,7 +29,7 @@ export function ObservationCard({ observation, first, last, upload, onDiscard, o
     <View
       testID="observation-card"
       className={cn(
-        'mx-4 gap-2 border-x border-b border-border bg-card p-3',
+        'gap-2 border-x border-b border-border bg-card p-3',
         first && 'rounded-t-lg border-t',
         last && 'rounded-b-lg',
       )}

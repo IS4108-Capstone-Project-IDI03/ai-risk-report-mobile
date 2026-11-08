@@ -5,6 +5,7 @@
 import '../../global.css'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { ActivityIndicator, Dimensions, View } from 'react-native'
 import { SessionProvider, useSession } from '@/features/auth/session'
 import { CurrentLocationProvider } from '@/features/locations/current'
@@ -41,6 +42,8 @@ function Screens() {
           name="assessment/[reference]/observation/[id]"
           options={{ title: 'Observation', headerBackButtonDisplayMode: 'minimal' }}
         />
+        {/* Its own header (title, no back arrow): Cancel at the bottom asks first (MB-12). */}
+        <Stack.Screen name="assessment/[reference]/observation/[id]/edit" options={{ title: 'Edit observation' }} />
         <Stack.Screen name="assessment/[reference]/locations" options={{ presentation: 'modal' }} />
         {/* Full screen on a phone; a centred sheet on a tablet (MB-09). No swipe
             to dismiss: closing goes through Discard? (MB-03 AC13). */}
@@ -61,16 +64,19 @@ function Screens() {
 
 export default function Layout() {
   return (
-    <SessionProvider>
-      {/* Light icons on the navy header and sign-in page. */}
-      <StatusBar style="light" />
-      <CurrentLocationProvider>
-        {/* Inside the location provider: an uploaded location replaces the
-            queued one the engineer is at (MB-10). */}
-        <OfflineProvider>
-          <Screens />
-        </OfflineProvider>
-      </CurrentLocationProvider>
-    </SessionProvider>
+    // The swipe rows (MB-12) need this around the screens to read gestures.
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SessionProvider>
+        {/* Light icons on the navy header and sign-in page. */}
+        <StatusBar style="light" />
+        <CurrentLocationProvider>
+          {/* Inside the location provider: an uploaded location replaces the
+              queued one the engineer is at (MB-10). */}
+          <OfflineProvider>
+            <Screens />
+          </OfflineProvider>
+        </CurrentLocationProvider>
+      </SessionProvider>
+    </GestureHandlerRootView>
   )
 }
