@@ -46,7 +46,7 @@ logging still apply.
   Opening it never starts a capture session.
 - **Location picker:** locations grouped by building, then level (lowest first), then
   "Elsewhere on site" (logic copied from the web client's `locations.ts`). **Add
-  location** takes a building, optional level and name, with tap-to-fill chips
+  location** takes a building, optional level and location, with tap-to-fill chips
   (`POST /api/assessments/:reference/locations`).
 - **The chosen location** is kept per assessment while the app is open. It belongs to
   the engineer who chose it, so another engineer on a shared phone starts fresh.
@@ -80,7 +80,7 @@ logging still apply.
 
 **MB-07: site flow redesign** (branch `MB-07`)
 
-- **Home:** a "Capturing now" card for the latest capturing assessment, one tap back
+- **Home:** a "Capturing now" card for the assessment whose capture started most recently, one tap back
   into it. Search in a navy band, and one scrolling row of date and status chips.
 - **Workspace:** the assessment's details in a navy band, and a bottom bar with where
   you are right above New observation. Observations show their first photo.
@@ -106,6 +106,10 @@ logging still apply.
   Photos, voice notes and scans are copied into the app's own storage.
 - The queue uploads when the gateway is reachable again: the app comes to the front, a
   screen refreshes, or every 30 seconds while items wait. Locations go first.
+- **Sign in with no signal:** an engineer who has signed in on the phone before signs in
+  again with the same email and password. The phone checks them against a salted hash
+  kept in its keychain (never the password). It forgets the hash if the gateway refuses
+  that email and password. Uploads wait for a sign-in with a signal.
 - Each engineer has their own folder on the phone. Refused items show "Couldn't upload"
   with Discard. Home shows how many are waiting.
 - With no signal at launch, the app carries on as the last engineer who signed in.
