@@ -46,7 +46,7 @@ export function CitationSheet({ citation, names, onClose }: Props) {
           <ScrollView contentContainerClassName="gap-5 p-4">
             <View className="gap-1">
               <Text className="text-lg font-semibold">{name}</Text>
-              {pages && <Text className="font-mono text-sm text-muted-foreground">{pages}</Text>}
+              {pages && <Text className="tabular-nums text-sm text-muted-foreground">{pages}</Text>}
             </View>
 
             {(source?.withdrawn || citation.state === 'unverified') && (

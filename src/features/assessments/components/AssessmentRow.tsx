@@ -42,8 +42,8 @@ export function AssessmentRow({ assessment, first, last, chosen = false, onOpen 
           <Badge variant={status.tone}>
             <Text>{status.label}</Text>
           </Badge>
-          <Text className="font-mono text-sm text-muted-foreground">{assessment.reference}</Text>
-          <Text className="font-mono text-sm text-muted-foreground">{formatDate(assessment.siteVisitDate)}</Text>
+          <Text className="tabular-nums text-sm text-muted-foreground">{assessment.reference}</Text>
+          <Text className="tabular-nums text-sm text-muted-foreground">{formatDate(assessment.siteVisitDate)}</Text>
         </View>
       </View>
       {/* The report's deadline (MB-04 AC8): red once overdue, amber within 3 days. */}

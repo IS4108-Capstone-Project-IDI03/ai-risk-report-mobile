@@ -7,24 +7,15 @@ module.exports = {
   content: ['./src/**/*.{ts,tsx}'],
   presets: [require('nativewind/preset')],
   theme: {
-    // Custom fonts on a phone need one family per weight: a fontWeight on its own
-    // makes iOS fall back to the system font and Android fake a bold. So the
-    // weight classes (font-medium, font-semibold ...) pick the IBM Plex family
-    // of that weight instead, and the same text looks the same on both.
-    fontWeight: {},
-    fontFamily: {
-      normal: ['IBMPlexSans_400Regular'],
-      medium: ['IBMPlexSans_500Medium'],
-      semibold: ['IBMPlexSans_600SemiBold'],
-      bold: ['IBMPlexSans_700Bold'],
-      mono: ['IBMPlexMono_400Regular'],
-    },
+    // The system font, as the web's design system v2 (one font, no second family):
+    // San Francisco on iOS, Roboto on Android. Weight classes (font-medium ...)
+    // are plain font weights; numbers that line up use `tabular-nums`.
     extend: {
       colors: {
         background: '#f7f9fc', // graphite-50, the page
         foreground: '#1a1f26', // graphite-900
         card: { DEFAULT: '#ffffff', foreground: '#1a1f26' },
-        primary: { DEFAULT: '#2c5488', foreground: '#ffffff' }, // ink-600
+        primary: { DEFAULT: '#000f47', foreground: '#ffffff' }, // Marsh navy: actions and titles (design system v2)
         secondary: { DEFAULT: '#e9f2fe', foreground: '#22406c' }, // ink-50 / ink-700, the tonal button
         muted: { DEFAULT: '#eef1f6', foreground: '#545e6b' }, // graphite-100 / 600
         accent: { DEFAULT: '#e9f2fe', foreground: '#22406c' },
@@ -41,8 +32,9 @@ module.exports = {
         critical: { DEFAULT: '#fdeae8', foreground: '#ad2e2d' },
         high: { DEFAULT: '#fdeae7', foreground: '#9e3e3b' },
       },
-      // Rounder than the web's 5px and 8px (MB-07, Miya 31 Oct): softer for a phone.
-      // The web design system caps radius at 8px; the app departs on purpose.
+      // Cards 16, buttons and pills fully round, as the web's design system v2
+      // (fields 10 is set on Input). 48px touch targets stay: the web's 40px
+      // fields are too small for gloves.
       borderRadius: { sm: '8px', md: '12px', lg: '16px', xl: '20px' },
     },
   },

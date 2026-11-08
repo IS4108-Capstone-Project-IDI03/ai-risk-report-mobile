@@ -13,7 +13,7 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: colors.page },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.muted,
-        tabBarLabelStyle: { fontFamily: 'IBMPlexSans_500Medium', fontSize: 12 },
+        tabBarLabelStyle: { fontWeight: '500', fontSize: 12 },
         tabBarStyle: { borderTopColor: colors.border },
       }}
     >

@@ -38,7 +38,7 @@ export function DateChips({ counts, selected, onToggle }: Props) {
         )}
       >
         <Icon color={alarm ? '#ad2e2d' : '#2c5488'} size={16} />
-        <Text className={cn('font-mono font-medium', alarm ? 'text-destructive' : 'text-primary')}>{counts[filter]}</Text>
+        <Text className={cn('tabular-nums font-medium', alarm ? 'text-destructive' : 'text-primary')}>{counts[filter]}</Text>
         <Text className="font-medium">{label}</Text>
       </Pressable>
     )

@@ -28,7 +28,7 @@ export function CitationMarker({ documentName, onOpen, ...citation }: Props) {
       onPress={() => onOpen(citation)}
       suppressHighlighting={false}
       // Inline text can't take a larger hit area, so the numeral itself is a size up.
-      style={[LOOK[state], { fontFamily: 'IBMPlexMono_400Regular', fontSize: 14 }]}
+      style={[LOOK[state], { fontVariant: ['tabular-nums'], fontSize: 14 }]}
     >
       {` ${number}${state === 'unverified' ? '?' : ''} `}
     </Text>

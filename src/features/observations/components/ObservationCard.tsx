@@ -51,7 +51,7 @@ export function ObservationCard({ observation, first, last, upload, onDiscard, o
             <Text className="flex-1 text-sm text-muted-foreground" numberOfLines={1}>
               {categoriesText(observation)}
             </Text>
-            <Text className="font-mono text-sm text-muted-foreground">{capturedAt(observation.recordedAt)}</Text>
+            <Text className="tabular-nums text-sm text-muted-foreground">{capturedAt(observation.recordedAt)}</Text>
           </View>
           {upload && !upload.refused && (
             <Text className="text-sm font-medium text-muted-foreground">Waiting to upload</Text>

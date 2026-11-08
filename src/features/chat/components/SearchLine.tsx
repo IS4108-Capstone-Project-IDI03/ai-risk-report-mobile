@@ -59,7 +59,7 @@ function Searching() {
     <Animated.Text
       accessibilityRole="text"
       accessibilityLiveRegion="polite"
-      style={{ opacity, fontSize: 13, color: '#545e6b', fontFamily: 'IBMPlexSans_400Regular' }}
+      style={{ opacity, fontSize: 13, color: '#545e6b' }}
     >
       Searching the knowledge base…
     </Animated.Text>

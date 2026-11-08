@@ -34,7 +34,7 @@ export function EvidenceTray({ draft, onRemove }: Props) {
               <View className="items-center justify-center gap-1 rounded-sm bg-secondary" style={{ width: SIZE, height: SIZE }}>
                 <Mic color="#2c5488" size={20} />
                 <Text className="text-xs font-medium text-secondary-foreground">{`Voice note ${i + 1}`}</Text>
-                <Text className="font-mono text-xs text-secondary-foreground">{duration(r.durationMillis)}</Text>
+                <Text className="tabular-nums text-xs text-secondary-foreground">{duration(r.durationMillis)}</Text>
               </View>
             </Tile>
           ))}

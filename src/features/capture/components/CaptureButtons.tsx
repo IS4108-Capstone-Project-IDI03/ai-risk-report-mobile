@@ -87,7 +87,7 @@ function Big({ label, text, count = 0, Icon, onPress, danger, disabled }: BigPro
       <Text className={cn('text-sm font-semibold', danger ? 'text-white' : 'text-secondary-foreground')}>{text}</Text>
       {count > 0 && (
         <View className="absolute right-1.5 top-1.5 h-6 min-w-6 items-center justify-center rounded-full bg-primary px-1.5">
-          <Text className="font-mono text-xs text-primary-foreground">{count}</Text>
+          <Text className="tabular-nums text-xs text-primary-foreground">{count}</Text>
         </View>
       )}
     </Pressable>

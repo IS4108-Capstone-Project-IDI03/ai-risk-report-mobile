@@ -1,13 +1,14 @@
 // From React Native Reusables (shadcn/ui for React Native), button component.
-// Changed for Site Capture: 48px controls, IBM Plex weights, a header variant.
+// Changed for Site Capture: 48px controls, a header variant.
 // Trimmed to what the app uses: native only, light only, no destructive/sm/icon.
+// Design system v2 (6 Nov): pill shape, and a press shrinks it a little.
 import { TextClassContext } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { Pressable } from 'react-native';
 
 const buttonVariants = cva(
-  'group shrink-0 flex-row items-center justify-center gap-2 rounded-md shadow-none',
+  'group shrink-0 flex-row items-center justify-center gap-2 rounded-full shadow-none active:scale-[0.97]',
   {
     variants: {
       variant: {
@@ -22,7 +23,7 @@ const buttonVariants = cva(
       },
       size: {
         default: 'h-12 px-5 py-2',
-        lg: 'h-14 rounded-md px-6',
+        lg: 'h-14 px-6',
       },
     },
     defaultVariants: {

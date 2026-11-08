@@ -173,8 +173,8 @@ export function WorkspaceView({ reference, embedded = false }: { reference: stri
                     </Badge>
                   </View>
                   <View className="flex-row flex-wrap gap-x-4">
-                    <Text className="font-mono text-sm text-[#b9c4d6]">{assessment.reference}</Text>
-                    <Text className="font-mono text-sm text-[#b9c4d6]">{formatDate(assessment.siteVisitDate)}</Text>
+                    <Text className="tabular-nums text-sm text-[#b9c4d6]">{assessment.reference}</Text>
+                    <Text className="tabular-nums text-sm text-[#b9c4d6]">{formatDate(assessment.siteVisitDate)}</Text>
                   </View>
                 </View>
               </View>
