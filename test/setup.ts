@@ -74,3 +74,25 @@ jest.mock('expo-file-system', () => {
   }
   return { File, Directory, Paths: { document: new Directory('file:///document'), cache: new Directory('file:///cache') }, __files: files }
 })
+
+// MB-10 AC9: the keychain and hashing, in memory. test/reset.ts clears the store
+// before each test; `__items` lets a test look at what was saved.
+jest.mock('expo-secure-store', () => {
+  const items = new Map<string, string>()
+  return {
+    WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'when-unlocked-this-device-only',
+    getItemAsync: async (key: string) => items.get(key) ?? null,
+    setItemAsync: async (key: string, value: string) => void items.set(key, value),
+    deleteItemAsync: async (key: string) => void items.delete(key),
+    __items: items,
+  }
+})
+
+jest.mock('expo-crypto', () => {
+  const { createHash, randomUUID } = jest.requireActual('crypto')
+  return {
+    CryptoDigestAlgorithm: { SHA256: 'SHA-256' },
+    digestStringAsync: async (_algorithm: string, text: string) => createHash('sha256').update(text).digest('hex'),
+    randomUUID,
+  }
+})

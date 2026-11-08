@@ -39,7 +39,8 @@
         {
           "microphonePermission": "Site Capture records voice notes about what you see on site."
         }
-      ]
+      ],
+      "expo-secure-store"
     ]
   }
 }
