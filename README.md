@@ -22,7 +22,7 @@ logging still apply.
 | Framework | Expo SDK 58, React Native 0.88, TypeScript |
 | Navigation | Expo Router: each file in `src/app/` is a screen |
 | UI | [React Native Reusables](https://reactnativereusables.com) (the shadcn/ui port for React Native) styled with NativeWind v4 (Tailwind for React Native) |
-| Look | The web app's design system: ink-600 `#2c5488` primary, Marsh navy `#000f47`, IBM Plex Sans and Mono bundled so iOS and Android match. Corners are rounder than the web's (MB-07) |
+| Look | The web's design system v2 (`docs/design-system-v2.md` in the web repo): the system font (San Francisco on iOS, Roboto on Android), Marsh navy `#000f47` for primary buttons and the header, ink-600 for links and tints, pill buttons, 48px touch targets (the web's are 40) |
 | Icons | `lucide-react-native` (the web app uses Lucide too) |
 | Sign-in | The gateway's `session` cookie, which React Native's `fetch` stores on both platforms |
 | Tests | Jest (`jest-expo`) and React Native Testing Library, with the gateway mocked |
@@ -87,8 +87,8 @@ logging still apply.
 - **Location picker:** "Where are you?", with search by name.
 - **New observation:** Take photo, Record and Scan page as big buttons at the bottom,
   with counts; everything added in one Evidence tray; severity before COPE.
-- **Corners are rounder than the web's** (8 to 20px; the web caps them at 8px). A
-  deliberate mobile-only choice; the web design system is unchanged.
+- **Corners are rounder than the web's** (8 to 20px; the web capped them at 8px then).
+  Superseded by design system v2 (6 Nov): the web is rounder too, and the app matches it.
 
 **MB-09: tablet layout and iPad split view** (branches `MB-08`, `MB-09`)
 
@@ -234,9 +234,9 @@ There's no CI yet, so run all four before committing.
   `src/components/ui/`, then adjust it. Use the colour names in `tailwind.config.js`.
   Touch targets are at least 48px. Copy follows the web design system: sentence case,
   buttons are verbs, errors state the cause and then the next step, no emoji.
-- **Fonts:** weight classes (`font-medium`, `font-semibold`, `font-bold`) choose the
-  IBM Plex family of that weight. Don't set `fontWeight` directly: a custom font
-  ignores it on iOS and fakes it on Android.
+- **Fonts:** the system font only (design system v2). Use the weight classes
+  (`font-medium`, `font-semibold`, `font-bold`); numbers that must line up (dates,
+  counts, report IDs) use `tabular-nums`. No bundled font.
 - **Stories and branches:** `MB-0n` IDs, one branch per story
   (`git switch -c MB-0n --no-track`), and one commit per finished behaviour with its
   test.
