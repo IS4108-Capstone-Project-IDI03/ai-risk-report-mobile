@@ -128,9 +128,30 @@ logging still apply.
 - No new gateway call: the detail finds its observation in the workspace list. It is its
   own screen on the phone and the iPad.
 
+**MB-12: manage my observations** (branch `MB-12`)
+
+- **Edit:** Edit on an observation's detail opens a screen for its severity, COPE
+  categories and note (`PATCH /api/observations/:id`, only what changed is sent). The
+  detail then says "Edited <time> by <name>". Leaving with unsaved changes asks first.
+- **Delete:** swipe a card left in the workspace, or tap Delete on the detail, then
+  confirm. It is a soft delete: the gateway keeps it. **Show deleted** below the list
+  loads the observations deleted at that location, each with Restore.
+- **Media:** the edit screen lists the observation's photos, voice notes and handwritten
+  pages. Photos and voice notes can be removed (and restored). New ones are added with the
+  same big tiles as capture, wait in a "New" row, and are uploaded, and each voice note
+  transcribed, only when you tap Save changes. Pages are view-only: the gateway can't add
+  or remove them on a saved observation yet (web CP-20).
+- **Online only.** With no signal Edit and Delete are greyed out ("Connect to edit or
+  delete."), the swipe is off, and Show deleted says "Connect to see deleted."
+  Observations waiting to upload keep Discard and have none of these.
+- Wording: the app says "media", not "evidence", for an observation's photos, voice notes
+  and pages. Adds `react-native-gesture-handler` (the swipe row).
+- Flags for the web team: pages on a saved observation (CP-20), and a deleted-only filter
+  for `?include=deleted`, which now sends every observation.
+
 ## What to build next
 
-The MVP order, agreed 27 Oct 2026 (MB-01 to MB-04 and MB-06 to MB-11 are built). Each is its own story (`MB-0n`). The web stories it
+The MVP order, agreed 27 Oct 2026 (MB-01 to MB-04 and MB-06 to MB-12 are built). Each is its own story (`MB-0n`). The web stories it
 mirrors are in the web repo's `docs/USER_STORIES.md`.
 
 | Order | Story | Mirrors | Gateway support |
@@ -177,7 +198,8 @@ src/
     assessments/          api, format, filters (search, date rules), components/, screens/AssessmentList, Workspace
     locations/            api, locations.ts (grouping, copied from web), current.tsx (chosen
                           location), components/, screens/LocationPicker
-    observations/         api, format, components/ (ObservationCard, detail pieces), screens/ObservationDetail
+    observations/         api, format, confirmDelete, components/ (ObservationCard, SwipeDelete, DeletedSection,
+                          MediaSection, detail pieces), screens/ObservationDetail, ObservationEdit
     capture/              draft (upload format), media (camera, library), useVoiceNote, api,
                           components/ (sections, chips), screens/CaptureSheet
     chat/                 library (answer format), events (stream), answer (citations),
