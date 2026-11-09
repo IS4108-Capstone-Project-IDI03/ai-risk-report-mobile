@@ -91,6 +91,22 @@ it('switches the workspace without leaving Home when a row is tapped (AC3)', asy
   expect(screen.getByRole('button', { name: /RPT-2026-0408/ }).props.accessibilityState).toMatchObject({ selected: true })
 })
 
+// AC7: the list can be hidden, so the workspace (observations and checklist) gets the width.
+it('hides the list into a slim bar and brings it back (AC7)', async () => {
+  gateway()
+  await renderRouter(routes)
+  await pane().findByText('Northgate Logistics')
+
+  await fireEvent.press(screen.getByRole('button', { name: 'Hide assessments' }))
+
+  expect(screen.queryByTestId('assessment-list')).toBeNull()
+  expect(pane().getByText('Northgate Logistics')).toBeTruthy()
+  await fireEvent.press(screen.getByRole('button', { name: 'Show assessments' }))
+
+  expect(screen.getByTestId('assessment-list')).toBeTruthy()
+  expect(screen.getByRole('button', { name: /RPT-2026-0411/ }).props.accessibilityState).toMatchObject({ selected: true })
+})
+
 it('captures from the right-hand workspace', async () => {
   gateway()
   await renderRouter(routes)
@@ -101,6 +117,31 @@ it('captures from the right-hand workspace', async () => {
   await fireEvent.press(await screen.findByRole('button', { name: 'New observation' }))
 
   expect(await screen.findByTestId('capture-sheet')).toBeTruthy()
+})
+
+// AC4: on the wide iPad the form opens inside the workspace, in place of the observations,
+// with the checklist beside it. Both stay on screen and scroll on their own.
+it('opens New observation beside the checklist, inside the workspace (AC4)', async () => {
+  gateway()
+  await renderRouter(routes)
+  await pane().findByText('Northgate Logistics')
+  // Jest has no layout pass: tell the workspace its pane is wide enough for side by side.
+  await fireEvent(screen.getByTestId('workspace-screen'), 'layout', { nativeEvent: { layout: { width: 996, height: 800, x: 0, y: 0 } } })
+
+  await fireEvent.press(pane().getByRole('button', { name: 'New observation' }))
+  await fireEvent.press(await screen.findByRole('button', { name: 'Pump room' }))
+
+  // Picking the location returns to the workspace; the next tap opens the form there.
+  await fireEvent.press(await screen.findByRole('button', { name: 'New observation' }))
+
+  expect(await screen.findByTestId('capture-sheet')).toBeTruthy()
+  expect(pane().getByTestId('checklist-pane')).toBeTruthy()
+  expect(pane().queryByTestId('workspace')).toBeNull()
+
+  // Close brings the observations back.
+  await fireEvent.press(pane().getByRole('button', { name: 'Close' }))
+  expect(await pane().findByTestId('workspace')).toBeTruthy()
+  expect(pane().queryByTestId('capture-sheet')).toBeNull()
 })
 
 // MB-11 AC8: an observation opened from the right-hand pane fills the window,
@@ -124,4 +165,54 @@ it('opens an observation over the split view and returns to it (MB-11 AC8)', asy
   await testRouter.back()
   expect(await screen.findByTestId('assessment-list')).toBeTruthy()
   expect(await pane().findByText('Northgate Logistics')).toBeTruthy()
+})
+
+// MB-05 AC22: Confirm on a checklist item fills the form beside the checklist.
+it('opens the form beside the checklist when Confirm is tapped (MB-05 AC22)', async () => {
+  const item = {
+    id: 'i1', area: '7', subsection: null, origin: 'template', hazard: null, text: 'Check the sprinkler heads are clear',
+    fields: [], COPE_dimension: ['Protection'], citations: [], flags: [], check: null,
+  }
+  gateway({
+    'GET /api/assessments/RPT-2026-0411/checklist': {
+      status: 200,
+      body: {
+        scope: { facilityType: 'warehouse', jurisdiction: 'SG' },
+        standards: [],
+        checklist: {
+          id: 'c1', facilityType: 'warehouse', jurisdiction: 'SG', standards: [], areas: [{ id: '7', title: 'Construction' }],
+          hazards: [], sources: {}, items: [item], provenance: { generated_at: '2026-11-07T02:00:00.000Z' },
+        },
+      },
+    },
+  })
+  await renderRouter(routes)
+  await pane().findByText('Northgate Logistics')
+  await fireEvent(screen.getByTestId('workspace-screen'), 'layout', { nativeEvent: { layout: { width: 996, height: 800, x: 0, y: 0 } } })
+  await fireEvent.press(pane().getByRole('button', { name: 'New observation' }))
+  await fireEvent.press(await screen.findByRole('button', { name: 'Pump room' }))
+  await screen.findByTestId('workspace')
+
+  await fireEvent.press(await screen.findByText('Check the sprinkler heads are clear'))
+  await fireEvent.press(await screen.findByRole('button', { name: /Confirm/ }))
+
+  const form = await screen.findByTestId('capture-sheet')
+  expect(within(form).getByDisplayValue('Check the sprinkler heads are clear')).toBeTruthy()
+  expect(screen.getByTestId('checklist-pane')).toBeTruthy()
+  expect(screen.queryByTestId('answer-sheet')).toBeNull()
+})
+
+// The navy band can shrink to one line, to give the workspace the height (wide only).
+it('shrinks the band to one line and back (wide)', async () => {
+  gateway()
+  await renderRouter(routes)
+  await pane().findByText('Northgate Logistics')
+  await fireEvent(screen.getByTestId('workspace-screen'), 'layout', { nativeEvent: { layout: { width: 996, height: 800, x: 0, y: 0 } } })
+
+  await fireEvent.press(pane().getByRole('button', { name: 'Collapse details' }))
+
+  expect(pane().queryByText('Northgate Logistics')).toBeNull()
+  expect(pane().getByText('Tilbury Distribution Centre')).toBeTruthy()
+  await fireEvent.press(pane().getByRole('button', { name: 'Show details' }))
+  expect(pane().getByText('Northgate Logistics')).toBeTruthy()
 })
