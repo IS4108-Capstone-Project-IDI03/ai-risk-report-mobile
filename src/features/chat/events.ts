@@ -15,11 +15,12 @@ export type Search = {
 }
 
 // What an answer has received so far: its search step and its program text.
-export type Received = { search: Search | null; program: string }
+// `id` is the stream's message id, which the next question's request must carry (MB-14).
+export type Received = { search: Search | null; program: string; id?: string }
 
-type ChatEvent = { type: string; delta?: string; content?: string }
+type ChatEvent = { type: string; delta?: string; content?: string; messageId?: string }
 
-// Folds one event into what's been received. Others (TEXT_MESSAGE_START/END,
+// Folds one event into what's been received. Others (TEXT_MESSAGE_END,
 // TOOL_CALL_END, the CUSTOM bookkeeping event) change nothing on screen.
 export function receive(r: Received, e: ChatEvent): Received {
   switch (e.type) {
@@ -36,6 +37,8 @@ export function receive(r: Received, e: ChatEvent): Received {
         search: { ...r.search, status: 'done', filters: result?.filters, passages: result?.passages, declined: result?.declined },
       }
     }
+    case 'TEXT_MESSAGE_START':
+      return { ...r, id: e.messageId ?? r.id }
     case 'TEXT_MESSAGE_CONTENT':
       return { ...r, program: r.program + (e.delta ?? '') }
     default:

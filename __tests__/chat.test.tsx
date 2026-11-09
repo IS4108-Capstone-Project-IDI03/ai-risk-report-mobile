@@ -47,7 +47,7 @@ const end = sse({ type: 'TEXT_MESSAGE_END', messageId: 'm1' })
 // Each POST /api/chat gets the next stream; `sent` keeps each request body.
 function gateway(overrides: Record<string, Reply | ((init?: RequestInit) => Reply)> = {}) {
   const streams: ReturnType<typeof chunkedStream>[] = []
-  const sent: { messages: { role: string; content: string }[] }[] = []
+  const sent: { messages: { id?: string; role: string; content: string }[] }[] = []
   const fetchMock = mockGateway({
     'GET /api/auth/me': signedIn,
     'GET /api/assessments': { status: 200, body: [] },
@@ -65,6 +65,8 @@ function gateway(overrides: Record<string, Reply | ((init?: RequestInit) => Repl
         },
       ],
     },
+    // MB-14: the chat is saved from the first question.
+    'POST /api/chat/conversations': { status: 201, body: { id: 't1', title: 'New chat', createdAt: '2026-11-09T01:00:00.000Z' } },
     'POST /api/chat': (init) => {
       sent.push(JSON.parse(String(init?.body)))
       const s = chunkedStream()
@@ -131,7 +133,7 @@ it('offers starter questions, and tapping one asks it (AC1)', async () => {
   await fireEvent.press(await screen.findByRole('button', { name: 'NFPA 25 inspection intervals' }))
 
   expect(g.sent[0].messages).toEqual([
-    { role: 'user', content: 'How often does NFPA 25 require sprinkler systems to be inspected and tested?' },
+    { id: expect.any(String), role: 'user', content: 'How often does NFPA 25 require sprinkler systems to be inspected and tested?' },
   ])
   expect(screen.getByText('How often does NFPA 25 require sprinkler systems to be inspected and tested?')).toBeTruthy()
 })
@@ -231,9 +233,9 @@ it('asks a follow-up when tapped, sending the conversation so far (AC7, AC8)', a
   await fireEvent.press(screen.getByRole('button', { name: 'Ask: What about Ordinary Hazard Group 1?' }))
 
   expect(g.sent[1].messages).toEqual([
-    { role: 'user', content: 'What density for OH2?' },
-    { role: 'assistant', content: PROGRAM + META },
-    { role: 'user', content: 'What about Ordinary Hazard Group 1?' },
+    { id: expect.any(String), role: 'user', content: 'What density for OH2?' },
+    { id: 'm1', role: 'assistant', content: PROGRAM + META },
+    { id: expect.any(String), role: 'user', content: 'What about Ordinary Hazard Group 1?' },
   ])
   // Earlier exchanges stay, in order.
   const questions = screen.getAllByTestId('my-message').map((m) => within(m).getByText(/./).props.children)

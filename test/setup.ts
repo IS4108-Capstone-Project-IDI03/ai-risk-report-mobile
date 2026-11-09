@@ -115,4 +115,9 @@ jest.mock('react-native-gesture-handler/ReanimatedSwipeable', () => {
 })
 jest.mock('react-native-gesture-handler', () => ({
   GestureHandlerRootView: jest.requireActual('react-native').View,
+  // MB-14: the chats panel's swipe-to-close; Jest can't swipe, so it only has to render.
+  GestureDetector: ({ children }: { children: React.ReactNode }) => children,
+  usePanGesture: () => ({}),
 }))
+// The blur is a native view; Jest only needs it to render (MB-14 chats drawer).
+jest.mock('expo-blur', () => ({ BlurView: jest.requireActual('react-native').View }))

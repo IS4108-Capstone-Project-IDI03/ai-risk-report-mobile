@@ -76,7 +76,28 @@ logging still apply.
 - Numbered citations open their passage (`GET /api/chat/passages/:id`), with the
   document's name from `GET /api/knowledge-documents/ingested`. Also: starter
   questions, follow-ups, Stop, Try again and New chat.
-- Every answer is a paid model call. The conversation lasts while the app is open.
+- Every answer is a paid model call. (Chats are now kept: see MB-14.)
+
+**MB-14: saved chats** (branch `MB-14`, web CB-03 / CB-06; the web docs disagree on the IDs)
+
+- **Kept on the gateway.** The first question creates a chat (`POST /api/chat/conversations`,
+  named from the question), then every question goes to `POST /api/chat` with its `threadId`.
+  Each message carries an id (the phone makes a question's, the stream sends an answer's), so
+  the gateway keeps follow-ups in order.
+- **Reopens.** The last chat's id is kept in the engineer's own folder; the Chatbot tab opens
+  on it after a restart. A chat deleted elsewhere is forgotten. A restored answer shows its
+  text and citations, not the "searched for" step (the gateway keeps text only).
+- **The list.** The two-line button at the header's left (ChatGPT's) opens a navy sidebar:
+  search (`?q=`, name or any message), newest first, tap to open, "…" or press and hold for
+  Rename and Delete (asks first), New chat at the bottom. On a phone the whole chat, header
+  included, slides aside to show it (Reanimated, on the UI thread; the pushed chat greys and
+  blurs a little; tap or swipe it to close). On a wide iPad it is a column beside the chat. The
+  plain list is kept on the phone, so it opens offline; search needs signal.
+- **Header.** The Chatbot screen draws its own navy bar (the tab bar's is off here) so it slides
+  with the chat. Adds `expo-blur`.
+- **Tests.** Jest swaps Reanimated for a stand-in (`src/lib/reanimated.ts`, `test/reanimated.ts`),
+  as it has no UI thread.
+- Out of scope: versions of a retried question (CB-04), preferences (CB-05).
 
 **MB-07: site flow redesign** (branch `MB-07`)
 
@@ -241,7 +262,7 @@ src/
                           AnswerSheet, GenerateSheet, Citations)
     capture/              draft (upload format), media (camera, library), useVoiceNote, api,
                           components/ (sections, chips), screens/CaptureSheet
-    chat/                 library (answer format), events (stream), answer (citations),
+    chat/                 api (incl. saved chats), library (answer format), events (stream), answer (citations),
                           useConversation, components/, screens/Chat
     profile/              screens/Profile
   components/ui/          React Native Reusables components, adjusted
