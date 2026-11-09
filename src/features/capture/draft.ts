@@ -17,6 +17,8 @@ export type Draft = {
   note: string
   cope: Cope[]
   severity: Severity | null
+  // The checklist item it answers, when saved from the checklist (MB-05 AC9, AC10).
+  checklistItem?: { itemId: string; result: 'confirmed' | 'differs' }
 }
 
 export const emptyDraft: Draft = { photos: [], pages: [], recordings: [], note: '', cope: [], severity: null }
@@ -67,6 +69,7 @@ export function toFormData(d: Draft, locationId: string) {
       copeDimensions: d.cope.length ? COPE.filter((c) => d.cope.includes(c)) : null,
       severity: d.severity,
       locationId,
+      ...(d.checklistItem && { checklistItem: d.checklistItem }),
     }),
   )
   d.photos.forEach((uri, i) => form.append('photo', filePart(uri, `Photo ${i + 1}.jpg`, 'image/jpeg')))

@@ -5,6 +5,9 @@
 // sheet is one form. MB-07: everything added sits in one Evidence tray at the
 // top, and the Photo, Voice and Scan buttons sit at the bottom, in thumb reach,
 // above Save. MB-10: with no signal, Save queues it on the phone instead.
+// MB-09 AC4: on a wide iPad the Workspace shows this form inside itself, beside the
+// checklist (props `onClose`, `embedded`), so both stay on screen and scroll on their
+// own. Everywhere else it is the capture route (src/app/assessment/[reference]/capture).
 import { router, Stack, useLocalSearchParams } from 'expo-router'
 import { MapPin } from 'lucide-react-native'
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
@@ -36,17 +39,47 @@ import { CaptureButtons } from '../components/CaptureButtons'
 import { CopeChips } from '../components/CopeChips'
 import { EvidenceTray } from '../components/EvidenceTray'
 import { SeverityPicker } from '../components/SeverityPicker'
-import { emptyDraft, isBlank, missing, type Draft } from '../draft'
+import type { Item } from '@/features/checklist/api'
+import { COPE, emptyDraft, isBlank, missing, type Draft } from '../draft'
 import { choosePhotos, takePhoto } from '../media'
 import { useVoiceNote, type RecordingProblem } from '../useVoiceNote'
 
 type Into = 'photos' | 'pages'
 type ListKey = 'photos' | 'pages' | 'recordings'
 
-export default function CaptureSheet() {
-  const { reference } = useLocalSearchParams<{ reference: string }>()
+type Props = {
+  // Given when the Workspace shows the form inside itself: closing and saving call
+  // this, not router.back(), and the form draws its own header.
+  onClose?: () => void
+  // Inside Home's tab, where the tab bar below already clears the home indicator.
+  embedded?: boolean
+  reference?: string
+  // A checklist item being answered (MB-05 AC22): the form starts as the answer box does.
+  answer?: { item: Item; result: 'confirmed' | 'differs' }
+}
+
+export default function CaptureSheet({ onClose, embedded = false, reference: given, answer }: Props = {}) {
+  const params = useLocalSearchParams<{ reference: string }>()
+  const reference = given ?? params.reference
+  // Inside the workspace the form fills its column, left-aligned with its header;
+  // as a route it keeps the readable column (MB-09).
+  const col = onClose ? '' : readable
+  // Leaves the form: back to the observations, or off the route.
+  const leaveForm = () => (onClose ? onClose() : router.back())
   const [location] = useCurrentLocation(reference)
-  const [draft, setDraft] = useState<Draft>(emptyDraft)
+  // Confirm starts from the item's own words, Differs from nothing; the item's COPE
+  // categories are chosen and the item linked (as checklist/components/AnswerSheet).
+  const [initial] = useState<Draft>(() =>
+    answer
+      ? {
+          ...emptyDraft,
+          note: answer.result === 'confirmed' ? answer.item.text : '',
+          cope: COPE.filter((c) => answer.item.COPE_dimension.includes(c)),
+          checklistItem: { itemId: answer.item.id, result: answer.result },
+        }
+      : emptyDraft,
+  )
+  const [draft, setDraft] = useState<Draft>(initial)
   // Why the camera, library or microphone couldn't be used (AC13).
   const [problem, setProblem] = useState<RecordingProblem | null>(null)
   const [saving, setSaving] = useState(false)
@@ -54,7 +87,8 @@ export default function CaptureSheet() {
   // Whether the sheet is 640pt or wider (the `readable` column's width,
   // src/lib/utils.ts), measured, as on iPad the sheet isn't the window's width.
   // A tablet starts wide, so its form doesn't open in one column then reflow.
-  const [wide, setWide] = useState(() => isTablet(Dimensions.get('screen')))
+  // Inside the workspace the form is narrower than that, so it starts in one column.
+  const [wide, setWide] = useState(() => !onClose && isTablet(Dimensions.get('screen')))
   // False once closed, so a late save doesn't navigate twice and pop the workspace too.
   const open = useRef(true)
   const { queueObservation } = useOffline()
@@ -85,9 +119,11 @@ export default function CaptureSheet() {
     const leave = async () => {
       if (voice.recording) await voice.stop()
       open.current = false
-      router.back()
+      leaveForm()
     }
-    if (isBlank(draft) && !voice.recording) return void leave()
+    // Untouched counts as nothing to lose, also when it started filled in from a checklist item.
+    const untouched = JSON.stringify(draft) === JSON.stringify(initial)
+    if ((isBlank(draft) || untouched) && !voice.recording) return void leave()
     Alert.alert('Discard this observation?', 'Its photos, voice notes, scans and note are not saved.', [
       { text: 'Keep editing', style: 'cancel' },
       { text: 'Discard', style: 'destructive', onPress: leave },
@@ -118,7 +154,7 @@ export default function CaptureSheet() {
           return queueObservation(reference, draft, location.id)
         })
       }
-      if (open.current) router.back()
+      if (open.current) leaveForm()
       open.current = false
     } catch (e) {
       // The gateway's own words; the sheet keeps everything, so the engineer
@@ -130,34 +166,48 @@ export default function CaptureSheet() {
 
   const blocker = missing(draft)
 
+  // Close on the left, where a sheet's cancel goes; Save is at the bottom.
+  const closeButton = (
+    <Button
+      variant="header"
+      accessibilityLabel="Close"
+      accessibilityState={{ disabled: saving }}
+      disabled={saving}
+      onPress={close}
+      className="px-2"
+    >
+      <Text>Close</Text>
+    </Button>
+  )
+
   return (
     <>
-      <Stack.Screen
-        options={{
-          title: 'New observation',
-          // Close on the left, where a sheet's cancel goes; Save is at the bottom.
-          headerLeft: () => (
-            <Button
-              variant="header"
-              accessibilityLabel="Close"
-              accessibilityState={{ disabled: saving }}
-              disabled={saving}
-              onPress={close}
-              className="px-2"
-            >
+      {/* Inside the workspace there is no stack header to set. */}
+      {!onClose && (
+        <Stack.Screen options={{ title: 'New observation', headerLeft: () => closeButton, headerRight: () => null }} />
+      )}
+      <SafeAreaView testID="capture-sheet" edges={embedded ? [] : ['bottom']} className="flex-1 bg-background">
+        {/* Its own header, with Close in words, as the form isn't a screen here. */}
+        {onClose && (
+          <View className="min-h-16 flex-row items-center justify-between border-b border-border bg-card px-4 py-3">
+            <Text className="text-lg font-semibold">New observation</Text>
+            <Button variant="outline" accessibilityLabel="Close" accessibilityState={{ disabled: saving }} disabled={saving} onPress={close}>
               <Text>Close</Text>
             </Button>
-          ),
-          headerRight: () => null,
-        }}
-      />
-      <SafeAreaView testID="capture-sheet" edges={['bottom']} className="flex-1 bg-background">
+          </View>
+        )}
         <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           {/* Read-only here: changing it means closing the sheet, so a picker on
               top can't catch Android's back button meant for the sheet. */}
+          {answer && (
+            <View className="gap-1 border-b border-border bg-accent px-4 py-3">
+              <Eyebrow>What the checklist expects</Eyebrow>
+              <Text>{answer.item.text}</Text>
+            </View>
+          )}
           {location && (
             <View className="border-b border-border bg-card px-4">
-              <View className={cn('min-h-12 flex-row items-center gap-2', readable)}>
+              <View className={cn('min-h-12 flex-row items-center gap-2', col)}>
                 <MapPin color="#2c5488" size={18} />
                 <Text className="flex-1 font-medium">{locationLabel(location)}</Text>
               </View>
@@ -166,7 +216,7 @@ export default function CaptureSheet() {
           <ScrollView
             onLayout={(e) => setWide(e.nativeEvent.layout.width >= 640)}
             // Wide, the two columns use the sheet's width; else the readable column (MB-09).
-            contentContainerClassName={cn('gap-6 p-4 pb-8', wide ? 'w-full max-w-[960px] self-center' : readable)}
+            contentContainerClassName={cn('gap-6 p-4 pb-8', wide ? 'w-full max-w-[960px] self-center' : col)}
             keyboardShouldPersistTaps="handled"
           >
             {problem && (
@@ -225,7 +275,7 @@ export default function CaptureSheet() {
 
           {/* Pinned in thumb reach; says what's missing when it can't save yet (AC9). */}
           <View className="border-t border-border bg-card px-4 pt-3">
-            <View className={cn('gap-2', readable)}>
+            <View className={cn('gap-2', col)}>
               <CaptureButtons
                 draft={draft}
                 recording={voice.recording}

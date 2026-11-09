@@ -7,11 +7,13 @@
 // MB-09: WorkspaceView is also Home's right-hand pane in the iPad split view;
 // the route below renders it for the reference in the URL. MB-10: opens
 // offline from the last copy, and lists observations waiting to upload first.
-// MB-11: tapping an observation opens its detail. MB-12: swiping an uploaded one
+// MB-05: a switch, Observations | Checklist, under the band; the checklist shows in place
+// of the observations, with the location bar and New observation still below. On a wide
+// iPad pane the two sit side by side instead, the checklist collapsible. MB-11: tapping an observation opens its detail. MB-12: swiping an uploaded one
 // left deletes it, and Show deleted below the list restores.
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router'
-import { Plus } from 'lucide-react-native'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { ChevronDown, ChevronUp, Plus } from 'lucide-react-native'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Alert, FlatList, RefreshControl, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Eyebrow } from '@/components/Eyebrow'
@@ -19,6 +21,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Text } from '@/components/ui/text'
 import { errorText } from '@/lib/api'
+import { easeLayout } from '@/lib/motion'
 import { cn, readable } from '@/lib/utils'
 import { CurrentLocationCard } from '@/features/locations/components/CurrentLocationCard'
 import { listLocations } from '@/features/locations/api'
@@ -29,9 +32,15 @@ import { asObservation, type QueuedObservation } from '@/features/offline/queue'
 import { deleteObservation, listObservations } from '@/features/observations/api'
 import { confirmDelete } from '@/features/observations/confirmDelete'
 import { DeletedSection } from '@/features/observations/components/DeletedSection'
+import type { Item } from '@/features/checklist/api'
+import { ChecklistView } from '@/features/checklist/components/ChecklistView'
+import { useChecklist } from '@/features/checklist/useChecklist'
 import { ObservationCard } from '@/features/observations/components/ObservationCard'
 import { SwipeDelete } from '@/features/observations/components/SwipeDelete'
 import type { Observation } from '@/features/observations/format'
+import CaptureSheet from '@/features/capture/screens/CaptureSheet'
+import { ChecklistPane } from '../components/ChecklistPane'
+import { WorkspaceSwitch, type Side } from '../components/WorkspaceSwitch'
 import { listAssessments } from '../api'
 import { formatDate, STATUS, type Assessment } from '../format'
 
@@ -41,7 +50,9 @@ export default function Workspace() {
 }
 
 // `embedded`: inside Home's split view, where there's no stack header to set.
-export function WorkspaceView({ reference, embedded = false }: { reference: string; embedded?: boolean }) {
+// `leading`: a button for the band's left edge; Home passes "Show assessments"
+// there while its list is hidden (MB-09 AC7).
+export function WorkspaceView({ reference, embedded = false, leading }: { reference: string; embedded?: boolean; leading?: ReactNode }) {
   const [location] = useCurrentLocation(reference)
   // undefined while loading; null once the list arrives without it.
   const [assessment, setAssessment] = useState<Assessment | null | undefined>(undefined)
@@ -49,6 +60,35 @@ export function WorkspaceView({ reference, embedded = false }: { reference: stri
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { items, uploads, discard, offline } = useOffline()
+  // Which side of the switch is shown (MB-05 AC1), and the checklist, read once for both
+  // the switch's progress and the view.
+  const [side, setSide] = useState<Side>('observations')
+  const checklist = useChecklist(reference)
+  const list = checklist.body?.checklist
+  const progress = list ? { done: list.items.filter((i) => i.check).length, total: list.items.length } : null
+  // The pane's own width, measured (it is Home's right-hand side on a split view, not
+  // the window's). From 760pt the observations and the checklist go side by side, the
+  // checklist collapsible; below it the switch is used (MB-05 AC20, AC21).
+  const [paneWidth, setPaneWidth] = useState(0)
+  const together = paneWidth >= 760
+  const [collapsed, setCollapsed] = useState(false)
+  // Side by side, New observation opens its form here, in place of the observations,
+  // so the checklist beside it stays on screen and scrollable (MB-09 AC4).
+  const [capturing, setCapturing] = useState(false)
+  // The navy band as one line, to give the lists the height (wide only).
+  const [compact, setCompact] = useState(false)
+  // The checklist item the form is answering, when it was opened from Confirm or Differs.
+  const [answer, setAnswer] = useState<{ item: Item; result: 'confirmed' | 'differs' } | undefined>()
+  // Opens or closes the form.
+  function openForm(on: boolean, next?: typeof answer) {
+    easeLayout()
+    setCapturing(on)
+    setAnswer(next)
+  }
+  // Wide, the page fills the width with 32pt side padding, as the web's design system
+  // asks ("collapsed sidebar = full width"). Narrower, it keeps the 640pt column.
+  const col = together ? '' : readable
+  const pad = together ? 'px-8' : 'px-4'
 
   // Both together, so one failing isn't hidden by the other succeeding, and
   // pull to refresh retries both. State is set once the replies arrive.
@@ -89,6 +129,7 @@ export function WorkspaceView({ reference, embedded = false }: { reference: stri
 
   // Capture needs a location (CP-15 AC1), so without one the picker comes first.
   function newObservation() {
+    if (together && location) return openForm(true)
     const pathname = location ? '/assessment/[reference]/capture' : '/assessment/[reference]/locations'
     router.push({ pathname, params: { reference } })
   }
@@ -157,11 +198,63 @@ export function WorkspaceView({ reference, embedded = false }: { reference: stri
   const rows = [...queued.map(asObservation).reverse(), ...here]
   const status = assessment && STATUS[assessment.status]
   const Bar = embedded ? View : SafeAreaView
+  // The band and the offline note, and (below 760pt) the switch between them: on top of
+  // either side of the switch. Side by side, they sit above both columns instead.
+  const top = (
+    <View className={together ? undefined : 'gap-4 pb-2'}>
+      {assessment && status && together && compact ? (
+        // One line: the site, its status and reference, and the way back to the full band.
+        <View className={cn('min-h-14 flex-row items-center gap-3 bg-navy pb-1', pad)}>
+          {leading}
+          <Text className="shrink text-lg font-bold text-white" numberOfLines={1}>{assessment.site.name}</Text>
+          <Badge variant={status.tone}>
+            <Text>{status.label}</Text>
+          </Badge>
+          <Text className="flex-1 tabular-nums text-sm text-[#b9c4d6]" numberOfLines={1}>{assessment.reference}</Text>
+          <Button variant="header" accessibilityLabel="Show details" onPress={() => { easeLayout(); setCompact(false) }}>
+            <ChevronDown color="#ffffff" size={20} />
+            <Text>Details</Text>
+          </Button>
+        </View>
+      ) : (
+        assessment &&
+        status && (
+          <View className={cn('bg-navy pb-5', pad)}>
+            {/* Over the band's corner, so it adds no height. */}
+            {together && (
+              <View className="absolute right-6 top-0 z-10">
+                <Button variant="header" accessibilityLabel="Collapse details" onPress={() => { easeLayout(); setCompact(true) }}>
+                  <ChevronUp color="#ffffff" size={20} />
+                  <Text>Collapse</Text>
+                </Button>
+              </View>
+            )}
+            <View className={cn('gap-1.5', col)}>
+              {leading && <View className="mb-2 flex-row">{leading}</View>}
+              <Text className="text-2xl font-bold text-white">{assessment.site.name}</Text>
+              <View className="flex-row flex-wrap items-center gap-x-3 gap-y-1">
+                <Text className="text-[#d6dde8]">{assessment.client}</Text>
+                <Badge variant={status.tone}>
+                  <Text>{status.label}</Text>
+                </Badge>
+              </View>
+              <View className="flex-row flex-wrap gap-x-4">
+                <Text className="tabular-nums text-sm text-[#b9c4d6]">{assessment.reference}</Text>
+                <Text className="tabular-nums text-sm text-[#b9c4d6]">{formatDate(assessment.siteVisitDate)}</Text>
+              </View>
+            </View>
+          </View>
+        )
+      )}
+      <View className={cn('gap-4', pad, col)}>
+        {!together && <WorkspaceSwitch side={side} onChange={setSide} progress={progress} />}
+        <OfflineNote />
+      </View>
+    </View>
+  )
 
-  return (
-    <View testID="workspace-screen" className="flex-1">
-      {/* The site name is in the band below, so the header carries only Back. */}
-      {!embedded && <Stack.Screen options={{ title: '' }} />}
+  // The observations, for either layout.
+  const observationList = (
       <FlatList
         testID="workspace"
         data={rows}
@@ -170,7 +263,7 @@ export function WorkspaceView({ reference, embedded = false }: { reference: stri
           const waiting = queued.find((q) => q.id === item.id)
           return (
             // On a tablet, rows keep to the readable column (MB-09).
-            <View className={readable}>
+            <View className={together ? 'px-4' : readable}>
               {/* Swipe to delete: only for an uploaded one, and with a signal (MB-12 AC13, AC14). */}
               <SwipeDelete
                 first={index === 0}
@@ -194,26 +287,9 @@ export function WorkspaceView({ reference, embedded = false }: { reference: stri
         contentContainerClassName="pb-6"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
         ListHeaderComponent={
-          <View className="gap-4 pb-2">
-            {assessment && status && (
-              <View className="bg-navy px-4 pb-5">
-                <View className={cn('gap-1.5', readable)}>
-                  <Text className="text-2xl font-bold text-white">{assessment.site.name}</Text>
-                  <View className="flex-row flex-wrap items-center gap-x-3 gap-y-1">
-                    <Text className="text-[#d6dde8]">{assessment.client}</Text>
-                    <Badge variant={status.tone}>
-                      <Text>{status.label}</Text>
-                    </Badge>
-                  </View>
-                  <View className="flex-row flex-wrap gap-x-4">
-                    <Text className="tabular-nums text-sm text-[#b9c4d6]">{assessment.reference}</Text>
-                    <Text className="tabular-nums text-sm text-[#b9c4d6]">{formatDate(assessment.siteVisitDate)}</Text>
-                  </View>
-                </View>
-              </View>
-            )}
-            <View className={cn('gap-4 px-4', readable)}>
-              <OfflineNote />
+          <View>
+            {!together && top}
+            <View className={cn('gap-4 pb-2', together && 'pt-6', pad, col)}>
               {error && (
                 <View className="rounded-md bg-destructive/10 p-3">
                   <Text className="text-destructive">{error}</Text>
@@ -225,7 +301,7 @@ export function WorkspaceView({ reference, embedded = false }: { reference: stri
         }
         ListFooterComponent={
           location ? (
-            <View className={cn('px-4 pt-4', readable)}>
+            <View className={cn('pt-4', pad, col)}>
               <DeletedSection key={location.id} reference={reference} locationId={location.id} offline={offline} watch={observations} onRestored={load} />
             </View>
           ) : undefined
@@ -236,22 +312,63 @@ export function WorkspaceView({ reference, embedded = false }: { reference: stri
           ) : undefined
         }
       />
+  )
+
+  return (
+    <View testID="workspace-screen" className="flex-1" onLayout={(e) => setPaneWidth(e.nativeEvent.layout.width)}>
+      {/* The site name is in the band below, so the header carries only Back. */}
+      {!embedded && <Stack.Screen options={{ title: '' }} />}
+      {together ? (
+        <>
+          {top}
+          <View className="flex-1 flex-row">
+            <View className="flex-1">
+              {capturing ? (
+                <CaptureSheet
+                  reference={reference}
+                  embedded={embedded}
+                  answer={answer}
+                  // The answer may have changed the checklist: read it again.
+                  onClose={() => {
+                    openForm(false)
+                    checklist.load()
+                  }}
+                />
+              ) : (
+                observationList
+              )}
+            </View>
+            <ChecklistPane wide={paneWidth >= 1100} collapsed={collapsed} onToggle={() => { easeLayout(); setCollapsed(!collapsed) }} progress={progress && `${progress.done}/${progress.total}`}>
+              <ChecklistView reference={reference} state={checklist} header={null} answerBeside={(item, result) => openForm(true, { item, result })} />
+            </ChecklistPane>
+          </View>
+        </>
+      ) : side === 'checklist' ? (
+        <ChecklistView reference={reference} state={checklist} header={top} />
+      ) : (
+        observationList
+      )}
       {/* One way in, in thumb reach, below the list rather than over it, with the
           location it files to right above: one observation holds a note,
           photos, voice notes and scans together. */}
       {/* Embedded, the tab bar below already clears the home indicator. */}
-      <Bar edges={['bottom']} className="border-t border-border bg-card px-4 pt-2">
-        <View className={cn('gap-2', readable)}>
-          <CurrentLocationCard
-            location={location}
-            onChange={() => router.push({ pathname: '/assessment/[reference]/locations', params: { reference } })}
-          />
-          <Button size="lg" accessibilityLabel="New observation" onPress={newObservation} className="mb-2">
-            <Plus color="#ffffff" size={20} />
-            <Text className="text-lg">New observation</Text>
-          </Button>
-        </View>
-      </Bar>
+      {!(together && capturing) && (
+  <Bar edges={['bottom']} className={cn('border-t border-border bg-card pt-2', pad)}>
+          {/* Wide: the location and the button share one row, so the bar stays slim. */}
+          <View className={cn(together ? 'mb-2 flex-row items-center gap-6' : 'gap-2', col)}>
+            <View className={together ? 'flex-1' : undefined}>
+              <CurrentLocationCard
+                location={location}
+                onChange={() => router.push({ pathname: '/assessment/[reference]/locations', params: { reference } })}
+              />
+            </View>
+            <Button size="lg" accessibilityLabel="New observation" onPress={newObservation} className={together ? 'w-72' : 'mb-2'}>
+              <Plus color="#ffffff" size={20} />
+              <Text className="text-lg">New observation</Text>
+            </Button>
+          </View>
+        </Bar>
+      )}
     </View>
   )
 }

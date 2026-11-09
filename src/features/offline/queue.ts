@@ -1,11 +1,12 @@
 // The offline queue (MB-10): observations and new locations saved with no
-// signal, kept on the phone until the gateway can be reached. Used by
+// signal (MB-05: and checklist marks), kept on the phone until the gateway can be reached. Used by
 // provider.tsx, which saves the list and runs upload(). Uploads through the
 // same calls as an online save.
 import { File } from 'expo-file-system'
 import { ApiError, errorText, NetworkError } from '@/lib/api'
 import { folder } from '@/lib/store'
 import { saveObservation } from '@/features/capture/api'
+import { markItem } from '@/features/checklist/api'
 import type { Draft } from '@/features/capture/draft'
 import { addLocation, listLocations } from '@/features/locations/api'
 import { samePlace, savedLevel, type Location } from '@/features/locations/locations'
@@ -14,7 +15,10 @@ import type { Observation } from '@/features/observations/format'
 type Base = { id: string; reference: string; error?: string }
 export type QueuedLocation = Base & { kind: 'location'; location: Location }
 export type QueuedObservation = Base & { kind: 'observation'; locationId: string; draft: Draft; savedAt: string }
-export type Item = QueuedLocation | QueuedObservation
+// A checklist item marked Not seen or Not applicable, or its mark cleared (null), with
+// no signal (MB-05 AC16). It uploads as PUT .../checklist/items/:itemId/mark.
+export type QueuedMark = Base & { kind: 'mark'; itemId: string; mark: 'not_seen' | 'not_applicable' | null }
+export type Item = QueuedLocation | QueuedObservation | QueuedMark
 
 // A queued location's ID, until the gateway gives it a real one.
 export const isLocal = (id: string) => id.startsWith('local-')
@@ -24,6 +28,10 @@ const filesOf = (id: string) => folder('queue', id)
 export function removeFiles(item: Item) {
   const dir = filesOf(item.id)
   if (dir.exists) dir.delete()
+}
+
+export function queuedMark(reference: string, itemId: string, mark: QueuedMark['mark']): QueuedMark {
+  return { kind: 'mark', id: newId(), reference, itemId, mark }
 }
 
 // Shown in the picker straight away, as the gateway will save it (AC3).
@@ -143,6 +151,18 @@ export async function upload(
         // with Discard, in the workspace.
         const error = `Its location, ${item.location.name}, couldn't be added: ${errorText(e)}`
         set(get().flatMap((i) => (i.id === id ? [] : filedHere(i) ? [{ ...i, error }] : [i])))
+      }
+      continue
+    }
+    if (item.kind === 'mark') {
+      // A refusal (409: an observation answers the item meanwhile; 404: the checklist
+      // was regenerated and the item is gone; 403) says why, with Discard (MB-05 AC18).
+      try {
+        await markItem(item.reference, item.itemId, item.mark)
+        set(get().filter((i) => i.id !== id))
+      } catch (e) {
+        if (later(e)) return
+        refuse(errorText(e))
       }
       continue
     }

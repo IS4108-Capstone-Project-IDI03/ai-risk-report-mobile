@@ -154,14 +154,52 @@ logging still apply.
 - Flags for the web team: pages on a saved observation (CP-20), and a deleted-only filter
   for `?include=deleted`, which now sends every observation.
 
+**MB-05: pre-survey checklist** (branch `MB-05`, web CP-30 and CP-31)
+
+- **Where:** inside the workspace. A switch at the top of the workspace flips between
+  **Observations** and **Checklist 12/48** (the progress), so an engineer ticks items as
+  they walk the site without leaving the assessment.
+- **Read:** `GET /api/assessments/:ref/checklist`. Priority risks first, then the areas,
+  then an "Other" group. Unchecked items first. An item expands to show its source, with
+  the standard and the quote on tap.
+- **Mark:** Not seen and Not applicable (`PUT .../checklist/items/:id/mark`) work offline:
+  they queue like observations and show "Waiting to upload".
+- **Confirm and Differs:** save an observation at the current location, linked to the
+  item (`details.checklistItem`). Confirm starts the note from the item's words, Differs
+  from nothing. Severity is required. The item's COPE categories are chosen. With no
+  signal it queues. A refused one shows a failed row with Discard and "Save without the
+  checklist link".
+- **Generate:** a "Standards to use" box (all on) then `POST .../checklist` (about 30
+  seconds, online only, `reports:generate` permission). Generate again keeps the answers
+  the gateway keeps. With no standards in scope the gateway calls no model.
+- **Wide iPad** (workspace 760pt or more): the observations and the checklist show side
+  by side, and Confirm and Differs fill the observation form beside the checklist instead
+  of a pop-up box. The checklist pane can collapse to a slim bar.
+- Not built yet: the regenerate confirm and carry-over notice, the "ask a knowledge admin"
+  hint, and testing Generate against the cloud gateway (the local one has no ingested
+  standards).
+
+**MB-09 additions (9 Nov, on the `MB-05` branch)**
+
+- **Hide the list:** on the iPad, Hide on the assessments list shrinks it away and puts an
+  **Assessments** button in the navy band to bring it back (`AssessmentList`).
+- **New observation inside the workspace:** side by side, the form opens in place of the
+  observations, with the checklist beside it, both scrollable. Below that width it is the
+  capture route as before (`CaptureSheet` takes `onClose`, `embedded` and `answer`).
+- **Wide layout:** the workspace fills the width with 32pt side padding, as the web's
+  design system does. The location and New observation share one bottom row. The navy band
+  can collapse to one line. Panes ease in 260 ms (`src/lib/motion.ts`, skipped under Reduce
+  Motion).
+- Sheets close with the word **Close**, not an X.
+
 ## What to build next
 
-The MVP order, agreed 27 Oct 2026 (MB-01 to MB-04 and MB-06 to MB-12 are built). Each is its own story (`MB-0n`). The web stories it
+The MVP order, agreed 27 Oct 2026 (MB-01 to MB-12 are all built). Each is its own story (`MB-0n`). The web stories it
 mirrors are in the web repo's `docs/USER_STORIES.md`.
 
 | Order | Story | Mirrors | Gateway support |
 | --- | --- | --- | --- |
-| MB-05 | Pre-survey checklist in the workspace, to tick off on site | CP-11, CP-12 (Could) | **None yet.** Teammates are building CP-11 in the web repo. Until then, use a dummy checklist (see below). |
+| (next) | Chosen from the migration shortlist, agreed with Miya | | |
 
 Separate web story for the team: make severity optional. It's required in the gateway
 model, the save rule and `report_sections` evidence, and the web UI assumes it.
@@ -170,12 +208,6 @@ Later, outside the MVP: editing my captures (CP-08). Completing an assessment (C
 was dropped on the web.
 
 Things to know before building these:
-
-- **The checklist starts as a dummy** (Miya, 27 Oct). Groupmates own CP-11 (generating
-  the checklist) in the web repo. Build the screen against sample items kept in one
-  file, behind one function (for example `getChecklist(reference)`). Then swapping in
-  the real gateway route later changes only that function. Mark the sample data
-  clearly as sample in the UI, so nobody mistakes it for a real checklist.
 
 - **Opening capture can reopen a completed assessment.** `POST /capture-session` starts
   a new session when the last one is complete, which turns the status back to
@@ -205,13 +237,15 @@ src/
                           location), components/, screens/LocationPicker
     observations/         api, format, confirmDelete, components/ (ObservationCard, SwipeDelete, DeletedSection,
                           MediaSection, detail pieces), screens/ObservationDetail, ObservationEdit
+    checklist/            api, format (sections, status), useChecklist, components/ (ChecklistView, ItemRow,
+                          AnswerSheet, GenerateSheet, Citations)
     capture/              draft (upload format), media (camera, library), useVoiceNote, api,
                           components/ (sections, chips), screens/CaptureSheet
     chat/                 library (answer format), events (stream), answer (citations),
                           useConversation, components/, screens/Chat
     profile/              screens/Profile
   components/ui/          React Native Reusables components, adjusted
-  lib/                    api.ts (every gateway call), utils.ts (cn), nav.ts (header styles)
+  lib/                    api.ts (every gateway call), utils.ts (cn), nav.ts (header styles), motion.ts (pane ease)
 __tests__/                tests; never put them inside src/app/
 test/gateway.tsx          shared test helpers: mocked gateway, sample data, route map
 test/setup.ts             default mocks for the camera and recorder (Jest has no phone)
