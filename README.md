@@ -141,6 +141,11 @@ logging still apply.
   same big tiles as capture, wait in a "New" row, and are uploaded, and each voice note
   transcribed, only when you tap Save changes. Pages are view-only: the gateway can't add
   or remove them on a saved observation yet (web CP-20).
+- **Try again (9 Nov):** a failed voice note or handwritten page shows its reason and a
+  **Try again** button on the detail (`POST .../transcription/retry`, 202). It says
+  "Transcribing", then the detail reads the observation every 5 seconds for about 2
+  minutes until the result shows, then "Still working. Check back soon." One paid AI call
+  per tap, never automatic, one note at a time. Greyed offline.
 - **Online only.** With no signal Edit and Delete are greyed out ("Connect to edit or
   delete."), the swipe is off, and Show deleted says "Connect to see deleted."
   Observations waiting to upload keep Discard and have none of these.

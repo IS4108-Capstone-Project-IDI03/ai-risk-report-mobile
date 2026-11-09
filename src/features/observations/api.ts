@@ -36,11 +36,16 @@ export const addMedia = (id: string, media: NewMedia) =>
     body: mediaToFormData(media.photos, media.recordings),
   })
 
-const mediaPath = (id: string, kind: MediaKind, itemId: string) =>
+const mediaPath = (id: string, kind: MediaKind | 'pages', itemId: string) =>
   `/api/observations/${encodeURIComponent(id)}/${kind}/${encodeURIComponent(itemId)}`
 
 export const removeMedia = (id: string, kind: MediaKind, itemId: string) =>
   request<Observation>(mediaPath(id, kind, itemId), { method: 'DELETE' })
+
+// Starts a new attempt at a failed voice note or page (CP-03 AC6, CP-19 AC11). The gateway
+// answers 202 with no body and works in the background, so the caller reads the list again.
+export const retryTranscription = (id: string, kind: MediaKind | 'pages', itemId: string) =>
+  request<void>(`${mediaPath(id, kind, itemId)}/transcription/retry`, { method: 'POST' })
 
 export const restoreMedia = (id: string, kind: MediaKind, itemId: string) =>
   request<Observation>(`${mediaPath(id, kind, itemId)}/restore`, { method: 'POST' })

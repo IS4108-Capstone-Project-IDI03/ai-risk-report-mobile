@@ -6,7 +6,7 @@
 // uploaded.
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { Pencil, Trash2 } from 'lucide-react-native'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Button } from '@/components/ui/button'
@@ -18,7 +18,8 @@ import { OfflineNote } from '@/features/offline/components/OfflineNote'
 import { useOffline } from '@/features/offline/provider'
 import { asObservation, type QueuedObservation } from '@/features/offline/queue'
 import { cn, readable } from '@/lib/utils'
-import { deleteObservation, listObservations } from '../api'
+import { deleteObservation, listObservations, retryTranscription, type MediaKind } from '../api'
+import { POLL_LIMIT, POLL_MS } from '../transcriptPoll'
 import { confirmDelete } from '../confirmDelete'
 import { DetailFacts } from '../components/DetailFacts'
 import { MediaImage } from '../components/MediaImage'
@@ -38,6 +39,12 @@ export default function ObservationDetail() {
   const [problem, setProblem] = useState<string | null>(null)
   // Goes up to read the list again, e.g. after a refused delete: it may be gone.
   const [reloads, setReloads] = useState(0)
+  // A retry request in flight, how many times the list was read for a result, and
+  // whether we stopped waiting (MB-12 AC28-AC30).
+  const [retrying, setRetrying] = useState(false)
+  const [attempt, setAttempt] = useState(0)
+  const polls = useRef(0)
+  const [gaveUp, setGaveUp] = useState(false)
 
   const waiting = items.find((i): i is QueuedObservation => i.kind === 'observation' && i.id === id)
   // Opened while waiting. If it then uploads, it gets a new ID on the gateway, so
@@ -66,6 +73,42 @@ export default function ObservationDetail() {
     }, [reference, id, openedWaiting, reloads]),
   )
   const found = waiting ? asObservation(waiting) : listed
+
+  // While a voice note or page is being transcribed, read the list again every few
+  // seconds so the result shows without leaving; stop after about 2 minutes (AC29).
+  const transcribing = !!found && !waiting && [...found.recordings, ...found.pages].some((m) => m.transcription?.status === 'transcribing')
+  useEffect(() => {
+    if (!transcribing) return
+    const timer = setInterval(() => {
+      if (++polls.current > POLL_LIMIT) {
+        setGaveUp(true)
+        clearInterval(timer)
+      } else setReloads((n) => n + 1)
+    }, POLL_MS)
+    return () => clearInterval(timer)
+  }, [transcribing, attempt])
+
+  // One new attempt at a failed transcript, one tap (AC28). The reply is 202 with no
+  // body, so the list is read again to show "Transcribing"; a refusal or no signal says
+  // why and reads it again too, in case it already changed (AC30). Nothing is queued.
+  async function retry(kind: MediaKind | 'pages', itemId: string) {
+    if (retrying) return
+    setRetrying(true)
+    setProblem(null)
+    setGaveUp(false)
+    polls.current = 0
+    try {
+      await retryTranscription(id, kind, itemId)
+    } catch (e) {
+      setProblem(errorText(e))
+    } finally {
+      setRetrying(false)
+      setAttempt((n) => n + 1)
+      setReloads((n) => n + 1)
+    }
+  }
+  const tryAgain = (kind: MediaKind | 'pages', itemId: string) =>
+    waiting ? undefined : { run: () => retry(kind, itemId), disabled: offline || retrying, offline }
 
   // A waiting observation knows its location's ID, not its name.
   useEffect(() => {
@@ -112,11 +155,12 @@ export default function ObservationDetail() {
             <MediaImage key={photo.id ?? photo.url} url={photo.url} testID="detail-photo" label={`Photo ${i + 1}`} />
           ))}
           {found.recordings.map((note, i) => (
-            <VoiceNote key={note.id} note={note} number={i + 1} />
+            <VoiceNote key={note.id} note={note} number={i + 1} retry={tryAgain('recordings', note.id)} />
           ))}
           {found.pages.map((page, i) => (
-            <PageEntry key={page.id ?? page.url} page={page} number={i + 1} />
+            <PageEntry key={page.id ?? page.url} page={page} number={i + 1} retry={page.id ? tryAgain('pages', page.id) : undefined} />
           ))}
+          {gaveUp && transcribing && <Text className="text-sm text-muted-foreground">Still working. Check back soon.</Text>}
         </View>
       </ScrollView>
       {/* Only for an uploaded one: a waiting one has Discard in the workspace (MB-10).
