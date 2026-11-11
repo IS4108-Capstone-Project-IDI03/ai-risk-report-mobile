@@ -3,6 +3,7 @@
 // it as a test file.
 import { fireEvent, screen } from 'expo-router/testing-library'
 import Layout from '../src/app/_layout'
+import SitePins from '../src/app/assessment/[reference]/site-pins'
 import Chat from '../src/app/(tabs)/chat'
 import Home from '../src/app/(tabs)/index'
 import TabsLayout from '../src/app/(tabs)/_layout'
@@ -118,6 +119,7 @@ export const routes = {
   '(tabs)/profile': Profile,
   'assessment/[reference]/index': Workspace,
   'assessment/[reference]/locations': LocationPicker,
+  'assessment/[reference]/site-pins': SitePins,
   'assessment/[reference]/capture': Capture,
   'assessment/[reference]/observation/[id]': ObservationDetail,
   'assessment/[reference]/observation/[id]/edit': ObservationEdit,

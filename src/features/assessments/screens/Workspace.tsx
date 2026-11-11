@@ -12,7 +12,7 @@
 // iPad pane the two sit side by side instead, the checklist collapsible. MB-11: tapping an observation opens its detail. MB-12: swiping an uploaded one
 // left deletes it, and Show deleted below the list restores.
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router'
-import { ChevronDown, ChevronUp, Plus } from 'lucide-react-native'
+import { ChevronDown, ChevronUp, MapPin, Plus } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Alert, FlatList, RefreshControl, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -242,6 +242,18 @@ export function WorkspaceView({ reference, embedded = false, leading }: { refere
                 <Text className="tabular-nums text-sm text-[#b9c4d6]">{assessment.reference}</Text>
                 <Text className="tabular-nums text-sm text-[#b9c4d6]">{formatDate(assessment.siteVisitDate)}</Text>
               </View>
+            </View>
+            {/* The site's pins and directions (MB-02 AC19), at the band's lower corner so the band
+                doesn't grow. */}
+            <View className="absolute bottom-2 right-4">
+              <Button
+                variant="header"
+                accessibilityLabel="Site pins"
+                onPress={() => router.push({ pathname: '/assessment/[reference]/site-pins', params: { reference } })}
+              >
+                <MapPin color="#ffffff" size={18} />
+                <Text>Site pins</Text>
+              </Button>
             </View>
           </View>
         )

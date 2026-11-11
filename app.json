@@ -40,6 +40,12 @@
           "microphonePermission": "Site Capture records voice notes about what you see on site."
         }
       ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Site Capture reads your position once, when you tap Pin where I am, to save where a location on site is."
+        }
+      ],
       "expo-secure-store"
     ]
   }

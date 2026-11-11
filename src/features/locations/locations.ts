@@ -9,6 +9,8 @@ export type Location = {
   building: string | null
   floor: string | null
   name: string
+  // Where it was pinned with the phone's GPS (MB-02 AC13), when it was.
+  coordinates?: { lat: number; lng: number }
 }
 
 export const ELSEWHERE = 'Elsewhere on site'

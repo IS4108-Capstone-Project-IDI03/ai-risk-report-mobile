@@ -50,6 +50,18 @@ logging still apply.
   (`POST /api/assessments/:reference/locations`).
 - **The chosen location** is kept per assessment while the app is open. It belongs to
   the engineer who chose it, so another engineer on a shared phone starts fresh.
+- **Pin where I am (9 Nov, branch `MB-02-gps-pin`; web CP-26):** Add location has an optional
+  **Pin where I am** that reads the phone's GPS once, when tapped, and saves `coordinates` with the
+  location (`expo-location`). Permission off or no fix says so and saving still works. A location
+  queued with no signal keeps its pin.
+- **Site pins:** a **Site pins** button in the workspace band opens the site and its blocks, each with
+  its pin or "Not pinned" (`site.coordinates` and `site.pins` from `GET /api/assessments`).
+  **Directions** opens Google Maps directions (no key). **Edit pin** (or **Set pin**) opens a panel:
+  tap the map, use the phone's position, or type `lat, lng`, then **Set** (`PUT /api/sites/:id/map`,
+  one change at a time); **Remove pin** is there too. A map (`react-native-maps`, Apple Maps on
+  iOS) shows a marker for each pin (S, 1, 2…), which can be dragged to move; **Hide map** folds it.
+  On a wide iPad it is two columns, the map on the left and the rows on the right. Pins are shared
+  by every visit to the site. Android needs a Google Maps key in store builds (not set up).
 
 **MB-03: capture an observation** (branch `MB-03`)
 

@@ -21,7 +21,8 @@ export type Assessment = {
   status: AssessmentStatus
   // ISO time the current capture session started; null before any capture.
   captureStartedAt?: string | null
-  site: { name: string }
+  // The site's own pin and its blocks' pins, shared by every visit to it (web CP-26).
+  site: { id?: string; name: string; coordinates?: { lat: number; lng: number } | null; pins?: { name: string; lat: number; lng: number }[] }
 }
 
 // Label and badge tone for each status. Colour carries meaning only (design

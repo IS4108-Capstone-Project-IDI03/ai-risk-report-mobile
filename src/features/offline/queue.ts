@@ -35,13 +35,18 @@ export function queuedMark(reference: string, itemId: string, mark: QueuedMark['
 }
 
 // Shown in the picker straight away, as the gateway will save it (AC3).
-export function queuedLocation(reference: string, details: { building: string; floor: string; name: string }) {
+export function queuedLocation(
+  reference: string,
+  details: { building: string; floor: string; name: string; coordinates?: { lat: number; lng: number } | null },
+) {
   const id = newId()
   const location: Location = {
     id: `local-${id}`,
     building: details.building.trim() || null,
     floor: details.floor.trim() ? savedLevel(details.floor) : null,
     name: details.name.trim(),
+    // Kept with it, so a pin made with no signal still goes up (MB-02 AC17).
+    ...(details.coordinates && { coordinates: details.coordinates }),
   }
   return { kind: 'location', id, reference, location } satisfies QueuedLocation
 }
@@ -110,7 +115,7 @@ export function asObservation(item: QueuedObservation): Observation {
 // reply was lost. Its observations use that one (AC6).
 async function addOrFind({ reference, location: l }: QueuedLocation) {
   try {
-    return await addLocation(reference, { building: l.building ?? '', floor: l.floor ?? '', name: l.name })
+    return await addLocation(reference, { building: l.building ?? '', floor: l.floor ?? '', name: l.name, coordinates: l.coordinates })
   } catch (e) {
     if (!(e instanceof ApiError && e.status === 409)) throw e
     const listed = (await listLocations(reference)).find((other) => samePlace(other, l))

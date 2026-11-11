@@ -19,7 +19,7 @@ type Offline = {
   // Goes up after each upload, so the workspace reloads and shows it from the gateway.
   uploads: number
   queueObservation(reference: string, draft: Draft, locationId: string): Promise<void>
-  queueLocation(reference: string, details: { building: string; floor: string; name: string }): Location
+  queueLocation(reference: string, details: { building: string; floor: string; name: string; coordinates?: { lat: number; lng: number } | null }): Location
   // A checklist mark made with no signal (MB-05 AC16).
   queueMark(reference: string, itemId: string, mark: QueuedMark['mark']): void
   // Drops a waiting observation's link to its checklist item and tries it again: for one

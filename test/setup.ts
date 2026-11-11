@@ -121,3 +121,24 @@ jest.mock('react-native-gesture-handler', () => ({
 }))
 // The blur is a native view; Jest only needs it to render (MB-14 chats drawer).
 jest.mock('expo-blur', () => ({ BlurView: jest.requireActual('react-native').View }))
+// The phone's GPS (MB-02 AC13): granted, with a fix at the Marina Point example. A test changes
+// these to try a refusal or a failed fix.
+jest.mock('expo-location', () => ({
+  requestForegroundPermissionsAsync: jest.fn(async () => ({ granted: true, canAskAgain: true })),
+  getForegroundPermissionsAsync: jest.fn(async () => ({ granted: false, canAskAgain: true })),
+  getLastKnownPositionAsync: jest.fn(async () => null),
+  getCurrentPositionAsync: jest.fn(async () => ({ coords: { latitude: 1.2966124, longitude: 103.8520338, accuracy: 8.4 } })),
+  Accuracy: { Balanced: 3, High: 4 },
+}))
+// MB-02 AC25-AC27: Jest has no map. The map is a plain View that passes its props through, so a test
+// can press a marker or call its onDragEnd; moving the camera does nothing.
+jest.mock('react-native-maps', () => {
+  const { View } = jest.requireActual('react-native')
+  const React = jest.requireActual('react')
+  const MapView = React.forwardRef((props: Record<string, unknown>, ref: unknown) => {
+    React.useImperativeHandle(ref, () => ({ fitToCoordinates: () => {}, animateToRegion: () => {} }))
+    return React.createElement(View, props, props.children)
+  })
+  const Marker = (props: Record<string, unknown>) => React.createElement(View, props, props.children)
+  return { __esModule: true, default: MapView, Marker }
+})
