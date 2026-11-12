@@ -107,8 +107,8 @@ describe('starting', () => {
     await openSheet()
 
     expect(sheet().getByText('Block A · Level 2 · Staircase')).toBeTruthy()
-    // Since MB-07 (AC10) photos, voice notes and scans share one Evidence tray.
-    for (const section of ['Note', 'Evidence · 0']) {
+    // Since MB-07 (AC10) photos, voice notes and scans share one Media tray.
+    for (const section of ['Note', 'Media · 0']) {
       expect(sheet().getByText(section)).toBeTruthy()
     }
   })

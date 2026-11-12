@@ -122,7 +122,7 @@ async function captureAndSave(note: string) {
 async function addLocationOffline(name: string) {
   await fireEvent.press(await screen.findByRole('button', { name: /Choose location|Change/ }))
   await fireEvent.press(await screen.findByRole('button', { name: 'Add location' }))
-  await fireEvent.changeText(screen.getByLabelText('Name'), name)
+  await fireEvent.changeText(screen.getByLabelText('Location'), name)
   await fireEvent.press(screen.getByRole('button', { name: 'Save location' }))
 }
 

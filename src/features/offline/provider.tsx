@@ -10,7 +10,7 @@ import { useSession } from '@/features/auth/session'
 import type { Draft } from '@/features/capture/draft'
 import { useReplaceLocation } from '@/features/locations/current'
 import type { Location } from '@/features/locations/locations'
-import { queuedLocation, queuedObservation, removeFiles, upload, type Item } from './queue'
+import { queuedLocation, queuedMark, queuedObservation, removeFiles, upload, type Item, type QueuedMark } from './queue'
 
 type Offline = {
   // The last call couldn't reach the gateway, so screens show their last copy.
@@ -19,7 +19,12 @@ type Offline = {
   // Goes up after each upload, so the workspace reloads and shows it from the gateway.
   uploads: number
   queueObservation(reference: string, draft: Draft, locationId: string): Promise<void>
-  queueLocation(reference: string, details: { building: string; floor: string; name: string }): Location
+  queueLocation(reference: string, details: { building: string; floor: string; name: string; coordinates?: { lat: number; lng: number } | null }): Location
+  // A checklist mark made with no signal (MB-05 AC16).
+  queueMark(reference: string, itemId: string, mark: QueuedMark['mark']): void
+  // Drops a waiting observation's link to its checklist item and tries it again: for one
+  // the gateway refused because the item is gone or already answered (MB-05 AC18).
+  unlink(id: string): void
   discard(id: string): void
 }
 
@@ -95,6 +100,13 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
       const item = queuedLocation(reference, details)
       add(item)
       return item.location
+    },
+    queueMark: (reference, itemId, mark) => add(queuedMark(reference, itemId, mark)),
+    unlink(id) {
+      commit(
+        latest.current.map((i) => (i.id === id && i.kind === 'observation' ? { ...i, error: undefined, draft: { ...i.draft, checklistItem: undefined } } : i)),
+      )
+      tryUpload()
     },
     discard(id) {
       const item = latest.current.find((i) => i.id === id)

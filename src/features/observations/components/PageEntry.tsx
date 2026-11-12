@@ -4,6 +4,7 @@ import { View } from 'react-native'
 import { Text } from '@/components/ui/text'
 import type { Page } from '../format'
 import { MediaImage } from './MediaImage'
+import { TryAgain, type Retry } from './TryAgain'
 
 // Nothing for a page waiting to upload: it hasn't been read yet (MB-10).
 function reading(t: Page['transcription']) {
@@ -13,12 +14,13 @@ function reading(t: Page['transcription']) {
   return t.transcript || 'No handwriting found.'
 }
 
-export function PageEntry({ page, number }: { page: Page; number: number }) {
+export function PageEntry({ page, number, retry }: { page: Page; number: number; retry?: Retry }) {
   const text = reading(page.transcription)
   return (
     <View className="gap-2">
       <MediaImage url={page.url} testID="detail-page" label={`Handwritten page ${number}`} />
       {text && <Text className="text-base">{text}</Text>}
+      {retry && page.transcription?.status === 'failed' && <TryAgain label={`handwritten page ${number}`} retry={retry} />}
     </View>
   )
 }

@@ -1,18 +1,11 @@
-// Root layout (MB-01). Loads the fonts and styles, then shows sign-in or the
+// Root layout (MB-01). Loads the styles, then shows sign-in or the
 // assessment list depending on the session (src/features/auth/session.tsx).
 // Stack.Protected hides a screen while its guard is false, so a signed-out
 // engineer can't reach the list.
 import '../../global.css'
-import { IBMPlexMono_400Regular } from '@expo-google-fonts/ibm-plex-mono'
-import {
-  IBMPlexSans_400Regular,
-  IBMPlexSans_500Medium,
-  IBMPlexSans_600SemiBold,
-  IBMPlexSans_700Bold,
-  useFonts,
-} from '@expo-google-fonts/ibm-plex-sans'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { ActivityIndicator, Dimensions, View } from 'react-native'
 import { SessionProvider, useSession } from '@/features/auth/session'
 import { CurrentLocationProvider } from '@/features/locations/current'
@@ -32,7 +25,7 @@ function Screens() {
   }
   return (
     <Stack
-      // Tablets turn; phones stay portrait (MB-08). app.json allows every
+      // Tablets turn; phones stay portrait (MB-09). app.json allows every
       // orientation, so this is what keeps a phone upright.
       screenOptions={{ ...headerOptions, contentStyle: { backgroundColor: colors.page }, orientation: orientation() }}
     >
@@ -49,7 +42,13 @@ function Screens() {
           name="assessment/[reference]/observation/[id]"
           options={{ title: 'Observation', headerBackButtonDisplayMode: 'minimal' }}
         />
+        {/* Its own header (title, no back arrow): Cancel at the bottom asks first (MB-12). */}
+        <Stack.Screen name="assessment/[reference]/observation/[id]/edit" options={{ title: 'Edit observation' }} />
         <Stack.Screen name="assessment/[reference]/locations" options={{ presentation: 'modal' }} />
+        {/* The chatbot's lasting facts about me (MB-15). */}
+        <Stack.Screen name="preferences" options={{ presentation: 'modal', title: 'My preferences' }} />
+        {/* Where the site and its blocks are, with directions and Move here (MB-02). */}
+        <Stack.Screen name="assessment/[reference]/site-pins" options={{ title: 'Site pins', headerBackButtonDisplayMode: 'minimal' }} />
         {/* Full screen on a phone; a centred sheet on a tablet (MB-09). No swipe
             to dismiss: closing goes through Discard? (MB-03 AC13). */}
         <Stack.Screen
@@ -68,29 +67,20 @@ function Screens() {
 }
 
 export default function Layout() {
-  // Bundled fonts look the same on iOS and Android; the system fonts differ.
-  const [loaded, error] = useFonts({
-    IBMPlexSans_400Regular,
-    IBMPlexSans_500Medium,
-    IBMPlexSans_600SemiBold,
-    IBMPlexSans_700Bold,
-    IBMPlexMono_400Regular,
-  })
-  // A font that fails to load falls back to the system font rather than
-  // leaving the engineer on a blank screen.
-  if (!loaded && !error) return null
-
   return (
-    <SessionProvider>
-      {/* Light icons on the navy header and sign-in page. */}
-      <StatusBar style="light" />
-      <CurrentLocationProvider>
-        {/* Inside the location provider: an uploaded location replaces the
-            queued one the engineer is at (MB-10). */}
-        <OfflineProvider>
-          <Screens />
-        </OfflineProvider>
-      </CurrentLocationProvider>
-    </SessionProvider>
+    // The swipe rows (MB-12) need this around the screens to read gestures.
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SessionProvider>
+        {/* Light icons on the navy header and sign-in page. */}
+        <StatusBar style="light" />
+        <CurrentLocationProvider>
+          {/* Inside the location provider: an uploaded location replaces the
+              queued one the engineer is at (MB-10). */}
+          <OfflineProvider>
+            <Screens />
+          </OfflineProvider>
+        </CurrentLocationProvider>
+      </SessionProvider>
+    </GestureHandlerRootView>
   )
 }

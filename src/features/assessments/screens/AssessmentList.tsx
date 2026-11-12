@@ -6,13 +6,17 @@
 // MB-09: on a wide window (iPad), the list sits on the left and the chosen
 // assessment's workspace on the right, so switching sites never leaves Home.
 // MB-10: opens offline from the last copy, and says what's waiting to upload.
+// MB-09 AC7: in the split view the list can be hidden into a slim bar, so the
+// workspace (observations and checklist side by side) gets the width.
 import { router, useFocusEffect } from 'expo-router'
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
 import { FlatList, RefreshControl, ScrollView, View } from 'react-native'
 import { Eyebrow } from '@/components/Eyebrow'
 import { Button } from '@/components/ui/button'
 import { Text } from '@/components/ui/text'
 import { useSplitView } from '@/lib/device'
+import { easeLayout } from '@/lib/motion'
 import { cn, readable } from '@/lib/utils'
 import { OfflineNote } from '@/features/offline/components/OfflineNote'
 import { UploadStatus } from '@/features/offline/components/UploadStatus'
@@ -22,7 +26,7 @@ import { CapturingNowCard } from '../components/CapturingNowCard'
 import { DateChips } from '../components/DateChips'
 import { SearchBar } from '../components/SearchBar'
 import { StatusChips } from '../components/StatusChips'
-import { DATE_FILTERS, matches, noFilters, type DateFilter, type Filters } from '../filters'
+import { DATE_FILTERS, latestCapturing, matches, noFilters, type DateFilter, type Filters } from '../filters'
 import type { Assessment } from '../format'
 import { WorkspaceView } from './Workspace'
 
@@ -34,6 +38,9 @@ export default function AssessmentList() {
   const split = useSplitView()
   // The one shown on the right in the split view, once tapped (MB-09 AC3).
   const [chosen, setChosen] = useState<string | null>(null)
+  // The list is hidden into a slim bar (split view only). Kept here, so it stays
+  // hidden while the engineer works, until the app is closed.
+  const [hidden, setHidden] = useState(false)
 
   // Archived assessments are left out (AC9): the gateway refuses capture on them.
   // State is set in the promise's callbacks, once the reply arrives.
@@ -46,7 +53,7 @@ export default function AssessmentList() {
           // The split view opens on the latest capturing one, then stays on it
           // until another is tapped (MB-09 AC2), so a refresh that changes which
           // is latest never swaps the site the engineer is filing under.
-          setChosen((c) => c ?? shown.find((a) => a.status === 'capturing')?.reference ?? null)
+          setChosen((c) => c ?? latestCapturing(shown)?.reference ?? null)
           setError(null)
         },
         // A 401 has already sent the engineer to sign-in (src/lib/api.ts).
@@ -76,11 +83,11 @@ export default function AssessmentList() {
   const all = assessments ?? []
   const shown = all.filter((a) => matches(a, filters))
   const filtering = filters.search.trim() !== '' || filters.status !== null || filters.date !== null
-  // The latest capturing assessment gets its own card (MB-07 AC1); the list
-  // is newest site visit first, so that's the first one. Not while filtering
-  // (AC2), so every match stays in the list the filters describe.
+  // The latest capturing assessment gets its own card (MB-07 AC1): the one whose
+  // capture started most recently. Not while filtering (AC2), so every match
+  // stays in the list the filters describe.
   // In the split view the right side already shows it, so no card (MB-09 AC4).
-  const current = filtering || split ? undefined : all.find((a) => a.status === 'capturing')
+  const current = filtering || split ? undefined : latestCapturing(all)
   // Only while it's still in the list: one archived or reassigned since closes.
   const open = all.some((a) => a.reference === chosen) ? chosen : null
 
@@ -101,8 +108,16 @@ export default function AssessmentList() {
       {/* Search sits in the navy band, out of the list, so it stays put while scrolling. */}
       {all.length > 0 && (
         <View className="bg-navy px-4 pb-4">
-          <View className={readable}>
-            <SearchBar value={filters.search} onChange={(search) => set({ search })} />
+          <View className={cn('flex-row items-center gap-2', readable)}>
+            <View className="flex-1">
+              <SearchBar value={filters.search} onChange={(search) => set({ search })} />
+            </View>
+            {split && (
+              <Button variant="header" accessibilityLabel="Hide assessments" onPress={() => { easeLayout(); setHidden(true) }}>
+                <PanelLeftClose color="#ffffff" size={22} />
+                <Text>Hide</Text>
+              </Button>
+            )}
           </View>
         </View>
       )}
@@ -119,7 +134,7 @@ export default function AssessmentList() {
             onOpen={openAssessment}
           />
         )}
-        // On a tablet, the list keeps to the readable column (MB-08).
+        // On a tablet, the list keeps to the readable column (MB-09).
         contentContainerClassName={cn('p-4 pb-8', readable)}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
@@ -182,16 +197,37 @@ export default function AssessmentList() {
     </View>
 
   if (!split) return list
+  const showList = (
+    <Button variant="header" accessibilityLabel="Show assessments" onPress={() => { easeLayout(); setHidden(false) }} className="border border-white/30">
+      <PanelLeftOpen color="#ffffff" size={20} />
+      <Text>Assessments</Text>
+    </Button>
+  )
   return (
     <View className="flex-1 flex-row">
-      <View className="w-[380px] border-r border-border">{list}</View>
+      {!hidden && <View className="w-[380px] border-r border-border">{list}</View>}
       <View className="flex-1">
         {open ? (
           // A new key per assessment, so its state (observations, errors) starts fresh.
-          <WorkspaceView key={open} reference={open} embedded />
+          <WorkspaceView
+            key={open}
+            reference={open}
+            embedded
+            // While the list is hidden, the way back sits in the band: no tall bar.
+            leading={
+              hidden ? showList : undefined
+            }
+          />
         ) : (
           assessments && (
             <View className="flex-1 items-center justify-center gap-2 px-8">
+              {/* Hidden with nothing chosen: the way back is a navy-on-white button. */}
+              {hidden && (
+                <Button variant="outline" accessibilityLabel="Show assessments" onPress={() => { easeLayout(); setHidden(false) }}>
+                  <PanelLeftOpen color="#000f47" size={20} />
+                  <Text>Show assessments</Text>
+                </Button>
+              )}
               <Text className="text-lg font-semibold">Choose an assessment</Text>
               <Text className="text-center text-muted-foreground">Its workspace opens here, beside your list.</Text>
             </View>

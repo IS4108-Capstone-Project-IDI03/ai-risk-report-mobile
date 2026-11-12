@@ -19,7 +19,10 @@ export type Assessment = {
   siteVisitDate: string | null // YYYY-MM-DD
   reportDueDate: string | null // YYYY-MM-DD (MB-04)
   status: AssessmentStatus
-  site: { name: string }
+  // ISO time the current capture session started; null before any capture.
+  captureStartedAt?: string | null
+  // The site's own pin and its blocks' pins, shared by every visit to it (web CP-26).
+  site: { id?: string; name: string; coordinates?: { lat: number; lng: number } | null; pins?: { name: string; lat: number; lng: number }[] }
 }
 
 // Label and badge tone for each status. Colour carries meaning only (design

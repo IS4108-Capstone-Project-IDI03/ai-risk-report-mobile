@@ -16,7 +16,7 @@ export function EvidenceTray({ draft, onRemove }: Props) {
   const count = draft.photos.length + draft.recordings.length + draft.pages.length
   return (
     <View className="gap-2">
-      <Eyebrow>{`Evidence · ${count}`}</Eyebrow>
+      <Eyebrow>{`Media · ${count}`}</Eyebrow>
       {count === 0 ? (
         <Text className="rounded-lg border border-dashed border-input p-4 text-center text-sm text-muted-foreground">
           Nothing added yet. Take a photo, record a voice note or scan a page with the buttons below.
@@ -34,7 +34,7 @@ export function EvidenceTray({ draft, onRemove }: Props) {
               <View className="items-center justify-center gap-1 rounded-sm bg-secondary" style={{ width: SIZE, height: SIZE }}>
                 <Mic color="#2c5488" size={20} />
                 <Text className="text-xs font-medium text-secondary-foreground">{`Voice note ${i + 1}`}</Text>
-                <Text className="font-mono text-xs text-secondary-foreground">{duration(r.durationMillis)}</Text>
+                <Text className="tabular-nums text-xs text-secondary-foreground">{duration(r.durationMillis)}</Text>
               </View>
             </Tile>
           ))}

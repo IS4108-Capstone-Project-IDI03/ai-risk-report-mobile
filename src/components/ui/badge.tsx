@@ -1,13 +1,13 @@
 // From React Native Reusables (shadcn/ui for React Native), badge component.
-// Changed for Site Capture: IBM Plex weights, web Badge tones, 8px corners
-// rather than a pill (MB-07). Trimmed to the status tones the app uses.
+// Changed for Site Capture: web Badge tones, a pill shape (design system v2),
+// trimmed to the status tones the app uses.
 import { TextClassContext } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { View } from 'react-native';
 
 const badgeVariants = cva(
-  'border-border group shrink-0 flex-row items-center justify-center gap-1 overflow-hidden rounded-sm border px-2 py-0.5',
+  'border-border group shrink-0 flex-row items-center justify-center gap-1 overflow-hidden rounded-full border px-2.5 py-0.5',
   {
     variants: {
       variant: {

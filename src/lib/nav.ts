@@ -12,6 +12,6 @@ export const colors = {
 export const headerOptions = {
   headerStyle: { backgroundColor: colors.navy },
   headerTintColor: '#ffffff',
-  headerTitleStyle: { fontFamily: 'IBMPlexSans_600SemiBold' },
+  headerTitleStyle: { fontWeight: '600' as const },
   headerShadowVisible: false,
 }

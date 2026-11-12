@@ -1,5 +1,5 @@
 // From React Native Reusables (shadcn/ui for React Native), text component.
-// Changed for Site Capture: IBM Plex weights. Trimmed to what the app uses: one
+// Changed for Site Capture: the system font. Trimmed to what the app uses: one
 // style, and a context so Button, Badge and Card can set their text's colour.
 import { cn } from '@/lib/utils';
 import * as React from 'react';

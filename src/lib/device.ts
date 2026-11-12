@@ -1,4 +1,4 @@
-// Phone or tablet (MB-08), and whether the window is wide enough for the split
+// Phone or tablet (MB-09), and whether the window is wide enough for the split
 // view (MB-09). Called by src/app/_layout.tsx, which lets tablets turn and keeps
 // phones in portrait, and by Home, which splits on a wide window.
 import { Dimensions, useWindowDimensions } from 'react-native'

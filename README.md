@@ -22,7 +22,7 @@ logging still apply.
 | Framework | Expo SDK 58, React Native 0.88, TypeScript |
 | Navigation | Expo Router: each file in `src/app/` is a screen |
 | UI | [React Native Reusables](https://reactnativereusables.com) (the shadcn/ui port for React Native) styled with NativeWind v4 (Tailwind for React Native) |
-| Look | The web app's design system: ink-600 `#2c5488` primary, Marsh navy `#000f47`, IBM Plex Sans and Mono bundled so iOS and Android match. Corners are rounder than the web's (MB-07) |
+| Look | The web's design system v2 (`docs/design-system-v2.md` in the web repo): the system font (San Francisco on iOS, Roboto on Android), Marsh navy `#000f47` for primary buttons and the header, ink-600 for links and tints, pill buttons, 48px touch targets (the web's are 40) |
 | Icons | `lucide-react-native` (the web app uses Lucide too) |
 | Sign-in | The gateway's `session` cookie, which React Native's `fetch` stores on both platforms |
 | Tests | Jest (`jest-expo`) and React Native Testing Library, with the gateway mocked |
@@ -46,10 +46,22 @@ logging still apply.
   Opening it never starts a capture session.
 - **Location picker:** locations grouped by building, then level (lowest first), then
   "Elsewhere on site" (logic copied from the web client's `locations.ts`). **Add
-  location** takes a building, optional level and name, with tap-to-fill chips
+  location** takes a building, optional level and location, with tap-to-fill chips
   (`POST /api/assessments/:reference/locations`).
 - **The chosen location** is kept per assessment while the app is open. It belongs to
   the engineer who chose it, so another engineer on a shared phone starts fresh.
+- **Pin where I am (9 Nov, branch `MB-02-gps-pin`; web CP-26):** Add location has an optional
+  **Pin where I am** that reads the phone's GPS once, when tapped, and saves `coordinates` with the
+  location (`expo-location`). Permission off or no fix says so and saving still works. A location
+  queued with no signal keeps its pin.
+- **Site pins:** a **Site pins** button in the workspace band opens the site and its blocks, each with
+  its pin or "Not pinned" (`site.coordinates` and `site.pins` from `GET /api/assessments`).
+  **Directions** opens Google Maps directions (no key). **Edit pin** (or **Set pin**) opens a panel:
+  tap the map, use the phone's position, or type `lat, lng`, then **Set** (`PUT /api/sites/:id/map`,
+  one change at a time); **Remove pin** is there too. A map (`react-native-maps`, Apple Maps on
+  iOS) shows a marker for each pin (S, 1, 2…), which can be dragged to move; **Hide map** folds it.
+  On a wide iPad it is two columns, the map on the left and the rows on the right. Pins are shared
+  by every visit to the site. Android needs a Google Maps key in store builds (not set up).
 
 **MB-03: capture an observation** (branch `MB-03`)
 
@@ -76,27 +88,57 @@ logging still apply.
 - Numbered citations open their passage (`GET /api/chat/passages/:id`), with the
   document's name from `GET /api/knowledge-documents/ingested`. Also: starter
   questions, follow-ups, Stop, Try again and New chat.
-- Every answer is a paid model call. The conversation lasts while the app is open.
+- Every answer is a paid model call. (Chats are now kept: see MB-14.)
+
+**MB-14: saved chats** (branch `MB-14`, web CB-03 / CB-06; the web docs disagree on the IDs)
+
+- **Kept on the gateway.** The first question creates a chat (`POST /api/chat/conversations`,
+  named from the question), then every question goes to `POST /api/chat` with its `threadId`.
+  Each message carries an id (the phone makes a question's, the stream sends an answer's), so
+  the gateway keeps follow-ups in order.
+- **Reopens.** The last chat's id is kept in the engineer's own folder; the Chatbot tab opens
+  on it after a restart. A chat deleted elsewhere is forgotten. A restored answer shows its
+  text and citations, not the "searched for" step (the gateway keeps text only).
+- **The list.** The two-line button at the header's left (ChatGPT's) opens a navy sidebar:
+  search (`?q=`, name or any message), newest first, tap to open, "…" or press and hold for
+  Rename and Delete (asks first), New chat at the bottom. On a phone the whole chat, header
+  included, slides aside to show it (Reanimated, on the UI thread; the pushed chat greys and
+  blurs a little; tap or swipe it to close). On a wide iPad it is a column beside the chat. The
+  plain list is kept on the phone, so it opens offline; search needs signal.
+- **Header.** The Chatbot screen draws its own navy bar (the tab bar's is off here) so it slides
+  with the chat. Adds `expo-blur`.
+- **Tests.** Jest swaps Reanimated for a stand-in (`src/lib/reanimated.ts`, `test/reanimated.ts`),
+  as it has no UI thread.
+- Out of scope: versions of a retried question (CB-04), preferences (CB-05).
+
+**MB-15: chatbot preferences, "memory"** (branch `MB-15`, web CB-05 as the code names it)
+
+- **Where:** a **My preferences** row at the bottom of the chats list (the drawer on a phone, the column
+  on a wide iPad) opens a My preferences screen.
+- **What:** the switch "Use my preferences in chats" (`PATCH /api/chat/memory`), an **Add a fact** box
+  ("N of 200 characters", up to 20 facts, `POST .../facts`), and the facts oldest first with the date
+  added. Tap a fact to edit it (Save, Cancel); Delete is inside the edit box and asks first. With the
+  switch off the facts are kept and dimmed and the box is hidden. A warning says not to type client
+  names or site details.
+- **Offline:** the last copy shows read-only ("Connect to change your preferences."). Nothing here is a
+  paid call.
 
 **MB-07: site flow redesign** (branch `MB-07`)
 
-- **Home:** a "Capturing now" card for the latest capturing assessment, one tap back
+- **Home:** a "Capturing now" card for the assessment whose capture started most recently, one tap back
   into it. Search in a navy band, and one scrolling row of date and status chips.
 - **Workspace:** the assessment's details in a navy band, and a bottom bar with where
   you are right above New observation. Observations show their first photo.
 - **Location picker:** "Where are you?", with search by name.
 - **New observation:** Take photo, Record and Scan page as big buttons at the bottom,
   with counts; everything added in one Evidence tray; severity before COPE.
-- **Corners are rounder than the web's** (8 to 20px; the web caps them at 8px). A
-  deliberate mobile-only choice; the web design system is unchanged.
+- **Corners are rounder than the web's** (8 to 20px; the web capped them at 8px then).
+  Superseded by design system v2 (6 Nov): the web is rounder too, and the app matches it.
 
-**MB-08: tablets, light** (branch `MB-08`)
+**MB-09: tablet layout and iPad split view** (branches `MB-08`, `MB-09`)
 
 - Tablets (shortest side 600pt or more) turn with the device; phones stay portrait.
 - The site screens keep a 640pt column, centred, so nothing stretches on an iPad.
-
-**MB-09: iPad split view** (branch `MB-09`)
-
 - On a window 900pt or wider, Home shows the list beside the chosen assessment's
   workspace. It opens on the latest capturing assessment; tapping a row switches it.
 - On a tablet, New observation is a centred sheet, in two columns at 640pt or wider.
@@ -109,6 +151,10 @@ logging still apply.
   Photos, voice notes and scans are copied into the app's own storage.
 - The queue uploads when the gateway is reachable again: the app comes to the front, a
   screen refreshes, or every 30 seconds while items wait. Locations go first.
+- **Sign in with no signal:** an engineer who has signed in on the phone before signs in
+  again with the same email and password. The phone checks them against a salted hash
+  kept in its keychain (never the password). It forgets the hash if the gateway refuses
+  that email and password. Uploads wait for a sign-in with a signal.
 - Each engineer has their own folder on the phone. Refused items show "Couldn't upload"
   with Discard. Home shows how many are waiting.
 - With no signal at launch, the app carries on as the last engineer who signed in.
@@ -127,14 +173,78 @@ logging still apply.
 - No new gateway call: the detail finds its observation in the workspace list. It is its
   own screen on the phone and the iPad.
 
+**MB-12: manage my observations** (branch `MB-12`)
+
+- **Edit:** Edit on an observation's detail opens a screen for its severity, COPE
+  categories and note (`PATCH /api/observations/:id`, only what changed is sent). The
+  detail then says "Edited <time> by <name>". Leaving with unsaved changes asks first.
+- **Delete:** swipe a card left in the workspace, or tap Delete on the detail, then
+  confirm. It is a soft delete: the gateway keeps it. **Show deleted** below the list
+  loads the observations deleted at that location, each with Restore.
+- **Media:** the edit screen lists the observation's photos, voice notes and handwritten
+  pages. Photos and voice notes can be removed (and restored). New ones are added with the
+  same big tiles as capture, wait in a "New" row, and are uploaded, and each voice note
+  transcribed, only when you tap Save changes. Pages are view-only: the gateway can't add
+  or remove them on a saved observation yet (web CP-20).
+- **Try again (9 Nov):** a failed voice note or handwritten page shows its reason and a
+  **Try again** button on the detail (`POST .../transcription/retry`, 202). It says
+  "Transcribing", then the detail reads the observation every 5 seconds for about 2
+  minutes until the result shows, then "Still working. Check back soon." One paid AI call
+  per tap, never automatic, one note at a time. Greyed offline.
+- **Online only.** With no signal Edit and Delete are greyed out ("Connect to edit or
+  delete."), the swipe is off, and Show deleted says "Connect to see deleted."
+  Observations waiting to upload keep Discard and have none of these.
+- Wording: the app says "media", not "evidence", for an observation's photos, voice notes
+  and pages. Adds `react-native-gesture-handler` (the swipe row).
+- Flags for the web team: pages on a saved observation (CP-20), and a deleted-only filter
+  for `?include=deleted`, which now sends every observation.
+
+**MB-05: pre-survey checklist** (branch `MB-05`, web CP-30 and CP-31)
+
+- **Where:** inside the workspace. A switch at the top of the workspace flips between
+  **Observations** and **Checklist 12/48** (the progress), so an engineer ticks items as
+  they walk the site without leaving the assessment.
+- **Read:** `GET /api/assessments/:ref/checklist`. Priority risks first, then the areas,
+  then an "Other" group. Unchecked items first. An item expands to show its source, with
+  the standard and the quote on tap.
+- **Mark:** Not seen and Not applicable (`PUT .../checklist/items/:id/mark`) work offline:
+  they queue like observations and show "Waiting to upload".
+- **Confirm and Differs:** save an observation at the current location, linked to the
+  item (`details.checklistItem`). Confirm starts the note from the item's words, Differs
+  from nothing. Severity is required. The item's COPE categories are chosen. With no
+  signal it queues. A refused one shows a failed row with Discard and "Save without the
+  checklist link".
+- **Generate:** a "Standards to use" box (all on) then `POST .../checklist` (about 30
+  seconds, online only, `reports:generate` permission). Generate again keeps the answers
+  the gateway keeps. With no standards in scope the gateway calls no model.
+- **Wide iPad** (workspace 760pt or more): the observations and the checklist show side
+  by side, and Confirm and Differs fill the observation form beside the checklist instead
+  of a pop-up box. The checklist pane can collapse to a slim bar.
+- Not built yet: the regenerate confirm and carry-over notice, the "ask a knowledge admin"
+  hint, and testing Generate against the cloud gateway (the local one has no ingested
+  standards).
+
+**MB-09 additions (9 Nov, on the `MB-05` branch)**
+
+- **Hide the list:** on the iPad, Hide on the assessments list shrinks it away and puts an
+  **Assessments** button in the navy band to bring it back (`AssessmentList`).
+- **New observation inside the workspace:** side by side, the form opens in place of the
+  observations, with the checklist beside it, both scrollable. Below that width it is the
+  capture route as before (`CaptureSheet` takes `onClose`, `embedded` and `answer`).
+- **Wide layout:** the workspace fills the width with 32pt side padding, as the web's
+  design system does. The location and New observation share one bottom row. The navy band
+  can collapse to one line. Panes ease in 260 ms (`src/lib/motion.ts`, skipped under Reduce
+  Motion).
+- Sheets close with the word **Close**, not an X.
+
 ## What to build next
 
-The MVP order, agreed 27 Oct 2026 (MB-01 to MB-04 and MB-06 to MB-11 are built). Each is its own story (`MB-0n`). The web stories it
+The MVP order, agreed 27 Oct 2026 (MB-01 to MB-12 are all built). Each is its own story (`MB-0n`). The web stories it
 mirrors are in the web repo's `docs/USER_STORIES.md`.
 
 | Order | Story | Mirrors | Gateway support |
 | --- | --- | --- | --- |
-| MB-05 | Pre-survey checklist in the workspace, to tick off on site | CP-11, CP-12 (Could) | **None yet.** Teammates are building CP-11 in the web repo. Until then, use a dummy checklist (see below). |
+| (next) | Chosen from the migration shortlist, agreed with Miya | | |
 
 Separate web story for the team: make severity optional. It's required in the gateway
 model, the save rule and `report_sections` evidence, and the web UI assumes it.
@@ -143,12 +253,6 @@ Later, outside the MVP: editing my captures (CP-08). Completing an assessment (C
 was dropped on the web.
 
 Things to know before building these:
-
-- **The checklist starts as a dummy** (Miya, 27 Oct). Groupmates own CP-11 (generating
-  the checklist) in the web repo. Build the screen against sample items kept in one
-  file, behind one function (for example `getChecklist(reference)`). Then swapping in
-  the real gateway route later changes only that function. Mark the sample data
-  clearly as sample in the UI, so nobody mistakes it for a real checklist.
 
 - **Opening capture can reopen a completed assessment.** `POST /capture-session` starts
   a new session when the last one is complete, which turns the status back to
@@ -176,14 +280,17 @@ src/
     assessments/          api, format, filters (search, date rules), components/, screens/AssessmentList, Workspace
     locations/            api, locations.ts (grouping, copied from web), current.tsx (chosen
                           location), components/, screens/LocationPicker
-    observations/         api, format, components/ (ObservationCard, detail pieces), screens/ObservationDetail
+    observations/         api, format, confirmDelete, components/ (ObservationCard, SwipeDelete, DeletedSection,
+                          MediaSection, detail pieces), screens/ObservationDetail, ObservationEdit
+    checklist/            api, format (sections, status), useChecklist, components/ (ChecklistView, ItemRow,
+                          AnswerSheet, GenerateSheet, Citations)
     capture/              draft (upload format), media (camera, library), useVoiceNote, api,
                           components/ (sections, chips), screens/CaptureSheet
-    chat/                 library (answer format), events (stream), answer (citations),
-                          useConversation, components/, screens/Chat
+    chat/                 api (incl. saved chats), library (answer format), events (stream), answer (citations),
+                          useConversation, components/ (ChatList, FactRow, FactForm), screens/Chat, Preferences
     profile/              screens/Profile
   components/ui/          React Native Reusables components, adjusted
-  lib/                    api.ts (every gateway call), utils.ts (cn), nav.ts (header styles)
+  lib/                    api.ts (every gateway call), utils.ts (cn), nav.ts (header styles), motion.ts (pane ease)
 __tests__/                tests; never put them inside src/app/
 test/gateway.tsx          shared test helpers: mocked gateway, sample data, route map
 test/setup.ts             default mocks for the camera and recorder (Jest has no phone)
@@ -233,9 +340,9 @@ There's no CI yet, so run all four before committing.
   `src/components/ui/`, then adjust it. Use the colour names in `tailwind.config.js`.
   Touch targets are at least 48px. Copy follows the web design system: sentence case,
   buttons are verbs, errors state the cause and then the next step, no emoji.
-- **Fonts:** weight classes (`font-medium`, `font-semibold`, `font-bold`) choose the
-  IBM Plex family of that weight. Don't set `fontWeight` directly: a custom font
-  ignores it on iOS and fakes it on Android.
+- **Fonts:** the system font only (design system v2). Use the weight classes
+  (`font-medium`, `font-semibold`, `font-bold`); numbers that must line up (dates,
+  counts, report IDs) use `tabular-nums`. No bundled font.
 - **Stories and branches:** `MB-0n` IDs, one branch per story
   (`git switch -c MB-0n --no-track`), and one commit per finished behaviour with its
   test.

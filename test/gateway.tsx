@@ -3,6 +3,8 @@
 // it as a test file.
 import { fireEvent, screen } from 'expo-router/testing-library'
 import Layout from '../src/app/_layout'
+import SitePins from '../src/app/assessment/[reference]/site-pins'
+import Preferences from '../src/app/preferences'
 import Chat from '../src/app/(tabs)/chat'
 import Home from '../src/app/(tabs)/index'
 import TabsLayout from '../src/app/(tabs)/_layout'
@@ -10,6 +12,7 @@ import Profile from '../src/app/(tabs)/profile'
 import Capture from '../src/app/assessment/[reference]/capture'
 import Workspace from '../src/app/assessment/[reference]/index'
 import ObservationDetail from '../src/app/assessment/[reference]/observation/[id]'
+import ObservationEdit from '../src/app/assessment/[reference]/observation/[id]/edit'
 import LocationPicker from '../src/app/assessment/[reference]/locations'
 import SignIn from '../src/app/sign-in'
 
@@ -43,13 +46,13 @@ export const sse = (event: object) => `data: ${JSON.stringify(event)}\n\n`
 // replies with a page that isn't JSON; `stream` replies with a body to read in
 // pieces. Unlisted routes fail the test loudly.
 export function mockGateway(
-  routes: Record<string, Reply | ((init?: RequestInit) => Reply)>,
+  routes: Record<string, Reply | ((init?: RequestInit, url?: string) => Reply)>,
 ) {
   const fetchMock = jest.fn(async (url: string, init?: RequestInit) => {
     const key = `${init?.method ?? 'GET'} ${new URL(url).pathname}`
     const route = routes[key]
     if (!route) throw new Error(`Unexpected request: ${key}`)
-    const reply = typeof route === 'function' ? route(init) : route
+    const reply = typeof route === 'function' ? route(init, url) : route
     if (reply instanceof Error) throw reply
     return {
       ok: reply.status >= 200 && reply.status < 300,
@@ -114,11 +117,14 @@ export const routes = {
   '(tabs)/_layout': TabsLayout,
   '(tabs)/index': Home,
   '(tabs)/chat': Chat,
+  preferences: Preferences,
   '(tabs)/profile': Profile,
   'assessment/[reference]/index': Workspace,
   'assessment/[reference]/locations': LocationPicker,
+  'assessment/[reference]/site-pins': SitePins,
   'assessment/[reference]/capture': Capture,
   'assessment/[reference]/observation/[id]': ObservationDetail,
+  'assessment/[reference]/observation/[id]/edit': ObservationEdit,
 }
 
 // Taps a bottom tab by its label.

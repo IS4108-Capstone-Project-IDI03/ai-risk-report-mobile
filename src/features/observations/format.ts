@@ -14,11 +14,15 @@ export type Transcription = {
   correction?: { text: string } | null
 }
 
-// Evidence as the detail screen reads it (MB-11). A waiting observation (MB-10)
+// Media as the detail screen reads it (MB-11). A waiting observation (MB-10)
 // fills `url` with a file on the phone and has no transcription yet.
 export type Photo = { id?: string; url: string; name?: string }
 export type Page = { id?: string; url: string; transcription?: Transcription | null }
 export type Recording = { id: string; url: string; transcription?: Transcription | null }
+
+// A photo or voice note an engineer removed (MB-12): kept by the gateway, and listed
+// with who removed it and when, so it can be restored (CP-08 AC20, AC21).
+export type Removed<T> = T & { removed: { at: string; by: { name: string } } }
 
 export type Observation = {
   id: string
@@ -35,6 +39,13 @@ export type Observation = {
   photos: Photo[]
   pages: Page[]
   recordedAt: string
+  // Set while it is deleted, and who deleted it and when (CP-08 AC12); only the
+  // gateway's `?include=deleted` list carries deleted ones.
+  deleted?: { at: string; by: { name: string } } | null
+  removedPhotos?: Removed<Photo>[]
+  removedRecordings?: Removed<Recording>[]
+  // The latest change to its tags or note, and who made it (CP-08 AC11).
+  edited?: { at: string; by: { name: string } } | null
 }
 
 // Severity chip tone, from the design system's fixed four-step scale.

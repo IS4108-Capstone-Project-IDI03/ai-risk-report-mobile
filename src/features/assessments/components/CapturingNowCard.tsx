@@ -45,7 +45,7 @@ export function CapturingNowCard({ assessment, onOpen }: Props) {
             )
           )}
         </View>
-        <Text className="font-mono text-sm text-muted-foreground">{assessment.reference}</Text>
+        <Text className="tabular-nums text-sm text-muted-foreground">{assessment.reference}</Text>
         {/* Looks like the screen's primary button; the card around it takes the tap. */}
         <View className="h-12 flex-row items-center justify-center gap-2 rounded-md bg-primary">
           <Text className="font-semibold text-primary-foreground">Continue capturing</Text>

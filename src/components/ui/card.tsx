@@ -1,5 +1,5 @@
 // From React Native Reusables (shadcn/ui for React Native), card component.
-// Changed for Site Capture: no sm: breakpoints, 48px controls, IBM Plex weights, web Badge tones.
+// Changed for Site Capture: no sm: breakpoints, 48px controls, web Badge tones.
 import { Text, TextClassContext } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
 import { View } from 'react-native';

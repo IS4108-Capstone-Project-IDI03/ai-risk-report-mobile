@@ -13,6 +13,7 @@ import { Text } from '@/components/ui/text'
 import { useOffline } from '@/features/offline/provider'
 import { download } from '@/lib/api'
 import type { Recording } from '../format'
+import { TryAgain, type Retry } from './TryAgain'
 
 // The file to play: the phone's own, or the gateway's downloaded once.
 async function localAudio({ id, url }: Recording) {
@@ -42,7 +43,7 @@ function transcript(t: Recording['transcription']) {
   return t.transcript || 'No speech found.'
 }
 
-export function VoiceNote({ note, number }: { note: Recording; number: number }) {
+export function VoiceNote({ note, number, retry }: { note: Recording; number: number; retry?: Retry }) {
   const player = useAudioPlayer()
   const { playing } = useAudioPlayerStatus(player)
   const { offline } = useOffline()
@@ -81,6 +82,7 @@ export function VoiceNote({ note, number }: { note: Recording; number: number })
       </Button>
       {problem && <Text className="text-sm text-destructive">{problem}</Text>}
       {text && <Text className="text-base">{text}</Text>}
+      {retry && note.transcription?.status === 'failed' && <TryAgain label={`voice note ${number}`} retry={retry} />}
     </View>
   )
 }
