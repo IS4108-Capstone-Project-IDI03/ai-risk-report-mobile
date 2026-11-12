@@ -5,7 +5,7 @@
 // phone the chat, header and all, slides aside to show the list under it; on a wide iPad the
 // list is a column beside the chat (shown at first). So the header is drawn here, not by the
 // tab bar, to move with the chat.
-import { Tabs } from 'expo-router'
+import { router, Tabs } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { KeyboardAvoidingView, Pressable, ScrollView, View, type ScrollViewInstance } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -65,6 +65,12 @@ export default function Chat() {
   function newChat() {
     reset()
     if (!split) setListOpen(false)
+  }
+
+  // My preferences opens over the chat; on a phone the list slides away first.
+  function openPreferences() {
+    if (!split) setListOpen(false)
+    router.push('/preferences')
   }
 
   function ask(question: string) {
@@ -162,7 +168,7 @@ export default function Chat() {
         <View className="flex-1 flex-row">
           {listOpen && (
             <View className="w-[320px]">
-              <ChatList activeId={openId} onOpen={openChat} onNewChat={newChat} onDeleted={forget} />
+              <ChatList activeId={openId} onOpen={openChat} onNewChat={newChat} onPreferences={openPreferences} onDeleted={forget} />
             </View>
           )}
           {chat}
@@ -173,7 +179,7 @@ export default function Chat() {
       <ChatsPanel
         open={listOpen}
         onClose={() => setListOpen(false)}
-        list={<ChatList activeId={openId} onOpen={openChat} onNewChat={newChat} onDeleted={forget} />}
+        list={<ChatList activeId={openId} onOpen={openChat} onNewChat={newChat} onPreferences={openPreferences} onDeleted={forget} />}
       >
         <View className="flex-1">
           {header}

@@ -45,6 +45,8 @@ function Screens() {
         {/* Its own header (title, no back arrow): Cancel at the bottom asks first (MB-12). */}
         <Stack.Screen name="assessment/[reference]/observation/[id]/edit" options={{ title: 'Edit observation' }} />
         <Stack.Screen name="assessment/[reference]/locations" options={{ presentation: 'modal' }} />
+        {/* The chatbot's lasting facts about me (MB-15). */}
+        <Stack.Screen name="preferences" options={{ presentation: 'modal', title: 'My preferences' }} />
         {/* Where the site and its blocks are, with directions and Move here (MB-02). */}
         <Stack.Screen name="assessment/[reference]/site-pins" options={{ title: 'Site pins', headerBackButtonDisplayMode: 'minimal' }} />
         {/* Full screen on a phone; a centred sheet on a tablet (MB-09). No swipe

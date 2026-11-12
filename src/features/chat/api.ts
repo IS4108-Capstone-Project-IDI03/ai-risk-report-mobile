@@ -73,3 +73,19 @@ export async function documentNames(): Promise<Map<string, string>> {
     }),
   )
 }
+
+// "My preferences" (MB-15; the web's CB-05): the engineer's lasting facts for the assistant and the
+// memory switch. Shapes match server/src/services/chat-memory.service.ts.
+export type Fact = { id: string; text: string; createdAt: string }
+export type Memory = { enabled: boolean; facts: Fact[]; maxFacts: number; maxChars: number }
+
+const MEMORY = '/api/chat/memory'
+// Kept on the phone, so the list opens with no signal (read-only).
+export const getMemory = () => cached<Memory>(MEMORY)
+export const setMemoryEnabled = (enabled: boolean) => request<Memory>(MEMORY, { method: 'PATCH', body: JSON.stringify({ enabled }) })
+export const addFact = (text: string) => request<Fact>(`${MEMORY}/facts`, { method: 'POST', body: JSON.stringify({ text }) })
+export const saveFact = (id: string, text: string) =>
+  request<Fact>(`${MEMORY}/facts/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ text }) })
+export const removeFact = (id: string) => request<void>(`${MEMORY}/facts/${encodeURIComponent(id)}`, { method: 'DELETE' })
+// The key `cached()` reads, so a change made now is what the offline copy shows next time.
+export const MEMORY_CACHE_KEY = `cache${MEMORY}`

@@ -5,7 +5,7 @@
 // Used by screens/Chat, as a drawer under the chat on a phone and a column beside it on a wide
 // iPad. Calls listThreads (the plain list is kept on the phone, so it opens offline),
 // renameThread and deleteThread.
-import { Ellipsis, Plus, Search } from 'lucide-react-native'
+import { Ellipsis, Plus, Search, SlidersHorizontal } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Alert, FlatList, Pressable, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -21,13 +21,15 @@ type Props = {
   activeId?: string | null
   onOpen(id: string): void
   onNewChat(): void
+  // Opens My preferences (MB-15 AC1).
+  onPreferences(): void
   // After a delete, so the chat screen can start over if it was the open one.
   onDeleted?(id: string): void
 }
 
 const SOFT = '#b9c4d6' // the web sidebar's quiet text on navy
 
-export function ChatList({ activeId, onOpen, onNewChat, onDeleted }: Props) {
+export function ChatList({ activeId, onOpen, onNewChat, onPreferences, onDeleted }: Props) {
   const [threads, setThreads] = useState<Thread[] | null>(null)
   const [query, setQuery] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -170,7 +172,16 @@ export function ChatList({ activeId, onOpen, onNewChat, onDeleted }: Props) {
         }
       />
       {/* In thumb reach, as the app's other main actions. */}
-      <View className="px-4 pb-4 pt-2">
+      <View className="gap-1 px-4 pb-4 pt-2">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="My preferences"
+          onPress={onPreferences}
+          className="min-h-12 flex-row items-center gap-3 rounded-xl px-3 active:bg-white/10"
+        >
+          <SlidersHorizontal color={SOFT} size={18} />
+          <Text className="text-base text-white">My preferences</Text>
+        </Pressable>
         <Button accessibilityLabel="Start a new chat" className="bg-white" onPress={onNewChat}>
           <Plus color="#000f47" size={20} />
           <Text className="text-primary">New chat</Text>

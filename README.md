@@ -111,6 +111,18 @@ logging still apply.
   as it has no UI thread.
 - Out of scope: versions of a retried question (CB-04), preferences (CB-05).
 
+**MB-15: chatbot preferences, "memory"** (branch `MB-15`, web CB-05 as the code names it)
+
+- **Where:** a **My preferences** row at the bottom of the chats list (the drawer on a phone, the column
+  on a wide iPad) opens a My preferences screen.
+- **What:** the switch "Use my preferences in chats" (`PATCH /api/chat/memory`), an **Add a fact** box
+  ("N of 200 characters", up to 20 facts, `POST .../facts`), and the facts oldest first with the date
+  added. Tap a fact to edit it (Save, Cancel); Delete is inside the edit box and asks first. With the
+  switch off the facts are kept and dimmed and the box is hidden. A warning says not to type client
+  names or site details.
+- **Offline:** the last copy shows read-only ("Connect to change your preferences."). Nothing here is a
+  paid call.
+
 **MB-07: site flow redesign** (branch `MB-07`)
 
 - **Home:** a "Capturing now" card for the assessment whose capture started most recently, one tap back
@@ -275,7 +287,7 @@ src/
     capture/              draft (upload format), media (camera, library), useVoiceNote, api,
                           components/ (sections, chips), screens/CaptureSheet
     chat/                 api (incl. saved chats), library (answer format), events (stream), answer (citations),
-                          useConversation, components/, screens/Chat
+                          useConversation, components/ (ChatList, FactRow, FactForm), screens/Chat, Preferences
     profile/              screens/Profile
   components/ui/          React Native Reusables components, adjusted
   lib/                    api.ts (every gateway call), utils.ts (cn), nav.ts (header styles), motion.ts (pane ease)
