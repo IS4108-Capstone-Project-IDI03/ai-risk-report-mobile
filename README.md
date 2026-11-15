@@ -123,6 +123,26 @@ logging still apply.
 - **Offline:** the last copy shows read-only ("Connect to change your preferences."). Nothing here is a
   paid call.
 
+**MB-16: site walk** (branch `MB-16`, web CP-22; not in the backlog yet, needs adding)
+
+- **Where:** a **Site walk** button beside New observation opens the Site walks list (walks not yet created,
+  newest first, each with its status and what it holds). **Start a walk** opens the recorder.
+- **Recording:** Record, Pause, Resume and Stop make numbered parts (up to 20 minutes each, "0:42 of 20:00").
+  Photo saves the part, opens the camera and starts the next part when it closes (the phone can't run camera and
+  microphone together). Typed notes share the numbering and can be edited or removed. The screen stays awake.
+  Everything is kept on the phone first and sent when there is signal. Finish walk names the walk and starts the
+  gateway's paid steps (transcribing, then the AI proposal).
+- **Review** (a Ready walk): observations by location, with a location chooser, Category, Severity, Type and
+  Status filters, "N to fix", and Previous and Next. Edit note, severity, category and location (saved as you go),
+  delete with Undo and a Deleted list, add, rename, same-as or delete a new location, add an observation by hand
+  (with photos, voice notes and pages), and see all photos and handwritten pages. **Create all** asks first, then
+  adds everything once (`POST .../create`); the walk then leaves the list.
+- **Gateway:** all `/api/assessments/:ref/site-walks` routes; no gateway change. The list route returns created
+  walks too, so the phone hides them.
+- **Needs the web `.env`:** the proposal step reads `TYPESAFE_API_KEY` (Jev classifier). Without it a walk fails
+  at "proposing". Send recordings as `audio/m4a` (the app does).
+- **Out of scope:** the bell notification, background recording, the web's in-page camera while recording.
+
 **MB-07: site flow redesign** (branch `MB-07`)
 
 - **Home:** a "Capturing now" card for the assessment whose capture started most recently, one tap back
@@ -239,7 +259,7 @@ logging still apply.
 
 ## What to build next
 
-The MVP order, agreed 27 Oct 2026 (MB-01 to MB-12 are all built). Each is its own story (`MB-0n`). The web stories it
+The MVP order, agreed 27 Oct 2026 (MB-01 to MB-12 are all built, and so is MB-16, the site walk). Each is its own story (`MB-0n`). The web stories it
 mirrors are in the web repo's `docs/USER_STORIES.md`.
 
 | Order | Story | Mirrors | Gateway support |

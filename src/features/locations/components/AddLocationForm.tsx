@@ -1,7 +1,8 @@
 // The picker's Add location view (MB-02 AC10-AC12). Building, level and location,
 // each with tap-to-fill chips (48px, for gloves) so the engineer rarely types a
 // building or level twice. MB-02 AC13: an optional Pin where I am, from the phone's GPS.
-// Used by screens/LocationPicker, which saves it.
+// Used by screens/LocationPicker, which saves it, and by the site walk review (MB-16 AC20, AC21), which
+// starts it filled in (rename) and without the GPS pin.
 import { MapPin } from 'lucide-react-native'
 import { useState } from 'react'
 import { ActivityIndicator, Linking, Pressable, View } from 'react-native'
@@ -18,12 +19,16 @@ export type NewLocation = { building: string; floor: string; name: string; coord
 type Props = {
   locations: Location[]
   onSave(details: NewLocation): Promise<void>
+  // Where it starts, for a rename. Blank for a new place.
+  initial?: { building: string; floor: string; name: string }
+  // False hides Pin where I am: a place in a proposal has no GPS pin of its own.
+  withPin?: boolean
 }
 
-export function AddLocationForm({ locations, onSave }: Props) {
-  const [building, setBuilding] = useState('')
-  const [floor, setFloor] = useState('')
-  const [name, setName] = useState('')
+export function AddLocationForm({ locations, onSave, initial, withPin = true }: Props) {
+  const [building, setBuilding] = useState(initial?.building ?? '')
+  const [floor, setFloor] = useState(initial?.floor ?? '')
+  const [name, setName] = useState(initial?.name ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<ApiError | Error | null>(null)
   // The GPS pin: what was read, a read in progress, and why one didn't work.
@@ -56,7 +61,7 @@ export function AddLocationForm({ locations, onSave }: Props) {
     setBusy(true)
     setError(null)
     try {
-      await onSave({ building, floor, name, coordinates: pin && { lat: pin.lat, lng: pin.lng } })
+      await onSave({ building, floor, name, coordinates: withPin ? pin && { lat: pin.lat, lng: pin.lng } : undefined })
     } catch (e) {
       setError(e instanceof Error ? e : new Error(String(e)))
       setBusy(false)
@@ -92,7 +97,7 @@ export function AddLocationForm({ locations, onSave }: Props) {
       <Field label="Location" value={name} onChange={setName} error={fields.name} onSubmit={save} />
 
       {/* Optional (the web's Coordinates field): the phone's position, read when tapped. */}
-      <View className="gap-2">
+      {withPin && <View className="gap-2">
         <Text className="font-medium">Position</Text>
         {pin ? (
           <View className="flex-row items-center justify-between gap-3 rounded-md border border-border bg-card p-3">
@@ -122,7 +127,7 @@ export function AddLocationForm({ locations, onSave }: Props) {
             <Text>Open Settings</Text>
           </Button>
         )}
-      </View>
+      </View>}
 
       {general && (
         <View className="rounded-md bg-destructive/10 p-3">

@@ -45,6 +45,10 @@ function Screens() {
         {/* Its own header (title, no back arrow): Cancel at the bottom asks first (MB-12). */}
         <Stack.Screen name="assessment/[reference]/observation/[id]/edit" options={{ title: 'Edit observation' }} />
         <Stack.Screen name="assessment/[reference]/locations" options={{ presentation: 'modal' }} />
+        {/* A site walk: record it, then review what the AI proposed (MB-16). */}
+        <Stack.Screen name="assessment/[reference]/site-walks" options={{ title: 'Site walks', headerBackButtonDisplayMode: 'minimal' }} />
+        <Stack.Screen name="assessment/[reference]/site-walk-recording" options={{ title: 'Record a walk', headerBackButtonDisplayMode: 'minimal' }} />
+        <Stack.Screen name="assessment/[reference]/site-walk-review" options={{ title: 'Review a walk', headerBackButtonDisplayMode: 'minimal' }} />
         {/* The chatbot's lasting facts about me (MB-15). */}
         <Stack.Screen name="preferences" options={{ presentation: 'modal', title: 'My preferences' }} />
         {/* Where the site and its blocks are, with directions and Move here (MB-02). */}

@@ -6,6 +6,8 @@ jest.mock('expo-audio', () => ({
   RecordingPresets: { HIGH_QUALITY: {} },
   useAudioRecorder: () => ({}),
   useAudioRecorderState: () => ({ isRecording: false, durationMillis: 0 }),
+  useAudioPlayer: () => ({ replace: jest.fn(), play: jest.fn(), pause: jest.fn(), seekTo: jest.fn(async () => {}), duration: 0, currentTime: 0 }),
+  useAudioPlayerStatus: () => ({ playing: false }),
   requestRecordingPermissionsAsync: jest.fn(),
   setAudioModeAsync: jest.fn(),
 }))
@@ -142,3 +144,5 @@ jest.mock('react-native-maps', () => {
   const Marker = (props: Record<string, unknown>) => React.createElement(View, props, props.children)
   return { __esModule: true, default: MapView, Marker }
 })
+// MB-16: keeping the screen on is the phone's; Jest only needs the call to exist.
+jest.mock('expo-keep-awake', () => ({ useKeepAwake: jest.fn() }))

@@ -4,6 +4,9 @@
 import { fireEvent, screen } from 'expo-router/testing-library'
 import Layout from '../src/app/_layout'
 import SitePins from '../src/app/assessment/[reference]/site-pins'
+import WalkRecording from '../src/app/assessment/[reference]/site-walk-recording'
+import WalkReview from '../src/app/assessment/[reference]/site-walk-review'
+import SiteWalks from '../src/app/assessment/[reference]/site-walks'
 import Preferences from '../src/app/preferences'
 import Chat from '../src/app/(tabs)/chat'
 import Home from '../src/app/(tabs)/index'
@@ -122,6 +125,9 @@ export const routes = {
   'assessment/[reference]/index': Workspace,
   'assessment/[reference]/locations': LocationPicker,
   'assessment/[reference]/site-pins': SitePins,
+  'assessment/[reference]/site-walks': SiteWalks,
+  'assessment/[reference]/site-walk-recording': WalkRecording,
+  'assessment/[reference]/site-walk-review': WalkReview,
   'assessment/[reference]/capture': Capture,
   'assessment/[reference]/observation/[id]': ObservationDetail,
   'assessment/[reference]/observation/[id]/edit': ObservationEdit,

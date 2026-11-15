@@ -12,7 +12,7 @@
 // iPad pane the two sit side by side instead, the checklist collapsible. MB-11: tapping an observation opens its detail. MB-12: swiping an uploaded one
 // left deletes it, and Show deleted below the list restores.
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router'
-import { ChevronDown, ChevronUp, MapPin, Plus } from 'lucide-react-native'
+import { ChevronDown, ChevronUp, Footprints, MapPin, Plus } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Alert, FlatList, RefreshControl, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -374,10 +374,23 @@ export function WorkspaceView({ reference, embedded = false, leading }: { refere
                 onChange={() => router.push({ pathname: '/assessment/[reference]/locations', params: { reference } })}
               />
             </View>
-            <Button size="lg" accessibilityLabel="New observation" onPress={newObservation} className={together ? 'w-72' : 'mb-2'}>
-              <Plus color="#ffffff" size={20} />
-              <Text className="text-lg">New observation</Text>
-            </Button>
+            {/* New observation for one thing; Site walk to record while walking round (MB-16 AC1). */}
+            <View className={together ? 'flex-row gap-3' : 'mb-2 flex-row gap-3'}>
+              <Button
+                size="lg"
+                variant="outline"
+                accessibilityLabel="Site walk"
+                onPress={() => router.push({ pathname: '/assessment/[reference]/site-walks', params: { reference } })}
+                className={together ? 'w-48' : 'flex-1'}
+              >
+                <Footprints color="#1a1f26" size={20} />
+                <Text className="text-lg">Site walk</Text>
+              </Button>
+              <Button size="lg" accessibilityLabel="New observation" onPress={newObservation} className={together ? 'w-72' : 'flex-[1.6]'}>
+                <Plus color="#ffffff" size={20} />
+                <Text className="text-lg">New observation</Text>
+              </Button>
+            </View>
           </View>
         </Bar>
       )}
