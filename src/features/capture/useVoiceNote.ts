@@ -23,12 +23,19 @@ export function useVoiceNote(onRecorded: (note: VoiceNote) => void) {
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY)
   const state = useAudioRecorderState(recorder)
   const [recording, setRecording] = useState(false)
+  // Held by Pause (the site walk's recorder, MB-16 AC32); still recording as far as the part goes.
+  const [paused, setPaused] = useState(false)
   // True while starting or stopping, so a second tap is ignored.
   const busy = useRef(false)
+  // Whether a part is going now, read by the functions below even from a screen's older render: the
+  // site walk stops a part for the camera and starts the next in one handler (MB-16 AC33), where
+  // `recording` would still be the value from before.
+  const active = useRef(false)
+  const held = useRef(false)
 
   // Returns why it couldn't start, or null once recording.
   async function start(): Promise<RecordingProblem | null> {
-    if (busy.current || recording) return null
+    if (busy.current || active.current) return null
     busy.current = true
     try {
       if (!(await requestRecordingPermissionsAsync()).granted)
@@ -36,6 +43,7 @@ export function useVoiceNote(onRecorded: (note: VoiceNote) => void) {
       await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true })
       await recorder.prepareToRecordAsync()
       recorder.record()
+      active.current = true
       setRecording(true)
       return null
     } catch {
@@ -47,16 +55,33 @@ export function useVoiceNote(onRecorded: (note: VoiceNote) => void) {
   }
 
   async function stop() {
-    if (busy.current || !recording) return
+    if (busy.current || !active.current) return
     busy.current = true
     try {
       const durationMillis = state.durationMillis
       await recorder.stop()
+      active.current = false
+      held.current = false
       setRecording(false)
+      setPaused(false)
       if (recorder.uri) onRecorded({ uri: recorder.uri, durationMillis })
     } finally {
       busy.current = false
     }
+  }
+
+  // Pause holds the part and Resume goes on with it (record() again): one part, one file.
+  function pause() {
+    if (busy.current || !active.current || held.current) return
+    recorder.pause()
+    held.current = true
+    setPaused(true)
+  }
+  function resume() {
+    if (busy.current || !active.current || !held.current) return
+    recorder.record()
+    held.current = false
+    setPaused(false)
   }
 
   // Stops at the limit, keeping what was recorded.
@@ -64,5 +89,5 @@ export function useVoiceNote(onRecorded: (note: VoiceNote) => void) {
     if (recording && state.durationMillis >= MAX_MILLIS) stop()
   })
 
-  return { recording, durationMillis: state.durationMillis, start, stop }
+  return { recording, paused, durationMillis: state.durationMillis, start, stop, pause, resume }
 }

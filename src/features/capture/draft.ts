@@ -43,7 +43,7 @@ export function duration(ms: number) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
 
-const filePart = (uri: string, name: string, type: string) =>
+export const filePart = (uri: string, name: string, type: string) =>
   ({ uri, name, type, bytes: () => new File(uri).bytes() }) as unknown as Blob
 
 // The same file parts for adding photos and voice notes to a saved observation
