@@ -1,6 +1,7 @@
 // One walk on the Site walks screen (MB-16 AC2, AC4, AC38): its name, when it started, its status,
 // up to four photos and what its proposal holds, and what can be done to it: Try again when it failed,
-// Rename, Discard. Used by screens/SiteWalks.
+// Rename, Discard. A walk already created ("Added") can only be viewed (AC40): the gateway refuses to change it.
+// Used by screens/SiteWalks.
 import { Mic, Pencil, RotateCcw, Trash2 } from 'lucide-react-native'
 import { useState } from 'react'
 import { ActivityIndicator, Image, View } from 'react-native'
@@ -19,7 +20,7 @@ type Props = {
   busy: boolean
   // Opens the recorder, for a walk still being recorded.
   onOpen(): void
-  // Opens the review, for a walk that is ready.
+  // Opens the review for a walk that is ready, or the read-only view for one already added.
   onReview(): void
   onRetry(): void
   onRename(name: string): Promise<void>
@@ -94,6 +95,12 @@ export function WalkRow({ walk, busy, onOpen, onReview, onRetry, onRename, onDis
       )}
       {walk.status === 'failed' && walk.error && <Text className="text-destructive">{walk.error}</Text>}
       {/* The one next step is a full-width button; Rename and Discard are an equal pair under it. */}
+      {walk.status === 'created' && (
+        <Button variant="outline" size="lg" accessibilityLabel={`View: ${title}`} onPress={onReview}>
+          <Text>View</Text>
+        </Button>
+      )}
+      {walk.status !== 'created' && (
       <View className="gap-2">
         {walk.status === 'recording' && (
           <Button size="lg" accessibilityLabel={`Continue recording: ${title}`} onPress={onOpen}>
@@ -125,6 +132,7 @@ export function WalkRow({ walk, busy, onOpen, onReview, onRetry, onRename, onDis
           </Button>
         </View>
       </View>
+      )}
     </View>
   )
 }

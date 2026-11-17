@@ -1,6 +1,6 @@
-// The Site walks screen (MB-16 AC1-AC4): this assessment's walks not yet created, newest first, each
-// with its status. A walk being transcribed or proposed is read again every few seconds until it is
-// done. Try again, Rename and Discard are here; Review opens a ready walk. Opened by
+// The Site walks screen (MB-16 AC1-AC4): this assessment's walks, newest first, those already created last under
+// "Added to the assessment", each with its status. A walk being transcribed or proposed is read again every
+// few seconds until it is done. Try again, Rename and Discard are here; Review opens a ready walk. Opened by
 // Site walk in the workspace's bottom bar. Calls the walk routes in ../api.
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -109,6 +109,21 @@ export default function SiteWalks() {
       </View>
     )
 
+  const open = walks.filter((w) => w.status !== 'created')
+  const added = walks.filter((w) => w.status === 'created')
+  const row = (walk: SiteWalk) => (
+    <WalkRow
+      key={walk.id}
+      walk={walk}
+      busy={busy !== null || offline}
+      onOpen={() => record(walk.id)}
+      onReview={() => review(walk.id)}
+      onRetry={() => change(walk.id, () => retryWalk(reference, walk.id))}
+      onRename={async (name) => void (await renameWalk(reference, walk.id, name), setReads((n) => n + 1))}
+      onDiscard={() => confirmDiscard(walk)}
+    />
+  )
+
   return (
     <ScrollView testID="site-walks" contentContainerClassName="gap-3 p-4 pb-10">
       <View className={cn('gap-3', readable)}>
@@ -123,21 +138,14 @@ export default function SiteWalks() {
             <Text className="text-destructive">{problem}</Text>
           </View>
         )}
-        {walks.length === 0 ? (
-          <Text className="py-8 text-center text-muted-foreground">No site walks yet.</Text>
-        ) : (
-          walks.map((walk) => (
-            <WalkRow
-              key={walk.id}
-              walk={walk}
-              busy={busy !== null || offline}
-              onOpen={() => record(walk.id)}
-              onReview={() => review(walk.id)}
-              onRetry={() => change(walk.id, () => retryWalk(reference, walk.id))}
-              onRename={async (name) => void (await renameWalk(reference, walk.id, name), setReads((n) => n + 1))}
-              onDiscard={() => confirmDiscard(walk)}
-            />
-          ))
+        {walks.length === 0 && <Text className="py-8 text-center text-muted-foreground">No site walks yet.</Text>}
+        {open.map(row)}
+        {/* Walks already created, as the web's "Added to the assessment" tab: read-only. */}
+        {added.length > 0 && (
+          <View testID="walks-added" className="mt-3 gap-3">
+            <Text className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Added to the assessment</Text>
+            {added.map(row)}
+          </View>
         )}
       </View>
     </ScrollView>

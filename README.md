@@ -125,8 +125,8 @@ logging still apply.
 
 **MB-16: site walk** (branch `MB-16`, web CP-22; not in the backlog yet, needs adding)
 
-- **Where:** a **Site walk** button beside New observation opens the Site walks list (walks not yet created,
-  newest first, each with its status and what it holds). **Start a walk** opens the recorder.
+- **Where:** a **Site walk** button beside New observation opens the Site walks list (newest first, each with its
+  status and what it holds; walks already added sit last under "Added to the assessment"). **Start a walk** opens the recorder.
 - **Recording:** Record, Pause, Resume and Stop make numbered parts (up to 20 minutes each, "0:42 of 20:00").
   Photo saves the part, opens the camera and starts the next part when it closes (the phone can't run camera and
   microphone together). Typed notes share the numbering and can be edited or removed. The screen stays awake.
@@ -136,9 +136,10 @@ logging still apply.
   Status filters, "N to fix", and Previous and Next. Edit note, severity, category and location (saved as you go),
   delete with Undo and a Deleted list, add, rename, same-as or delete a new location, add an observation by hand
   (with photos, voice notes and pages), and see all photos and handwritten pages. **Create all** asks first, then
-  adds everything once (`POST .../create`); the walk then leaves the list.
+  adds everything once (`POST .../create`); the walk then moves to "Added to the assessment", where it can only
+  be viewed (the gateway refuses to change a created walk): its locations, observations, photos and recording, read only.
 - **Gateway:** all `/api/assessments/:ref/site-walks` routes; no gateway change. The list route returns created
-  walks too, so the phone hides them.
+  walks too, and the phone groups them under "Added to the assessment".
 - **Needs the web `.env`:** the proposal step reads `TYPESAFE_API_KEY` (Jev classifier). Without it a walk fails
   at "proposing". Send recordings as `audio/m4a` (the app does).
 - **Out of scope:** the bell notification, background recording, the web's in-page camera while recording.

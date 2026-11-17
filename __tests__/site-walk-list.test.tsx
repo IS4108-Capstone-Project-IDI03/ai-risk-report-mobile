@@ -60,16 +60,26 @@ describe('the Site walks screen', () => {
     expect(list.getByText('The speech service could not be reached.')).toBeTruthy()
   })
 
-  // The gateway's list includes walks already created and leaves hiding them to the client; found by trying Create all
-  // against the real gateway (the walk stayed on the list with a "Created" badge).
-  it('leaves walks that are already created off the list (AC2, AC18)', async () => {
-    walks = [walk('w9', 'created', { name: 'Done walk' }), walk('w3', 'ready', { name: 'Block A walk' })]
+  // Changed 15 Nov (AC2, AC18, Miya): a walk already created stays on the list under "Added to the assessment",
+  // read-only, as in the web. (First written the other way, hiding it, from a misreading of the gateway's comment.)
+  it('keeps a created walk under "Added to the assessment", with only View (AC2, AC18, AC40)', async () => {
+    walks = [
+      walk('w9', 'created', { name: 'Done walk', proposal: { locations: [{ ref: 'loc-1' }], observations: [{ ref: 'obs-1' }, { ref: 'obs-2' }] } }),
+      walk('w3', 'ready', { name: 'Block A walk' }),
+    ]
     gateway()
     const list = await openWalks()
 
     expect(await list.findByText('Block A walk')).toBeTruthy()
-    expect(list.queryByText('Done walk')).toBeNull()
-    expect(list.queryByTestId('walk-w9')).toBeNull()
+    expect(within(list.getByTestId('walk-w3')).getByRole('button', { name: 'Review: Block A walk' })).toBeTruthy()
+    const added = within(list.getByTestId('walks-added'))
+    expect(added.getByText('Added to the assessment')).toBeTruthy()
+    const row = within(added.getByTestId('walk-w9'))
+    expect(row.getByText('Done walk')).toBeTruthy()
+    expect(row.getByText('Added')).toBeTruthy()
+    expect(row.getByText('1 location · 2 observations')).toBeTruthy()
+    // Nothing to rename or discard (the gateway refuses to change a created walk); it can only be viewed (AC40).
+    expect(row.getAllByRole('button').map((b) => b.props.accessibilityLabel)).toEqual(['View: Done walk'])
   })
 
   it('says there are no walks yet (AC2)', async () => {

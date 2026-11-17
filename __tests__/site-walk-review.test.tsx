@@ -37,11 +37,13 @@ let held: { recordings: object[]; photos: object[]; media: object[] }
 const saved: object[] = []
 const renamed: string[] = []
 let created = 0
+// The status the gateway reports for the walk: 'created' once Create all has run.
+let walkStatus = 'ready'
 // Makes the next proposal save fail, once.
 let failSave = false
 
 function walk() {
-  return { id: 'w1', status: 'ready', name: 'Block A walk', createdAt: '2026-11-12T03:00:00.000Z', recordings: held.recordings, photos: held.photos, media: held.media, notes: [], error: null, proposal }
+  return { id: 'w1', status: walkStatus, name: 'Block A walk', createdAt: '2026-11-12T03:00:00.000Z', recordings: held.recordings, photos: held.photos, media: held.media, notes: [], error: null, proposal }
 }
 
 function gateway() {
@@ -88,6 +90,7 @@ beforeEach(() => {
   saved.length = 0
   renamed.length = 0
   created = 0
+  walkStatus = 'ready'
   held = { recordings: [], photos: [], media: [] }
   failSave = false
   proposal = {
@@ -602,5 +605,37 @@ describe('a failed autosave', () => {
     await waitFor(() => expect(saved).toHaveLength(1))
     expect((saved[0] as { observations: { ref: string; note: string }[] }).observations.find((o) => o.ref === 'obs-1')!.note).toBe('Changed')
     expect(await review.findByText('All changes saved')).toBeTruthy()
+  })
+})
+
+// ---- A walk already added to the assessment (AC40) ----
+
+describe('a walk already added to the assessment', () => {
+  it('opens read-only, showing what it held and nothing to change (AC40)', async () => {
+    walkStatus = 'created'
+    held = { recordings: [clip], photos: [{ id: 'p1', url: '/api/photo/p1', recordingSeq: 1, offsetSec: 3 }], media: [] }
+    proposal = { locations: [place('loc-1', 'Loading bay')], observations: [obs('obs-1', { photoIds: ['p1'] })] }
+    gateway()
+    await renderRouter(routes)
+    await fireEvent.press(await screen.findByText(REF))
+    await screen.findByTestId('workspace')
+    await fireEvent.press(await screen.findByRole('button', { name: 'Site walk' }))
+    await fireEvent.press(await screen.findByRole('button', { name: 'View: Block A walk' }))
+
+    const view = within(await screen.findByTestId('walk-added'))
+    expect(await view.findByText('Block A walk')).toBeTruthy()
+    expect(view.getByText('Added to the assessment')).toBeTruthy()
+    expect(view.getByText('Block A · Ground · Loading bay')).toBeTruthy()
+    expect(view.getByText('Pallets block the sprinkler')).toBeTruthy()
+    expect(view.getByText('High')).toBeTruthy()
+    expect(view.getByText('Protection')).toBeTruthy()
+    // What it held: the walk recording it came from, and its photo.
+    expect(view.getByRole('button', { name: 'Play site walk recording' })).toBeTruthy()
+    expect(view.getByTestId('proposed-photo-p1')).toBeTruthy()
+    // Nothing to change, and nothing saved.
+    for (const name of ['Create all', 'Add observation', 'Rename', /^Edit observation/, /^Location: /])
+      expect(view.queryByRole('button', { name })).toBeNull()
+    await autosave()
+    expect(saved).toHaveLength(0)
   })
 })

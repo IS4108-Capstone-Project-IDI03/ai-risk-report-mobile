@@ -9,7 +9,7 @@ export const WALK_STATUS: Record<WalkStatus, { label: string; tone: BadgeProps['
   proposing: { label: 'Proposing observations', tone: 'warning' },
   ready: { label: 'Ready to review', tone: 'success' },
   failed: { label: "Couldn't process", tone: 'neutral' },
-  created: { label: 'Created', tone: 'success' },
+  created: { label: 'Added', tone: 'success' },
 }
 
 // A walk is working on the gateway while it is turned into text and proposals.

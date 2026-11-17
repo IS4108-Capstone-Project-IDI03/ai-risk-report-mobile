@@ -54,11 +54,9 @@ export type SiteWalk = {
 const walks = (reference: string) => `/api/assessments/${encodeURIComponent(reference)}/site-walks`
 const walkPath = (reference: string, id: string) => `${walks(reference)}/${encodeURIComponent(id)}`
 
-// The assessment's walks not yet created, newest first. Kept on the phone, so the list opens offline.
-// The gateway lists created walks too and leaves hiding them to the client; without the filter a walk
-// stays on the list, badged "Created", after Create all.
-export const listWalks = async (reference: string) =>
-  (await cached<SiteWalk[]>(walks(reference))).filter((w) => w.status !== 'created')
+// The assessment's walks, newest first, created ones too (the screen groups them). Kept on the phone, so the
+// list opens offline.
+export const listWalks = (reference: string) => cached<SiteWalk[]>(walks(reference))
 
 // A walk still being recorded by this engineer (200), or a new one (201).
 export const startWalk = (reference: string) => request<SiteWalk>(walks(reference), { method: 'POST' })

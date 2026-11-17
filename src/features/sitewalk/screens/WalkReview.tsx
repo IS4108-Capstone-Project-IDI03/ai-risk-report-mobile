@@ -22,6 +22,7 @@ import { PlaceSheet } from '../components/PlaceSheet'
 import { ReviewHeader } from '../components/ReviewHeader'
 import { SamePlaceSheet } from '../components/SamePlaceSheet'
 import { WALK_STATUS } from '../format'
+import { WalkAdded } from './WalkAdded'
 import {
   addLocation, ALL, confirmMessage, createdMessage, createProblem, firstIncomplete, incompleteCount, inputOf, linkLocation, locationProblem, matchesFilters, NEEDS_LOCATION, NO_FILTERS,
   placeName, removeLocation, removeObservation, renameLocation, restoreObservation, sameAs, sectionsAt, updateObservation, type LocationInput,
@@ -61,6 +62,9 @@ export default function WalkReview() {
       </View>
     )
   }
+
+  // A walk already added to the assessment is only viewed (AC40): the gateway locks it, so there is nothing to edit.
+  if (walk.status === 'created') return <WalkAdded walk={walk} proposal={p} />
 
   // a. What to show: the chosen place (All if it was deleted), narrowed by the filters.
   const selected = picked === ALL || picked === NEEDS_LOCATION || p.locations.some((l) => l.ref === picked) ? picked : ALL
