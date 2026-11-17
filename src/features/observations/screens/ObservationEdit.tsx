@@ -84,12 +84,12 @@ export default function ObservationEdit() {
     const typed = note.trim() ? note : ''
     if (typed !== (original.note ?? '')) changes.note = typed || null
   }
-  const hasStaged = staged.photos.length > 0 || staged.recordings.length > 0
+  const hasStaged = staged.photos.length > 0 || staged.recordings.length > 0 || staged.pages.length > 0
   const dirty = Object.keys(changes).length > 0 || hasStaged
 
-  // a. The tags and note, if changed. b. Then the new photos and voice notes, which is
-  // when they are uploaded and each voice note is transcribed. The tags go first, so a
-  // refused change doesn't cost a transcription. If b fails, a is already saved: the
+  // a. The tags and note, if changed. b. Then the new photos, voice notes and pages, which is
+  // when they are uploaded and each voice note and page is read. The tags go first, so a
+  // refused change doesn't cost a reading. If b fails, a is already saved: the
   // saved copy replaces `original` so it isn't sent again, and the message says so
   // (AC21).
   async function save() {

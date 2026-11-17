@@ -157,10 +157,16 @@ logging still apply.
   its text in a box (Save text, Cancel). Saving keeps the model's first reading and stores yours
   (`PUT .../pages/:pageId/transcript`); the page then says "Corrected by you" and reports are drafted from your text.
   A failed save keeps what you typed.
-- **Gateway change (web repo, branch `CP-20-page-text`):** the `PUT` route above, a page `correction` field, drafting
-  uses it, Read again clears it. Needs merging before Edit text works against a deployed gateway.
-- **Out of scope:** adding or removing pages on a saved observation (the gateway refuses; web CP-20 "still to
-  write"), the web client showing corrections (needs its own web story), saving a correction offline.
+- **Add, remove and restore pages (17 Nov):** in the Edit screen's Media list, **Scan page** and **Scan from library**
+  stage a page ("New page 1 · Added when you save", Discard drops it); Save sends it with any new photos and voice notes
+  (`page` parts of `POST .../media`), and the gateway reads each page (one paid call each). **Remove** on a page asks
+  first, then lists it under Removed with **Restore** (`DELETE` and `POST .../restore`). As on the web, a photo, voice
+  note or page can be removed only while the observation holds something else, counting its note; with one thing left
+  there is no Remove, and the screen says to delete the observation instead.
+- **Gateway:** nothing of ours. The web's CP-20 on `main` (Xuren, `2b0f7047`) provides the page routes and the
+  `transcription.correction` field this app reads. Needs that web `main` running.
+- **Out of scope:** the web client showing corrections made on a phone, saving a correction offline, removing a page
+  from the detail screen (Edit only).
 
 **MB-07: site flow redesign** (branch `MB-07`)
 

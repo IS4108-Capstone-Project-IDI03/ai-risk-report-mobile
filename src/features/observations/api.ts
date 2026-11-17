@@ -20,23 +20,23 @@ export const updateObservation = (id: string, changes: Changes) =>
 export const deleteObservation = (id: string) =>
   request<Observation>(`/api/observations/${encodeURIComponent(id)}`, { method: 'DELETE' })
 
-// Photos and voice notes inside a saved observation (MB-12 AC16-AC21). Each returns the
-// observation as it now is. Adding sends the files on Save, and each voice note is then
-// transcribed by the gateway (a paid call); removing is soft, so it can be restored.
-export type MediaKind = 'photos' | 'recordings'
+// Photos, voice notes and handwritten pages inside a saved observation (MB-12 AC16-AC21, MB-17 AC16-AC19).
+// Each returns the observation as it now is. Adding sends the files on Save, and each voice note and page is
+// then read by the gateway (a paid call); removing is soft, so it can be restored.
+export type MediaKind = 'photos' | 'recordings' | 'pages'
 
-// New photos (file URIs) and voice notes waiting to be added: kept on the edit screen
-// until Save, then sent together (MB-12 AC20), which is when each voice note is transcribed.
-export type NewMedia = { photos: string[]; recordings: VoiceNote[] }
-export const noNewMedia: NewMedia = { photos: [], recordings: [] }
+// New photos (file URIs), voice notes and pages waiting to be added: kept on the edit screen
+// until Save, then sent together (MB-12 AC20), which is when each voice note and page is read.
+export type NewMedia = { photos: string[]; recordings: VoiceNote[]; pages: string[] }
+export const noNewMedia: NewMedia = { photos: [], recordings: [], pages: [] }
 
 export const addMedia = (id: string, media: NewMedia) =>
   request<Observation>(`/api/observations/${encodeURIComponent(id)}/media`, {
     method: 'POST',
-    body: mediaToFormData(media.photos, media.recordings),
+    body: mediaToFormData(media.photos, media.recordings, media.pages),
   })
 
-const mediaPath = (id: string, kind: MediaKind | 'pages', itemId: string) =>
+const mediaPath = (id: string, kind: MediaKind, itemId: string) =>
   `/api/observations/${encodeURIComponent(id)}/${kind}/${encodeURIComponent(itemId)}`
 
 export const removeMedia = (id: string, kind: MediaKind, itemId: string) =>
@@ -44,7 +44,7 @@ export const removeMedia = (id: string, kind: MediaKind, itemId: string) =>
 
 // Starts a new attempt at a failed voice note or page (CP-03 AC6, CP-19 AC11). The gateway
 // answers 202 with no body and works in the background, so the caller reads the list again.
-export const retryTranscription = (id: string, kind: MediaKind | 'pages', itemId: string) =>
+export const retryTranscription = (id: string, kind: MediaKind, itemId: string) =>
   request<void>(`${mediaPath(id, kind, itemId)}/transcription/retry`, { method: 'POST' })
 
 // Reads a page again although it was read already (MB-17 AC9, CP-20 AC1). One paid handwriting

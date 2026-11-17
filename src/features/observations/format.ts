@@ -44,6 +44,7 @@ export type Observation = {
   deleted?: { at: string; by: { name: string } } | null
   removedPhotos?: Removed<Photo>[]
   removedRecordings?: Removed<Recording>[]
+  removedPages?: Removed<Page>[]
   // The latest change to its tags or note, and who made it (CP-08 AC11).
   edited?: { at: string; by: { name: string } } | null
 }
