@@ -2,8 +2,8 @@
 // manage its photos and voice notes (AC16-AC21, in MediaSection). Opened by Edit on
 // the detail (ObservationDetail). Calls updateObservation, which sends only what
 // changed. A failed save keeps what was typed (AC5).
-import { router, Stack, useLocalSearchParams } from 'expo-router'
-import { useCallback, useEffect, useState } from 'react'
+import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, Alert, BackHandler, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Eyebrow } from '@/components/Eyebrow'
@@ -54,6 +54,25 @@ export default function ObservationEdit() {
       live = false
     }
   }, [reference, id])
+
+  // Coming back from correcting a page's text (MB-17): take the pages from the gateway, and leave what was
+  // typed here alone. The first focus is the mount, which loads everything already.
+  const seen = useRef(false)
+  useFocusEffect(
+    useCallback(() => {
+      if (!seen.current) {
+        seen.current = true
+        return
+      }
+      listObservations(reference).then(
+        (all) => {
+          const fresh = all.find((o) => o.id === id)
+          if (fresh) setOriginal((prev) => (prev ? { ...prev, pages: fresh.pages } : prev))
+        },
+        () => {},
+      )
+    }, [reference, id]),
+  )
 
   // What differs from the saved one, in the gateway's terms: `null` uncategorises
   // and removes a note (a blank one is the same as none).

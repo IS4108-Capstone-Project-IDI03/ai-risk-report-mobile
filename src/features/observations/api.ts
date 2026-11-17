@@ -47,6 +47,18 @@ export const removeMedia = (id: string, kind: MediaKind, itemId: string) =>
 export const retryTranscription = (id: string, kind: MediaKind | 'pages', itemId: string) =>
   request<void>(`${mediaPath(id, kind, itemId)}/transcription/retry`, { method: 'POST' })
 
+// Reads a page again although it was read already (MB-17 AC9, CP-20 AC1). One paid handwriting
+// reading. The gateway replies with the observation, the page now Transcribing, and finishes in
+// the background, so the caller reads the list again until the new text is there.
+export const retranscribePage = (id: string, pageId: string) =>
+  request<Observation>(`${mediaPath(id, 'pages', pageId)}/retranscribe`, { method: 'POST' })
+
+// Saves the engineer's corrected text for a page that was read (MB-17 AC12, the web repo's CP-20).
+// The gateway keeps its own reading as evidence and drafts from this. Returns the observation as it
+// now is; a refusal carries `fields.text` (blank, or over 20,000 characters).
+export const correctPageText = (id: string, pageId: string, text: string) =>
+  request<Observation>(`${mediaPath(id, 'pages', pageId)}/transcript`, { method: 'PUT', body: JSON.stringify({ text }) })
+
 export const restoreMedia = (id: string, kind: MediaKind, itemId: string) =>
   request<Observation>(`${mediaPath(id, kind, itemId)}/restore`, { method: 'POST' })
 

@@ -144,6 +144,24 @@ logging still apply.
   at "proposing". Send recordings as `audio/m4a` (the app does).
 - **Out of scope:** the bell notification, background recording, the web's in-page camera while recording.
 
+**MB-17: scanned pages** (branch `MB-17`, web CP-19 and CP-20; not in the backlog yet, needs adding)
+
+- **Scans:** a **Scans** button in the workspace header (beside Site pins) opens every handwritten page of the
+  assessment's live observations, newest first: thumbnail, its text or status (Reading the handwriting, Couldn't
+  read and why, No handwriting found), when it was captured and which observation. Tap a page to open its
+  observation. Pull to refresh; pages still being read refresh every 5 seconds. Offline it shows the saved copy, and
+  pages still waiting to upload say so.
+- **Read again:** on a page that was read, in the observation's detail. It asks first ("This replaces your corrected
+  text" if you corrected it), then starts one new reading (`POST .../pages/:pageId/retranscribe`, one paid call).
+- **Edit text:** in the **Edit** screen's Media list, beside each page that was read. It opens the page photo and
+  its text in a box (Save text, Cancel). Saving keeps the model's first reading and stores yours
+  (`PUT .../pages/:pageId/transcript`); the page then says "Corrected by you" and reports are drafted from your text.
+  A failed save keeps what you typed.
+- **Gateway change (web repo, branch `CP-20-page-text`):** the `PUT` route above, a page `correction` field, drafting
+  uses it, Read again clears it. Needs merging before Edit text works against a deployed gateway.
+- **Out of scope:** adding or removing pages on a saved observation (the gateway refuses; web CP-20 "still to
+  write"), the web client showing corrections (needs its own web story), saving a correction offline.
+
 **MB-07: site flow redesign** (branch `MB-07`)
 
 - **Home:** a "Capturing now" card for the assessment whose capture started most recently, one tap back
@@ -260,7 +278,7 @@ logging still apply.
 
 ## What to build next
 
-The MVP order, agreed 27 Oct 2026 (MB-01 to MB-12 are all built, and so is MB-16, the site walk). Each is its own story (`MB-0n`). The web stories it
+The MVP order, agreed 27 Oct 2026 (MB-01 to MB-12 are all built, and so are MB-16, the site walk, and MB-17, scanned pages). Each is its own story (`MB-0n`). The web stories it
 mirrors are in the web repo's `docs/USER_STORIES.md`.
 
 | Order | Story | Mirrors | Gateway support |

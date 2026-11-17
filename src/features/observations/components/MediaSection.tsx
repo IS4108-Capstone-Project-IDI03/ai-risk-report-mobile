@@ -4,9 +4,10 @@
 // replaces the screen's copy through `onChange`) and added. An added photo or voice
 // note waits in a "new" row until the screen is saved (`staged`, held by the editor),
 // as on the web's Add media dialog: nothing is uploaded or transcribed before then.
-// Pages are only listed, because the gateway can't add or remove them on a saved
-// observation yet (web CP-20). Used by screens/ObservationEdit.
-import { Camera, Images, Mic, RotateCcw, Square, Trash2 } from 'lucide-react-native'
+// Pages can't be added or removed on a saved observation yet (web CP-20), but the text read from a
+// page can be corrected (MB-17 AC11: Edit text, opening the page-text screen). Used by screens/ObservationEdit.
+import { router, useLocalSearchParams } from 'expo-router'
+import { Camera, Images, Mic, Pencil, RotateCcw, Square, Trash2 } from 'lucide-react-native'
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react'
 import { Alert, Image, View, type ImageSourcePropType } from 'react-native'
 import { Eyebrow } from '@/components/Eyebrow'
@@ -41,6 +42,7 @@ type Props = {
 }
 
 export function MediaSection({ observation, onChange, staged, setStaged, onBusyChange }: Props) {
+  const { reference } = useLocalSearchParams<{ reference: string }>()
   const [busy, setBusy] = useState(false)
   // The camera or library is open, so a second tap can't open another.
   const [picking, setPicking] = useState(false)
@@ -110,7 +112,19 @@ export function MediaSection({ observation, onChange, staged, setStaged, onBusyC
         </Row>
       ))}
       {observation.pages.map((page, i) => (
-        <Row key={page.id ?? page.url} source={{ uri: mediaUri(page.url) }} title={`Handwritten page ${i + 1}`} />
+        <Row key={page.id ?? page.url} source={{ uri: mediaUri(page.url) }} title={`Handwritten page ${i + 1}`} subtitle={page.transcription?.correction ? 'Corrected by you' : null}>
+          {page.id && page.transcription?.status === 'transcribed' && (
+            <Button
+              variant="outline"
+              accessibilityLabel={`Edit text: handwritten page ${i + 1}`}
+              disabled={locked}
+              onPress={() => router.push({ pathname: '/assessment/[reference]/observation/[id]/page-text', params: { reference, id: observation.id, pageId: page.id! } })}
+            >
+              <Pencil color="#1a1f26" size={16} />
+              <Text>Edit text</Text>
+            </Button>
+          )}
+        </Row>
       ))}
       {observation.pages.length > 0 && (
         <Text className="text-sm text-muted-foreground">{"Pages can't be added or removed on a saved observation yet."}</Text>

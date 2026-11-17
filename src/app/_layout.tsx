@@ -44,9 +44,12 @@ function Screens() {
         />
         {/* Its own header (title, no back arrow): Cancel at the bottom asks first (MB-12). */}
         <Stack.Screen name="assessment/[reference]/observation/[id]/edit" options={{ title: 'Edit observation' }} />
+        {/* Its own Cancel at the bottom asks nothing: nothing is lost but the typed text (MB-17). */}
+        <Stack.Screen name="assessment/[reference]/observation/[id]/page-text" options={{ title: 'Edit text', headerBackButtonDisplayMode: 'minimal' }} />
         <Stack.Screen name="assessment/[reference]/locations" options={{ presentation: 'modal' }} />
         {/* A site walk: record it, then review what the AI proposed (MB-16). */}
         <Stack.Screen name="assessment/[reference]/site-walks" options={{ title: 'Site walks', headerBackButtonDisplayMode: 'minimal' }} />
+        <Stack.Screen name="assessment/[reference]/scans" options={{ title: 'Scans', headerBackButtonDisplayMode: 'minimal' }} />
         <Stack.Screen name="assessment/[reference]/site-walk-recording" options={{ title: 'Record a walk', headerBackButtonDisplayMode: 'minimal' }} />
         <Stack.Screen name="assessment/[reference]/site-walk-review" options={{ title: 'Review a walk', headerBackButtonDisplayMode: 'minimal' }} />
         {/* The chatbot's lasting facts about me (MB-15). */}
