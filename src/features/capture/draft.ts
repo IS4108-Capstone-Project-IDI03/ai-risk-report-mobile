@@ -47,9 +47,10 @@ export const filePart = (uri: string, name: string, type: string) =>
   ({ uri, name, type, bytes: () => new File(uri).bytes() }) as unknown as Blob
 
 // The same file parts for adding photos and voice notes to a saved observation
-// (MB-12 AC20): POST /api/observations/:id/media takes `photo` and `recording` parts.
-export function mediaToFormData(photos: string[], recordings: VoiceNote[]) {
+// (MB-12 AC20, MB-17 AC19): POST /api/observations/:id/media takes `photo`, `recording` and `page` parts.
+export function mediaToFormData(photos: string[], recordings: VoiceNote[], pages: string[] = []) {
   const form = new FormData()
+  pages.forEach((uri, i) => form.append('page', filePart(uri, `Page ${i + 1}.jpg`, 'image/jpeg')))
   photos.forEach((uri, i) => form.append('photo', filePart(uri, `Photo ${i + 1}.jpg`, 'image/jpeg')))
   recordings.forEach((r, i) => form.append('recording', filePart(r.uri, `Voice note ${i + 1}.m4a`, 'audio/m4a')))
   return form

@@ -125,7 +125,7 @@ beforeEach(() => {
 })
 
 describe('media', () => {
-  it('lists photos, voice notes and pages, with Remove on photos and voice notes only (AC16)', async () => {
+  it('lists photos, voice notes and pages, each with Remove (AC16; pages too since MB-17, 17 Nov)', async () => {
     gateway()
     const editor = await openEditor()
     const media = within(editor.getByTestId('media'))
@@ -137,8 +137,8 @@ describe('media', () => {
     expect(media.getByText('Handwritten page 1')).toBeTruthy()
     expect(media.getByRole('button', { name: 'Remove photo 1' })).toBeTruthy()
     expect(media.getByRole('button', { name: 'Remove voice note 2' })).toBeTruthy()
-    // The gateway can't remove a page from a saved observation yet (CP-20).
-    expect(media.queryByRole('button', { name: /Remove handwritten page/ })).toBeNull()
+    // The web's CP-20 (on main) removes pages too.
+    expect(media.getByRole('button', { name: 'Remove handwritten page 1' })).toBeTruthy()
   })
 
   it('removes a photo after confirming, and lists it under Removed (AC17)', async () => {

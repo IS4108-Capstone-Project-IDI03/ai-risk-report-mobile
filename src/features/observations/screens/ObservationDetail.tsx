@@ -7,7 +7,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { Pencil, Trash2 } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ScrollView, View } from 'react-native'
+import { Alert, ScrollView, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Button } from '@/components/ui/button'
 import { Text } from '@/components/ui/text'
@@ -18,14 +18,14 @@ import { OfflineNote } from '@/features/offline/components/OfflineNote'
 import { useOffline } from '@/features/offline/provider'
 import { asObservation, type QueuedObservation } from '@/features/offline/queue'
 import { cn, readable } from '@/lib/utils'
-import { deleteObservation, listObservations, retryTranscription, type MediaKind } from '../api'
+import { deleteObservation, listObservations, retranscribePage, retryTranscription, type MediaKind } from '../api'
 import { POLL_LIMIT, POLL_MS } from '../transcriptPoll'
 import { confirmDelete } from '../confirmDelete'
 import { DetailFacts } from '../components/DetailFacts'
 import { MediaImage } from '../components/MediaImage'
 import { PageEntry } from '../components/PageEntry'
 import { VoiceNote } from '../components/VoiceNote'
-import type { Observation } from '../format'
+import type { Observation, Page } from '../format'
 
 export default function ObservationDetail() {
   const { reference, id } = useLocalSearchParams<{ reference: string; id: string }>()
@@ -88,17 +88,18 @@ export default function ObservationDetail() {
     return () => clearInterval(timer)
   }, [transcribing, attempt])
 
-  // One new attempt at a failed transcript, one tap (AC28). The reply is 202 with no
-  // body, so the list is read again to show "Transcribing"; a refusal or no signal says
-  // why and reads it again too, in case it already changed (AC30). Nothing is queued.
-  async function retry(kind: MediaKind | 'pages', itemId: string) {
+  // One tap starts one new reading of a voice note or page: Try again on a failed one (AC28) or, MB-17,
+  // Read again on one that was read. Try again's reply is 202 with no body, so the list is read again
+  // to show "Transcribing"; a refusal or no signal says why and reads it again too, in case it already
+  // changed (AC30). Nothing is queued. A second tap while one is in flight does nothing.
+  async function start(action: () => Promise<unknown>) {
     if (retrying) return
     setRetrying(true)
     setProblem(null)
     setGaveUp(false)
     polls.current = 0
     try {
-      await retryTranscription(id, kind, itemId)
+      await action()
     } catch (e) {
       setProblem(errorText(e))
     } finally {
@@ -108,7 +109,21 @@ export default function ObservationDetail() {
     }
   }
   const tryAgain = (kind: MediaKind | 'pages', itemId: string) =>
-    waiting ? undefined : { run: () => retry(kind, itemId), disabled: offline || retrying, offline }
+    waiting ? undefined : { run: () => start(() => retryTranscription(id, kind, itemId)), disabled: offline || retrying, offline }
+  // Replaces good text with a new reading (a paid call), so it asks first (MB-17 AC8). A correction the
+  // engineer made is replaced too, so the question says so (AC15).
+  const readAgain = (page: Page) =>
+    waiting || !page.id
+      ? undefined
+      : {
+          run: () =>
+            Alert.alert('Read this page again?', page.transcription?.correction ? 'This replaces your corrected text.' : 'The current text will be replaced.', [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Read again', onPress: () => void start(() => retranscribePage(id, page.id!)) },
+            ]),
+          disabled: offline || retrying,
+          offline,
+        }
 
   // A waiting observation knows its location's ID, not its name.
   useEffect(() => {
@@ -158,7 +173,13 @@ export default function ObservationDetail() {
             <VoiceNote key={note.id} note={note} number={i + 1} retry={tryAgain('recordings', note.id)} />
           ))}
           {found.pages.map((page, i) => (
-            <PageEntry key={page.id ?? page.url} page={page} number={i + 1} retry={page.id ? tryAgain('pages', page.id) : undefined} />
+            <PageEntry
+              key={page.id ?? page.url}
+              page={page}
+              number={i + 1}
+              retry={page.id ? tryAgain('pages', page.id) : undefined}
+              again={readAgain(page)}
+            />
           ))}
           {gaveUp && transcribing && <Text className="text-sm text-muted-foreground">Still working. Check back soon.</Text>}
         </View>

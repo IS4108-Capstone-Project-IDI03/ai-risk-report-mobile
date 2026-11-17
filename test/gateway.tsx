@@ -6,6 +6,7 @@ import Layout from '../src/app/_layout'
 import SitePins from '../src/app/assessment/[reference]/site-pins'
 import WalkRecording from '../src/app/assessment/[reference]/site-walk-recording'
 import WalkReview from '../src/app/assessment/[reference]/site-walk-review'
+import Scans from '../src/app/assessment/[reference]/scans'
 import SiteWalks from '../src/app/assessment/[reference]/site-walks'
 import Preferences from '../src/app/preferences'
 import Chat from '../src/app/(tabs)/chat'
@@ -15,6 +16,7 @@ import Profile from '../src/app/(tabs)/profile'
 import Capture from '../src/app/assessment/[reference]/capture'
 import Workspace from '../src/app/assessment/[reference]/index'
 import ObservationDetail from '../src/app/assessment/[reference]/observation/[id]'
+import PageText from '../src/app/assessment/[reference]/observation/[id]/page-text'
 import ObservationEdit from '../src/app/assessment/[reference]/observation/[id]/edit'
 import LocationPicker from '../src/app/assessment/[reference]/locations'
 import SignIn from '../src/app/sign-in'
@@ -125,12 +127,14 @@ export const routes = {
   'assessment/[reference]/index': Workspace,
   'assessment/[reference]/locations': LocationPicker,
   'assessment/[reference]/site-pins': SitePins,
+  'assessment/[reference]/scans': Scans,
   'assessment/[reference]/site-walks': SiteWalks,
   'assessment/[reference]/site-walk-recording': WalkRecording,
   'assessment/[reference]/site-walk-review': WalkReview,
   'assessment/[reference]/capture': Capture,
   'assessment/[reference]/observation/[id]': ObservationDetail,
   'assessment/[reference]/observation/[id]/edit': ObservationEdit,
+  'assessment/[reference]/observation/[id]/page-text': PageText,
 }
 
 // Taps a bottom tab by its label.
