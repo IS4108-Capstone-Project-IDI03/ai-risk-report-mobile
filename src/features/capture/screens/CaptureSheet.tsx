@@ -253,12 +253,7 @@ export default function CaptureSheet({ onClose, embedded = false, reference: giv
               <View className={cn('gap-6', wide && 'flex-1')}>
                 {/* Severity first: it's required to save, COPE isn't. */}
                 <View className="gap-2">
-                  <View className="flex-row items-baseline justify-between">
-                    <Eyebrow>Severity</Eyebrow>
-                    <Text className={draft.severity ? 'text-sm font-semibold text-success-foreground' : 'text-sm font-semibold text-warning-foreground'}>
-                      Required
-                    </Text>
-                  </View>
+                  <Eyebrow required>Severity</Eyebrow>
                   <SeverityPicker value={draft.severity} onChange={(severity) => update({ severity })} />
                 </View>
 
