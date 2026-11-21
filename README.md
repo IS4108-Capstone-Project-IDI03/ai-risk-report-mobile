@@ -174,6 +174,31 @@ logging still apply.
 - **Out of scope:** the web client showing corrections made on a phone, saving a correction offline, removing a page
   from the detail screen (Edit only).
 
+**MB-19: calendar** (branch `MB-19`, web CP-60; not in the backlog yet, needs adding)
+
+- **Where:** a **Calendar** tab between Home and Chatbot. It reads the same list as Home
+  (`GET /api/assessments`) and adds no endpoint. Archived assessments are left out.
+- **Phone (changed 19 Nov, Miya):** the month grid, in a rounded card, fills the tab's height, as in Apple Calendar, with
+  lines between days. Entries are bars with their site name, as on the web, and each bar opens its
+  details: a survey is one bar across all its days in its type's colour and icon (flag, repeat,
+  calendar-check), a report due is a white chip in its state's colour and icon. Tap the rest of a day and a sheet slides up with
+  its entries (a survey shows on each of its days). Late reports and No survey
+  date are under the grid, just below a screen's worth of month. **Wide window (700pt or more):**
+  the web's month grid (a survey is one bar across its days, a report due date is a white chip that
+  says late, due soon, on track or finalised), three entries a day then "+N more", and a **Week**
+  view. The two lists sit beside the grid from 1080pt, under it below that.
+- **Move and filter:** arrows, **Today**, Month / Week, Survey dates / Report due dates, and one
+  assessment type. The footer's "N reports late" opens the month of the oldest late report. The
+  view, period and filters are kept when you open an assessment and come back (the tab stays open).
+- **Details:** tap an entry for its site, client, reference, type, status, survey days, report due
+  date and site contacts, with **Open assessment** and **Reschedule**.
+- **Reschedule and Set dates** (`PUT /api/assessments/:reference`, the web's Edit details route, type
+  sent unchanged, a cleared date sent as `''`): native date picker (`@react-native-community/datetimepicker`),
+  Save dates greyed until something changes, wrong dates named beside the field before anything is sent.
+  Only the assigned engineer can; online only ("Connect to reschedule.").
+- **Gateway:** nothing of ours. Needs the web `main` with `siteVisitEndDate` on that route (CP-60, `39a8dd83`).
+- **Out of scope:** New Assessment from a day, the admin Engineer filter, dragging an entry, `.ics` export.
+
 **MB-07: site flow redesign** (branch `MB-07`)
 
 - **Home:** a "Capturing now" card for the assessment whose capture started most recently, one tap back
@@ -290,7 +315,7 @@ logging still apply.
 
 ## What to build next
 
-The MVP order, agreed 27 Oct 2026 (MB-01 to MB-12 are all built, and so are MB-16, the site walk, and MB-17, scanned pages). Each is its own story (`MB-0n`). The web stories it
+The MVP order, agreed 27 Oct 2026 (MB-01 to MB-12 are all built, and so are MB-16, the site walk, MB-17, scanned pages, and MB-19, the calendar). Each is its own story (`MB-0n`). The web stories it
 mirrors are in the web repo's `docs/USER_STORIES.md`.
 
 | Order | Story | Mirrors | Gateway support |
@@ -324,7 +349,7 @@ src/
   app/                    Expo Router routes only; each re-exports a screen
     _layout.tsx           fonts, session check, sign-in vs tabs, workspace screens
     sign-in.tsx
-    (tabs)/               bottom tabs: index (Home), chat, profile
+    (tabs)/               bottom tabs: index (Home), calendar, chat, profile
     assessment/[reference]/  index (workspace), locations (picker modal), capture (sheet)
   features/
     auth/                 session.tsx, screens/SignIn
@@ -339,6 +364,9 @@ src/
                           components/ (sections, chips), screens/CaptureSheet
     chat/                 api (incl. saved chats), library (answer format), events (stream), answer (citations),
                           useConversation, components/ (ChatList, FactRow, FactForm), screens/Chat, Preferences
+    calendar/             calendar.ts (dates and layout, copied from the web), api (Reschedule), format,
+                          components/ (Toolbar, PhoneMonth, DayEntries, MonthGrid, EntryChip, EntryRow, SideLists, EntryDetails,
+                          RescheduleSheet, DateField), screens/Calendar
     profile/              screens/Profile
   components/ui/          React Native Reusables components, adjusted
   lib/                    api.ts (every gateway call), utils.ts (cn), nav.ts (header styles), motion.ts (pane ease)

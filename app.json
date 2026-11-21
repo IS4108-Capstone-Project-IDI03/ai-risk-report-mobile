@@ -46,7 +46,8 @@
           "locationWhenInUsePermission": "Site Capture reads your position once, when you tap Pin where I am, to save where a location on site is."
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "@react-native-community/datetimepicker"
     ]
   }
 }

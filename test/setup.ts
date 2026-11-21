@@ -146,3 +146,10 @@ jest.mock('react-native-maps', () => {
 })
 // MB-16: keeping the screen on is the phone's; Jest only needs the call to exist.
 jest.mock('expo-keep-awake', () => ({ useKeepAwake: jest.fn() }))
+
+// MB-19: the phone's date picker is native. This stand-in is one element a test can drive:
+// fireEvent(getByTestId('date-picker'), 'valueChange', {}, new Date(2026, 10, 20)).
+jest.mock('@react-native-community/datetimepicker', () => ({
+  __esModule: true,
+  default: (props: object) => require('react').createElement('View', props),
+}))
