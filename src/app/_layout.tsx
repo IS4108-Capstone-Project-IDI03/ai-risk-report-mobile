@@ -56,6 +56,7 @@ function Screens() {
         <Stack.Screen name="assessment/[reference]/site-walk-review" options={{ title: 'Review a walk', headerBackButtonDisplayMode: 'minimal' }} />
         {/* The chatbot's lasting facts about me (MB-15). */}
         <Stack.Screen name="preferences" options={{ presentation: 'modal', title: 'My preferences' }} />
+        <Stack.Screen name="new-assessment" options={{ presentation: 'modal', title: 'New assessment' }} />
         {/* Where the site and its blocks are, with directions and Move here (MB-02). */}
         <Stack.Screen name="assessment/[reference]/site-pins" options={{ title: 'Site pins', headerBackButtonDisplayMode: 'minimal' }} />
         {/* Full screen on a phone; a centred sheet on a tablet (MB-09). No swipe

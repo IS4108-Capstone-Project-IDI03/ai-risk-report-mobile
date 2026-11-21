@@ -9,6 +9,7 @@ import WalkReview from '../src/app/assessment/[reference]/site-walk-review'
 import Scans from '../src/app/assessment/[reference]/scans'
 import Assistant from '../src/app/assessment/[reference]/assistant'
 import SiteWalks from '../src/app/assessment/[reference]/site-walks'
+import NewAssessment from '../src/app/new-assessment'
 import Preferences from '../src/app/preferences'
 import Calendar from '../src/app/(tabs)/calendar'
 import Chat from '../src/app/(tabs)/chat'
@@ -128,6 +129,7 @@ export const routes = {
   '(tabs)/calendar': Calendar,
   '(tabs)/chat': Chat,
   preferences: Preferences,
+  'new-assessment': NewAssessment,
   '(tabs)/profile': Profile,
   'assessment/[reference]/index': Workspace,
   'assessment/[reference]/locations': LocationPicker,
