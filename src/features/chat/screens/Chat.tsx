@@ -96,7 +96,11 @@ export default function Chat() {
             <View className="h-0.5 w-3.5 rounded-full bg-white" />
           </View>
         </Pressable>
-        <Text className="text-lg font-semibold text-white">Chatbot</Text>
+        {/* Pinned to the middle of the bar: with "New chat" on the right the two sides differ in width,
+            and justify-between would push the title off-centre. pointerEvents none keeps taps on the buttons. */}
+        <View pointerEvents="none" className="absolute inset-0 items-center justify-center">
+          <Text className="text-lg font-semibold text-white">Chatbot</Text>
+        </View>
         {turns.length > 0 ? (
           <Button variant="header" accessibilityLabel="New chat" onPress={reset} className="px-3">
             <Text>New chat</Text>

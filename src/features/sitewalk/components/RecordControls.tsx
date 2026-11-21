@@ -22,9 +22,11 @@ export function RecordControls({ recording, paused, millis, onRecord, onPause, o
           <Text className={paused ? 'font-medium text-warning-foreground' : 'font-medium text-destructive'}>{paused ? 'Recording paused' : 'Recording'}</Text>
         </View>
       )}
-      <View className="flex-row gap-3">
-        {recording ? (
-          <>
+      {/* While recording, Pause or Resume and Stop share a row, and Photo has its own below: three side by side
+          left Resume ("Resum" over a cut-off "e") too narrow on a phone. Not recording: Record and Photo. */}
+      {recording ? (
+        <>
+          <View className="flex-row gap-3">
             <Button size="lg" variant="outline" accessibilityLabel={paused ? 'Resume recording' : 'Pause recording'} onPress={paused ? onResume : onPause} className="flex-1">
               {paused ? <Play color="#1a1f26" size={18} /> : <Pause color="#1a1f26" size={18} />}
               <Text className="text-lg">{paused ? 'Resume' : 'Pause'}</Text>
@@ -33,18 +35,24 @@ export function RecordControls({ recording, paused, millis, onRecord, onPause, o
               <Square color="#ffffff" size={18} />
               <Text className="text-lg">Stop</Text>
             </Button>
-          </>
-        ) : (
+          </View>
+          <Button size="lg" variant="outline" accessibilityLabel="Take photo" onPress={onPhoto}>
+            <Camera color="#1a1f26" size={20} />
+            <Text className="text-lg">Photo</Text>
+          </Button>
+        </>
+      ) : (
+        <View className="flex-row gap-3">
           <Button size="lg" accessibilityLabel="Record" onPress={onRecord} className="flex-1">
             <Mic color="#ffffff" size={20} />
             <Text className="text-lg">Record</Text>
           </Button>
-        )}
-        <Button size="lg" variant="outline" accessibilityLabel="Take photo" onPress={onPhoto}>
-          <Camera color="#1a1f26" size={20} />
-          <Text className="text-lg">Photo</Text>
-        </Button>
-      </View>
+          <Button size="lg" variant="outline" accessibilityLabel="Take photo" onPress={onPhoto}>
+            <Camera color="#1a1f26" size={20} />
+            <Text className="text-lg">Photo</Text>
+          </Button>
+        </View>
+      )}
       {recording && millis >= WARN_MILLIS && <Text className="font-medium text-warning-foreground">Under a minute left in this part.</Text>}
     </View>
   )

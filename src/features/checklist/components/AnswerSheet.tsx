@@ -130,10 +130,7 @@ export function AnswerSheet({ item, result, reference, locationId, onClose, onSa
               )}
             </View>
             <View className="gap-2">
-              <View className="flex-row items-center justify-between">
-                <Eyebrow>Severity</Eyebrow>
-                <Text className="text-sm font-medium text-warning-foreground">Required</Text>
-              </View>
+              <Eyebrow required>Severity</Eyebrow>
               <SeverityPicker value={severity} onChange={setSeverity} />
             </View>
             {problem && (
