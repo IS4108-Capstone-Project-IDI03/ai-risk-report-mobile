@@ -199,6 +199,39 @@ logging still apply.
 - **Gateway:** nothing of ours. Needs the web `main` with `siteVisitEndDate` on that route (CP-60, `39a8dd83`).
 - **Out of scope:** New Assessment from a day, the admin Engineer filter, dragging an entry, `.ics` export.
 
+**MB-20: next step and gaps, and MarshBot's chat** (branch `MB-20`, web AS-06; not in the backlog yet, needs adding; the chat was MB-20 until 21 Nov, when it was folded in)
+
+- **Where:** on a phone, a full-width **Overview** bar (stage, eight progress segments, one chip, the report's
+  due note, a chevron) above the Observations | Checklist switch; tapping it opens MarshBot's chat (below), whose **Summary** opens a sheet with the rest. On an
+  iPad, the card with **Hide**. Only the assigned engineer gets it (someone else's: nothing).
+- **What it shows:** the stage ("Capture · stage 3 of 8" and eight dots), the one **Next step** (a sentence and a button with a
+  verb), the open items most urgent first (Fix now, Gap, Reminder; five, then **Show all N**), the checklist areas that need
+  more as bars, and three "At a glance" tiles. Each row opens the checklist, an observation or the site walks; a row that
+  points to Generate, Review or Export is greyed and says "Continue on the web." A checklist link opens the Checklist
+  (it has no jump to one area yet).
+- **Loads** with the workspace, on coming back to it and on pull to refresh. Offline it shows the last copy.
+- **Gateway:** `GET /api/assessments/:reference/assistant/summary`, **new, in the web repo on branch `AS-06-summary`** (not merged).
+  It is read only: unlike `GET .../assistant` it records no "opened" and starts no paid AI call. The phone never calls that one.
+  Until that branch is on the gateway you run, the card shows the gateway's refusal text (a 404).
+- **Left out:** dismissing, live push, a stage on Home and the Focus list (see the spec). The chat is below.
+
+**The chat** (was MB-20; the same web story, AS-06):
+
+- **Where:** tapping the Overview bar (phone) opens the chat as its own screen, `/assessment/<reference>/assistant`. **Summary** at
+  its top goes back to the workspace with the old Overview sheet open (next step and gaps). The iPad keeps the card.
+- **What it shows:** the gateway's status pill, the stage with eight segments, three facts, then the conversation: MarshBot's
+  bubbles on the left, yours on the right, each turn as its lines then its cards. Cards drawn: To do (tasks), rows (with a button),
+  checklist and area bars. The outline, review lanes and stage-time cards show a title and "See the detail on the web."
+- **Replies:** MarshBot's buttons are pinned at the bottom (Skip for now, What else?, Add observations, That's everything, Another
+  visit with the native date picker and Confirm). One `POST .../assistant/replies` each, online only ("Connect to reply."). A reply with a
+  link (Add observations) only opens it and sends nothing, as the web does. A reply has its icon at the left, a link reply an arrow
+  at the right, and the first hint (what a stage move does) is one line under the buttons. The status block has **Hide** on its stage row (folds the segments and the three facts away; the pill, the stage line and Summary stay). A "Try Again" row opens its observation, where the phone's own Try again is (never a paid call from a chat button).
+- **Gateway:** nothing of ours. `GET /api/assessments/:ref/assistant` **records an "open" and can start paid AI steps** (a coverage
+  check, and the AI rewording of new bot turns), so the phone reads it once when the screen opens, and again after a reply or
+  while MarshBot is writing (every 5 s, up to 2 minutes). It sends no activity beacon.
+- **Left out:** earlier sessions, the agenda, the AI-worded form of a turn (the phone draws its lines and cards, as the web does
+  when a turn has none), the outline, lanes and stage-time cards in full, push when MarshBot finishes.
+
 **MB-07: site flow redesign** (branch `MB-07`)
 
 - **Home:** a "Capturing now" card for the assessment whose capture started most recently, one tap back
@@ -315,7 +348,7 @@ logging still apply.
 
 ## What to build next
 
-The MVP order, agreed 27 Oct 2026 (MB-01 to MB-12 are all built, and so are MB-16, the site walk, MB-17, scanned pages, and MB-19, the calendar). Each is its own story (`MB-0n`). The web stories it
+The MVP order, agreed 27 Oct 2026 (MB-01 to MB-12 are all built, and so are MB-16, the site walk, MB-17, scanned pages, MB-19, the calendar, and MB-20, next step and gaps and MarshBot's chat). Each is its own story (`MB-0n`). The web stories it
 mirrors are in the web repo's `docs/USER_STORIES.md`.
 
 | Order | Story | Mirrors | Gateway support |
@@ -367,6 +400,10 @@ src/
     calendar/             calendar.ts (dates and layout, copied from the web), api (Reschedule), format,
                           components/ (Toolbar, PhoneMonth, DayEntries, MonthGrid, EntryChip, EntryRow, SideLists, EntryDetails,
                           RescheduleSheet, DateField), screens/Calendar
+    assistant/            api (the conversation, replies), types, poll, useThread, format, components/ (Bubble, CardView, TasksCard,
+                          RowsCard, AreaCard, PlainCard, Row, StatusLine, Replies, DateStep), screens/Assistant
+    overview/             api (the summary), format (link targets), icons, useSummary, components/ (OverviewCard,
+                          StageLine, NextStep, GapRow, AreaBar, Glance)
     profile/              screens/Profile
   components/ui/          React Native Reusables components, adjusted
   lib/                    api.ts (every gateway call), utils.ts (cn), nav.ts (header styles), motion.ts (pane ease)
