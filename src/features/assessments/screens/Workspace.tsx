@@ -10,7 +10,8 @@
 // MB-05: a switch, Observations | Checklist, under the band; the checklist shows in place
 // of the observations, with the location bar and New observation still below. On a wide
 // iPad pane the two sit side by side instead, the checklist collapsible. MB-11: tapping an observation opens its detail. MB-12: swiping an uploaded one
-// left deletes it, and Show deleted below the list restores.
+// left deletes it, and Show deleted below the list restores. MB-20: the Overview (a full-width bar under the band that opens a sheet on the phone, the card on the iPad; stage, next
+// step, gaps) sits above the switch; its links open the checklist, an observation or the site walks.
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { ChevronDown, ChevronUp, Footprints, MapPin, Plus } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
@@ -39,20 +40,31 @@ import { ObservationCard } from '@/features/observations/components/ObservationC
 import { SwipeDelete } from '@/features/observations/components/SwipeDelete'
 import type { Observation } from '@/features/observations/format'
 import CaptureSheet from '@/features/capture/screens/CaptureSheet'
+import { OverviewCard } from '@/features/overview/components/OverviewCard'
+import { OverviewSheet } from '@/features/overview/components/OverviewSheet'
+import { OverviewButton } from '@/features/overview/components/OverviewButton'
+import type { Target } from '@/features/overview/format'
+import { useSummary } from '@/features/overview/useSummary'
 import { ChecklistPane } from '../components/ChecklistPane'
 import { WorkspaceSwitch, type Side } from '../components/WorkspaceSwitch'
 import { listAssessments } from '../api'
+import { dueNote } from '../filters'
 import { formatDate, STATUS, type Assessment } from '../format'
 
 export default function Workspace() {
-  const { reference } = useLocalSearchParams<{ reference: string }>()
-  return <WorkspaceView reference={reference} />
+  // `side` and `overview` come from MarshBot's chat (MB-20): a link there lands on a side of the switch, and Summary opens the
+  // Overview sheet. `at` is a timestamp the chat adds so the same choice twice still counts as a new one.
+  const { reference, side, overview, at } = useLocalSearchParams<{ reference: string; side?: string; overview?: string; at?: string }>()
+  return <WorkspaceView reference={reference} arrival={{ side, overview, at }} />
 }
+
+// What the chat asks the workspace to show on arrival.
+type Arrival = { side?: string; overview?: string; at?: string }
 
 // `embedded`: inside Home's split view, where there's no stack header to set.
 // `leading`: a button for the band's left edge; Home passes "Show assessments"
 // there while its list is hidden (MB-09 AC7).
-export function WorkspaceView({ reference, embedded = false, leading }: { reference: string; embedded?: boolean; leading?: ReactNode }) {
+export function WorkspaceView({ reference, embedded = false, leading, arrival }: { reference: string; embedded?: boolean; leading?: ReactNode; arrival?: Arrival }) {
   const [location] = useCurrentLocation(reference)
   // undefined while loading; null once the list arrives without it.
   const [assessment, setAssessment] = useState<Assessment | null | undefined>(undefined)
@@ -62,8 +74,22 @@ export function WorkspaceView({ reference, embedded = false, leading }: { refere
   const { items, uploads, discard, offline } = useOffline()
   // Which side of the switch is shown (MB-05 AC1), and the checklist, read once for both
   // the switch's progress and the view.
-  const [side, setSide] = useState<Side>('observations')
+  const asked = (a?: Arrival) => (a?.side === 'checklist' || a?.side === 'observations' ? a.side : null)
+  const [side, setSide] = useState<Side>(asked(arrival) ?? 'observations')
   const checklist = useChecklist(reference)
+  // The next step and gaps (MB-20): read only, loaded with this screen and on pull to refresh.
+  const overview = useSummary(reference)
+  // The sheet opens from the chat's Summary button (MB-20), which comes back here with overview=1 (the iPad keeps the card).
+  const [overviewOpen, setOverviewOpen] = useState(arrival?.overview === '1')
+  // Back from the chat (MB-20) with a new ask (a new `at`): show the side or the sheet it wants. Done while rendering, the
+  // way React advises for state that follows a prop; the first ask is already in the two states above.
+  const [lastAt, setLastAt] = useState(arrival?.at)
+  if (arrival?.at !== lastAt) {
+    setLastAt(arrival?.at)
+    const next = asked(arrival)
+    if (next) setSide(next)
+    if (arrival?.overview === '1') setOverviewOpen(true)
+  }
   const list = checklist.body?.checklist
   const progress = list ? { done: list.items.filter((i) => i.check).length, total: list.items.length } : null
   // The pane's own width, measured (it is Home's right-hand side on a split view, not
@@ -163,10 +189,27 @@ export function WorkspaceView({ reference, embedded = false, leading }: { refere
     })
   }
 
+  // Where an Overview link goes: a side of the switch, an observation, the site walks. A link
+  // to a web-only tab never reaches here (its row is greyed).
+  function go(target: Target) {
+    if (target.kind === 'checklist') {
+      if (together) setCollapsed(false)
+      else setSide('checklist')
+    } else if (target.kind === 'observations') setSide('observations')
+    else if (target.kind === 'uncategorised') {
+      // The gateway's gap names no observations; the phone has them all, so open the first one with no category.
+      const first = (observations ?? []).find((o) => !o.copeDimensions)
+      if (first) router.push({ pathname: '/assessment/[reference]/observation/[id]', params: { reference, id: first.id } })
+      else setSide('observations')
+    } else if (target.kind === 'observation')
+      router.push({ pathname: '/assessment/[reference]/observation/[id]', params: { reference, id: target.id } })
+    else if (target.kind === 'walks') router.push({ pathname: '/assessment/[reference]/site-walks', params: { reference } })
+  }
+
   async function refresh() {
     setRefreshing(true)
     try {
-      await load()
+      await Promise.all([load(), overview.reload()])
     } finally {
       setRefreshing(false)
     }
@@ -187,6 +230,7 @@ export function WorkspaceView({ reference, embedded = false, leading }: { refere
     )
   }
 
+  // Only what was captured at the chosen location (AC4); the gateway sends newest first.
   // Only what was captured at the chosen location (AC4); the gateway sends newest first.
   const here = location && observations ? observations.filter((o) => o.location?.id === location.id) : []
   // Waiting to upload from here, newest first, above the gateway's (MB-10 AC2).
@@ -245,7 +289,7 @@ export function WorkspaceView({ reference, embedded = false, leading }: { refere
             </View>
             {/* The site's pins and directions (MB-02 AC19), in a row of their own: beside the date, labelled buttons
                 covered it on a phone. A light white border. The Scans button (MB-17 AC1) was taken out on 19 Nov at
-                Miya's request; the Scans screen is still a route. */}
+                Miya's request; the Scans screen is still a route. The Overview is a bar below the band (MB-20). */}
             <View className={cn('mt-3 flex-row gap-3', col)}>
               <Button
                 variant="header"
@@ -260,7 +304,11 @@ export function WorkspaceView({ reference, embedded = false, leading }: { refere
           </View>
         )
       )}
-      <View className={cn('gap-4', pad, col)}>
+      {/* On the iPad (together) nothing else separates this from the navy band, so the card would touch it: pt-4 and pb-2 give it room. */}
+      <View className={cn('gap-4', pad, col, together && 'pb-2 pt-4')}>
+        {/* iPad: the card (MB-20). The phone has the Overview bar instead: one compact row above the switch. */}
+        {together && <OverviewCard state={overview} onGo={go} />}
+        {!together && <OverviewButton state={overview} due={assessment ? dueNote(assessment) : null} onOpen={() => router.push({ pathname: '/assessment/[reference]/assistant', params: { reference } })} />}
         {!together && <WorkspaceSwitch side={side} onChange={setSide} progress={progress} />}
         <OfflineNote />
       </View>
@@ -395,6 +443,19 @@ export function WorkspaceView({ reference, embedded = false, leading }: { refere
             </View>
           </View>
         </Bar>
+      )}
+      {!together && overviewOpen && (
+        <OverviewSheet
+          state={overview}
+          // The observations with no category, listed under that gap (the gateway names none).
+          uncategorised={(observations ?? []).filter((o) => !o.copeDimensions)}
+          // Close first, then go: the target may be the other side of the switch or another screen.
+          onGo={(target) => {
+            setOverviewOpen(false)
+            go(target)
+          }}
+          onClose={() => setOverviewOpen(false)}
+        />
       )}
     </View>
   )

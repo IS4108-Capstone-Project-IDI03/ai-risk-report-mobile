@@ -7,6 +7,7 @@ import SitePins from '../src/app/assessment/[reference]/site-pins'
 import WalkRecording from '../src/app/assessment/[reference]/site-walk-recording'
 import WalkReview from '../src/app/assessment/[reference]/site-walk-review'
 import Scans from '../src/app/assessment/[reference]/scans'
+import Assistant from '../src/app/assessment/[reference]/assistant'
 import SiteWalks from '../src/app/assessment/[reference]/site-walks'
 import Preferences from '../src/app/preferences'
 import Calendar from '../src/app/(tabs)/calendar'
@@ -56,7 +57,9 @@ export function mockGateway(
 ) {
   const fetchMock = jest.fn(async (url: string, init?: RequestInit) => {
     const key = `${init?.method ?? 'GET'} ${new URL(url).pathname}`
-    const route = routes[key]
+    // Every workspace asks for its Overview summary (MB-20). A test that is not about it gets
+    // 403, "not yours", which draws no card, so the other workspace tests are left as they were.
+    const route = routes[key] ?? (key.endsWith('/assistant/summary') ? { status: 403, body: { error: 'Not yours.' } } : undefined)
     if (!route) throw new Error(`Unexpected request: ${key}`)
     const reply = typeof route === 'function' ? route(init, url) : route
     if (reply instanceof Error) throw reply
@@ -130,6 +133,7 @@ export const routes = {
   'assessment/[reference]/locations': LocationPicker,
   'assessment/[reference]/site-pins': SitePins,
   'assessment/[reference]/scans': Scans,
+  'assessment/[reference]/assistant': Assistant,
   'assessment/[reference]/site-walks': SiteWalks,
   'assessment/[reference]/site-walk-recording': WalkRecording,
   'assessment/[reference]/site-walk-review': WalkReview,

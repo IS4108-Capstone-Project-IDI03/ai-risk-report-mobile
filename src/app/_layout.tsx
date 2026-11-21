@@ -50,6 +50,8 @@ function Screens() {
         {/* A site walk: record it, then review what the AI proposed (MB-16). */}
         <Stack.Screen name="assessment/[reference]/site-walks" options={{ title: 'Site walks', headerBackButtonDisplayMode: 'minimal' }} />
         <Stack.Screen name="assessment/[reference]/scans" options={{ title: 'Scans', headerBackButtonDisplayMode: 'minimal' }} />
+        {/* MarshBot's chat, opened from the Overview bar (MB-20). */}
+        <Stack.Screen name="assessment/[reference]/assistant" options={{ title: 'MarshBot', headerBackButtonDisplayMode: 'minimal' }} />
         <Stack.Screen name="assessment/[reference]/site-walk-recording" options={{ title: 'Record a walk', headerBackButtonDisplayMode: 'minimal' }} />
         <Stack.Screen name="assessment/[reference]/site-walk-review" options={{ title: 'Review a walk', headerBackButtonDisplayMode: 'minimal' }} />
         {/* The chatbot's lasting facts about me (MB-15). */}
