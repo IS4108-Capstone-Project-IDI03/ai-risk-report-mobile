@@ -54,9 +54,14 @@ logging still apply.
   **Pin where I am** that reads the phone's GPS once, when tapped, and saves `coordinates` with the
   location (`expo-location`). Permission off or no fix says so and saving still works. A location
   queued with no signal keeps its pin.
+- **Remove a location (20 Nov):** swipe a saved location left in the picker to show **Remove**. It asks first, then sends
+  `DELETE .../locations/:id` and reads the list again. If it was the chosen location, you choose again. A location with
+  observations (deleted ones too) or waiting to upload has no Remove; if the gateway still refuses, its words are shown.
+  Online only ("Connect to remove."). Editing a location stays on the web.
 - **Site pins:** a **Site pins** button in the workspace band opens the site and its blocks, each with
   its pin or "Not pinned" (`site.coordinates` and `site.pins` from `GET /api/assessments`).
-  **Directions** opens Google Maps directions (no key). **Edit pin** (or **Set pin**) opens a panel:
+  Each place saved with no building ("Elsewhere on site") has a row and a marker too, and its pin is kept on the location; a location
+  inside a building has none (its building's pin stands for every level). **Directions** opens Google Maps directions (no key). **Edit pin** (or **Set pin**) opens a panel:
   tap the map, use the phone's position, or type `lat, lng`, then **Set** (`PUT /api/sites/:id/map`,
   one change at a time); **Remove pin** is there too. A map (`react-native-maps`, Apple Maps on
   iOS) shows a marker for each pin (S, 1, 2…), which can be dragged to move; **Hide map** folds it.
@@ -146,8 +151,9 @@ logging still apply.
 
 **MB-17: scanned pages** (branch `MB-17`, web CP-19 and CP-20; not in the backlog yet, needs adding)
 
-- **Scans:** a **Scans** button in the workspace header (beside Site pins) opens every handwritten page of the
-  assessment's live observations, newest first: thumbnail, its text or status (Reading the handwriting, Couldn't
+- **Scans:** the Scans screen (a route, `/assessment/<reference>/scans`) lists every handwritten page of the
+  assessment's live observations. **The Scans button was taken out of the workspace header on 19 Nov (Miya), so the
+  phone has no way to open it for now** (see the MB-17 spec), newest first: thumbnail, its text or status (Reading the handwriting, Couldn't
   read and why, No handwriting found), when it was captured and which observation. Tap a page to open its
   observation. Pull to refresh; pages still being read refresh every 5 seconds. Offline it shows the saved copy, and
   pages still waiting to upload say so.
