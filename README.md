@@ -232,6 +232,21 @@ logging still apply.
 - **Left out:** earlier sessions, the agenda, the AI-worded form of a turn (the phone draws its lines and cards, as the web does
   when a turn has none), the outline, lanes and stage-time cards in full, push when MarshBot finishes.
 
+**MB-21: start a new assessment** (branch `MB-21`, web CP-01 and CP-23, manual form only; not in the backlog yet, needs adding)
+
+- **Where:** a **+ New** button in Home's header opens a **New assessment** screen (a modal).
+- **The form:** pick a **client** (a searchable list of the gateway's clients; the list takes the form's place while
+  you choose), then one of its **sites** or **Add a new site** (name, address, jurisdiction as two letters, and a facility
+  type), then the **visit type** (First survey, Resurvey, Follow-up) and the optional **dates**, with the calendar's native
+  date picker. A new site, or one with no visit yet, can only start with a First survey (the gateway's rule), so the
+  other two are greyed with the reason.
+- **Create assessment** sends one `POST /api/assessments` and opens the new assessment's workspace. A listed site's
+  locations are copied from its latest visit (`copyLocations`, the web's default). The gateway's problems show beside
+  their fields and the form stays filled in. Online only ("Connect to start an assessment."). Two quick taps send one request.
+- **Gateway:** nothing of ours (`POST /api/assessments`, `GET /api/clients`, `GET /api/clients/:id/sites` already exist).
+- **Left out:** a new client, contacts, several sites at once, an admin choosing the engineer, reading client documents
+  with AI (paid), and "New assessment from a day" in the calendar.
+
 **MB-07: site flow redesign** (branch `MB-07`)
 
 - **Home:** a "Capturing now" card for the assessment whose capture started most recently, one tap back
@@ -348,7 +363,7 @@ logging still apply.
 
 ## What to build next
 
-The MVP order, agreed 27 Oct 2026 (MB-01 to MB-12 are all built, and so are MB-16, the site walk, MB-17, scanned pages, MB-19, the calendar, and MB-20, next step and gaps and MarshBot's chat). Each is its own story (`MB-0n`). The web stories it
+The MVP order, agreed 27 Oct 2026 (MB-01 to MB-12 are all built, and so are MB-16, the site walk, MB-17, scanned pages, MB-19, the calendar, MB-20, next step and gaps, and MB-21, start a new assessment). Each is its own story (`MB-0n`). The web stories it
 mirrors are in the web repo's `docs/USER_STORIES.md`.
 
 | Order | Story | Mirrors | Gateway support |
@@ -400,6 +415,8 @@ src/
     calendar/             calendar.ts (dates and layout, copied from the web), api (Reschedule), format,
                           components/ (Toolbar, PhoneMonth, DayEntries, MonthGrid, EntryChip, EntryRow, SideLists, EntryDetails,
                           RescheduleSheet, DateField), screens/Calendar
+    new-assessment/       api (clients, sites, create), format (visit and facility types, field errors), useLists,
+                          components/ (ClientPicker, SitePicker, NewSiteFields, TypeChips), screens/NewAssessment
     assistant/            api (the conversation, replies), types, poll, useThread, format, components/ (Bubble, CardView, TasksCard,
                           RowsCard, AreaCard, PlainCard, Row, StatusLine, Replies, DateStep), screens/Assistant
     overview/             api (the summary), format (link targets), icons, useSummary, components/ (OverviewCard,

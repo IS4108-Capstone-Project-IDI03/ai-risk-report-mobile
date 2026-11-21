@@ -187,10 +187,14 @@ export default function AssessmentList() {
               </Button>
             </View>
           ) : error ? undefined : (
-            <Text className="mt-8 px-4 text-center text-muted-foreground">
-              No assessments assigned. Assessments appear here once one is created for you on the web
-              app.
-            </Text>
+            <View className="mt-8 gap-2 px-4">
+              <Text className="text-center text-muted-foreground">
+                No assessments assigned. Assessments appear here once one is created for you on the web
+                app.
+              </Text>
+              {/* MB-21: the phone can start one too. */}
+              <Text className="text-center text-muted-foreground">Or start one with New, at the top.</Text>
+            </View>
           )
         }
       />
