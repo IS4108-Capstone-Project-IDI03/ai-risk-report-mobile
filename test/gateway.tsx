@@ -9,6 +9,7 @@ import WalkReview from '../src/app/assessment/[reference]/site-walk-review'
 import Scans from '../src/app/assessment/[reference]/scans'
 import SiteWalks from '../src/app/assessment/[reference]/site-walks'
 import Preferences from '../src/app/preferences'
+import Calendar from '../src/app/(tabs)/calendar'
 import Chat from '../src/app/(tabs)/chat'
 import Home from '../src/app/(tabs)/index'
 import TabsLayout from '../src/app/(tabs)/_layout'
@@ -121,6 +122,7 @@ export const routes = {
   'sign-in': SignIn,
   '(tabs)/_layout': TabsLayout,
   '(tabs)/index': Home,
+  '(tabs)/calendar': Calendar,
   '(tabs)/chat': Chat,
   preferences: Preferences,
   '(tabs)/profile': Profile,
