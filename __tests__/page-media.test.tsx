@@ -69,7 +69,7 @@ async function openEditor() {
   await fireEvent.press(await screen.findByText(REF))
   await screen.findByTestId('workspace')
   await fireEvent.press(await screen.findByRole('button', { name: /Choose location|Location/ }))
-  await fireEvent.press(await screen.findByRole('button', { name: /Staircase/ }))
+  await fireEvent.press(await screen.findByRole('button', { name: /^Staircase/ }))
   await fireEvent.press((await screen.findAllByTestId('observation-open'))[0])
   const detail = within(await screen.findByTestId('observation-detail'))
   await fireEvent.press(await detail.findByRole('button', { name: 'Edit observation' }))
