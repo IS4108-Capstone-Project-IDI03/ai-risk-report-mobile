@@ -1,6 +1,6 @@
 // A form label with the web's red star when the field is required (MB-21; the web's design-system
 // Combobox and DatePicker draw the label, then "*" in the danger colour). The star is read out as
-// "required" rather than "star". Called by screens/NewAssessment and NewSiteFields.
+// "required" rather than "star". Called by screens/NewAssessment, NewSiteFields and the calendar's DateField.
 import { View } from 'react-native'
 import { Text } from '@/components/ui/text'
 import { cn } from '@/lib/utils'
