@@ -197,16 +197,18 @@ describe('in the sheet', () => {
     expect(sheet().queryAllByTestId('evidence-voice-note')).toHaveLength(0)
   })
 
-  it('says what is missing until it can be saved (AC10)', async () => {
+  // Changed for MB-23 AC12: severity is optional, because the gateway now suggests it after the save (CP-24).
+  // Only evidence is needed to save, and the sheet says the AI fills in what is left empty.
+  it('says what is missing until it can be saved: only evidence, not a severity (AC10, MB-23 AC12)', async () => {
     gateway()
     await openSheet()
     const save = () => sheet().getByRole('button', { name: 'Save observation' })
 
     expect(save()).toBeDisabled()
     expect(sheet().getByText('Add a note, photo, voice note or scan.')).toBeTruthy()
+    expect(sheet().getByText('Leave one empty and the AI will suggest it.')).toBeTruthy()
     await fireEvent.changeText(sheet().getByLabelText('Note'), 'Fire door wedged open')
-    expect(sheet().getByText('Choose a severity to save.')).toBeTruthy()
-    await tap('High')
+    expect(sheet().queryByText('Choose a severity to save.')).toBeNull()
     expect(save()).toBeEnabled()
   })
 })
@@ -285,6 +287,24 @@ describe('saving', () => {
     await act(async () => {})
     const details = JSON.parse(String(sent!.parts.find(([k]) => k === 'details')![1]))
     expect(details.copeDimensions).toBeNull()
+  })
+
+  it('saves with no severity and no category as null, for the AI to suggest (MB-23 AC12)', async () => {
+    let sent: RecordingFormData | undefined
+    gateway({
+      [`POST /api/assessments/${REF}/capture-session`]: { status: 200, body: {} },
+      [`POST /api/assessments/${REF}/observations`]: (init) => {
+        sent = init?.body as unknown as RecordingFormData
+        return { status: 201, body: observation('o1', 'l1') }
+      },
+    })
+    await openSheet()
+    await fireEvent.changeText(sheet().getByLabelText('Note'), 'Fire door wedged open')
+    await tap('Save observation')
+
+    await act(async () => {})
+    const details = JSON.parse(String(sent!.parts.find(([k]) => k === 'details')![1]))
+    expect(details).toEqual({ note: 'Fire door wedged open', copeDimensions: null, severity: null, locationId: 'l1' })
   })
 
   it("shows the gateway's refusal and keeps everything in the sheet (AC11)", async () => {

@@ -24,6 +24,18 @@ export type Recording = { id: string; url: string; transcription?: Transcription
 // with who removed it and when, so it can be restored (CP-08 AC20, AC21).
 export type Removed<T> = T & { removed: { at: string; by: { name: string } } }
 
+// A category or severity the AI fills in when the engineer left it empty (MB-23, the web's CP-24).
+// `reading` is queued or running, `failed` carries a short reason. A field's entry is present only
+// while its value is still an unconfirmed suggestion; null once it is the engineer's, or while empty.
+// Shape: SavedSuggestion in the web repo's client/src/features/assessments/api.ts.
+export type SuggestionField = { notSure: boolean }
+export type Suggestion = {
+  status: 'reading' | 'done' | 'failed'
+  error: string | null
+  category: SuggestionField | null
+  severity: SuggestionField | null
+}
+
 export type Observation = {
   id: string
   // Who captured it; a waiting observation doesn't have it.
@@ -47,6 +59,13 @@ export type Observation = {
   removedPages?: Removed<Page>[]
   // The latest change to its tags or note, and who made it (CP-08 AC11).
   edited?: { at: string; by: { name: string } } | null
+  // The AI's suggestion for an empty category or severity (MB-23); null when nothing is suggested
+  // and nothing is running. A waiting observation (MB-10) and an older gateway have none.
+  suggestion?: Suggestion | null
+  // Category or severity empty or not sure, or the suggestion failed (the gateway's own rule).
+  toCheck?: boolean
+  // Only the photo description can still be reading (`interpreting`); the phone shows no description.
+  interpretation?: { photos: { status: string } | null } | null
 }
 
 // Severity chip tone, from the design system's fixed four-step scale.

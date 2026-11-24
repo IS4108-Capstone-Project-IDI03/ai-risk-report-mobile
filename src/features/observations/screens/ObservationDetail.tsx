@@ -6,7 +6,7 @@
 // uploaded.
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { Pencil, Trash2 } from 'lucide-react-native'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Alert, ScrollView, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Button } from '@/components/ui/button'
@@ -18,12 +18,22 @@ import { OfflineNote } from '@/features/offline/components/OfflineNote'
 import { useOffline } from '@/features/offline/provider'
 import { asObservation, type QueuedObservation } from '@/features/offline/queue'
 import { cn, readable } from '@/lib/utils'
-import { deleteObservation, listObservations, retranscribePage, retryTranscription, type MediaKind } from '../api'
+import {
+  confirmField,
+  deleteObservation,
+  listObservations,
+  retranscribePage,
+  retrySuggestion,
+  retryTranscription,
+  type MediaKind,
+} from '../api'
+import { isWorking } from '../rowState'
 import { POLL_LIMIT, POLL_MS } from '../transcriptPoll'
 import { confirmDelete } from '../confirmDelete'
 import { DetailFacts } from '../components/DetailFacts'
 import { MediaImage } from '../components/MediaImage'
 import { PageEntry } from '../components/PageEntry'
+import { SuggestionLines } from '../components/SuggestionLines'
 import { VoiceNote } from '../components/VoiceNote'
 import type { Observation, Page } from '../format'
 
@@ -43,7 +53,6 @@ export default function ObservationDetail() {
   // whether we stopped waiting (MB-12 AC28-AC30).
   const [retrying, setRetrying] = useState(false)
   const [attempt, setAttempt] = useState(0)
-  const polls = useRef(0)
   const [gaveUp, setGaveUp] = useState(false)
 
   const waiting = items.find((i): i is QueuedObservation => i.kind === 'observation' && i.id === id)
@@ -74,13 +83,16 @@ export default function ObservationDetail() {
   )
   const found = waiting ? asObservation(waiting) : listed
 
-  // While a voice note or page is being transcribed, read the list again every few
-  // seconds so the result shows without leaving; stop after about 2 minutes (AC29).
-  const transcribing = !!found && !waiting && [...found.recordings, ...found.pages].some((m) => m.transcription?.status === 'transcribing')
+  // While a voice note or page is being transcribed, or the AI is suggesting a category and severity
+  // (MB-23 AC15), read the list again every few seconds so the result shows without leaving; stop after
+  // about 2 minutes (MB-12 AC29).
+  const transcribing = !!found && !waiting && isWorking(found)
   useEffect(() => {
     if (!transcribing) return
+    // Counted here, so a new attempt (which re-runs this effect) starts the count again.
+    let polls = 0
     const timer = setInterval(() => {
-      if (++polls.current > POLL_LIMIT) {
+      if (++polls > POLL_LIMIT) {
         setGaveUp(true)
         clearInterval(timer)
       } else setReloads((n) => n + 1)
@@ -97,7 +109,6 @@ export default function ObservationDetail() {
     setRetrying(true)
     setProblem(null)
     setGaveUp(false)
-    polls.current = 0
     try {
       await action()
     } catch (e) {
@@ -110,6 +121,19 @@ export default function ObservationDetail() {
   }
   const tryAgain = (kind: MediaKind | 'pages', itemId: string) =>
     waiting ? undefined : { run: () => start(() => retryTranscription(id, kind, itemId)), disabled: offline || retrying, offline }
+  // Confirm and Try again for the AI's suggestion (MB-23): one request each, through the same `start` as the
+  // retries above, so a second quick tap sends nothing, a refusal says why, and the list is read again.
+  // Change opens the edit screen, whose pickers set the value.
+  const suggestionActions = () =>
+    waiting
+      ? undefined
+      : {
+          confirm: (field: 'category' | 'severity') => void start(() => confirmField(id, field)),
+          change: () => router.push({ pathname: '/assessment/[reference]/observation/[id]/edit', params: { reference, id } }),
+          retry: () => void start(() => retrySuggestion(id)),
+          disabled: offline || retrying || busy,
+          offline,
+        }
   // Replaces good text with a new reading (a paid call), so it asks first (MB-17 AC8). A correction the
   // engineer made is replaced too, so the question says so (AC15).
   const readAgain = (page: Page) =>
@@ -165,6 +189,7 @@ export default function ObservationDetail() {
             </Text>
           )}
           <DetailFacts observation={found} place={where ? locationLabel(where) : null} />
+          <SuggestionLines observation={found} actions={suggestionActions()} />
           {found.note && <Text className="text-lg">{found.note}</Text>}
           {found.photos.map((photo, i) => (
             <MediaImage key={photo.id ?? photo.url} url={photo.url} testID="detail-photo" label={`Photo ${i + 1}`} />
