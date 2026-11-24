@@ -152,21 +152,30 @@ describe('opening the chat (A)', () => {
     expect(screen.getByText('16 Dec')).toBeTruthy()
   })
 
-  // Added 21 Nov (Miya): the status block takes a quarter of a phone's height, so the stage bar and the three facts fold away.
-  it('A2b: Hide folds the stage bar and the three facts away, and keeps the status, the stage and Summary; Show brings them back', async () => {
+  // Added 21 Nov (Miya): the status block takes a quarter of a phone's height, so scrolling the chat folds all of it away
+  // (pill, stage, facts and Summary); the top of the chat brings it back. There is no Hide button: a short chat can't scroll,
+  // and a hidden bar with no way back would be worse.
+  it('A2b: dragging the chat away from its top folds the whole status block; coming back to the top opens it; a drag at the top does nothing', async () => {
     gateway()
     await openChat()
     await screen.findByText('2 things to fix')
+    const chat = screen.getByTestId('chat-scroll')
+    const at = (y: number) => ({ nativeEvent: { contentOffset: { x: 0, y } } })
+    expect(screen.queryByRole('button', { name: /stage details/ })).toBeNull()
+
+    await fireEvent(chat, 'scrollBeginDrag', at(0))
     expect(screen.getByLabelText('Observations, 18')).toBeTruthy()
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Hide stage details' }))
+    await fireEvent(chat, 'scrollBeginDrag', at(300))
     expect(screen.queryByLabelText('Observations, 18')).toBeNull()
-    expect(screen.getByText('Capture · stage 3 of 8')).toBeTruthy()
-    expect(screen.getByText('2 things to fix')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Summary' })).toBeTruthy()
+    expect(screen.queryByText('2 things to fix')).toBeNull()
+    expect(screen.queryByText('Capture · stage 3 of 8')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Summary' })).toBeNull()
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Show stage details' }))
+    await fireEvent(chat, 'momentumScrollEnd', at(0))
+    expect(screen.getByText('2 things to fix')).toBeTruthy()
     expect(screen.getByLabelText('Observations, 18')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Summary' })).toBeTruthy()
   })
 
   it("A3: draws each turn as its says then its cards, MarshBot's on the left and the engineer's on the right", async () => {

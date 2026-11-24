@@ -1,6 +1,6 @@
 // The one next step (MB-20, web AS-06): a sentence and, when it points somewhere the phone
 // has, a button with a verb. A step that points to a web-only tab says so instead of a button.
-// Called by OverviewCard.
+// Called by OverviewSheet.
 import { Button } from '@/components/ui/button'
 import { Text } from '@/components/ui/text'
 import { View } from 'react-native'

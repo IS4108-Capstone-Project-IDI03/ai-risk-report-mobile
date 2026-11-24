@@ -1,5 +1,5 @@
 // One checklist area that needs more (MB-20, web AS-06): its name, "1 of 4", and a bar of how
-// much is covered. Tapping opens the checklist. Called by OverviewCard.
+// much is covered. Tapping opens the checklist. Called by OverviewSheet and the assistant's AreaCard.
 import { Pressable, View } from 'react-native'
 import { Text } from '@/components/ui/text'
 import type { Summary } from '../api'

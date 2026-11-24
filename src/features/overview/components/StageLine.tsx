@@ -1,5 +1,5 @@
 // The stage as one line (MB-20, web AS-06): "Capture · stage 3 of 8" and eight dots, the
-// stages done filled, this one ringed, the rest empty. Called by OverviewCard.
+// stages done filled, this one ringed, the rest empty. Called by OverviewSheet.
 import { View } from 'react-native'
 import { Text } from '@/components/ui/text'
 

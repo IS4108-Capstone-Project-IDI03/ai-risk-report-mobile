@@ -1,7 +1,7 @@
 // The Overview as one full-width bar at the top of the phone's workspace (MB-20, web AS-06). It is the
 // web phone view's assistant bar in native clothes: the stage, eight progress segments, one chip (red
 // for things to fix, amber for gaps, green when clear), the report's due note and a chevron. The whole
-// bar is the button; it opens OverviewSheet. The iPad keeps the card (OverviewCard).
+// bar is the button; it opens OverviewSheet. The iPad uses it too (the inline card was dropped on 24 Nov).
 // Changed 20 Nov (Miya): was a small pill in the navy band. Called by screens/Workspace.
 import { ChevronRight } from 'lucide-react-native'
 import { Pressable, View } from 'react-native'

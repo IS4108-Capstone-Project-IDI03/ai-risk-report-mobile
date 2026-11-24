@@ -1,6 +1,6 @@
 // One open item (MB-20, web AS-06): an icon tile tinted by how urgent it is, its title and one
 // line of detail, and a way straight to it. One that points to a web-only tab is greyed and
-// says so in words. A 60pt row, as the calendar's. Called by OverviewCard.
+// says so in words. A 60pt row, as the calendar's. Called by OverviewSheet.
 import { ChevronRight } from 'lucide-react-native'
 import { Pressable, View } from 'react-native'
 import { Text } from '@/components/ui/text'
