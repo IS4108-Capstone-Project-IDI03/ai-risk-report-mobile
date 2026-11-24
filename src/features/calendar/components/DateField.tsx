@@ -5,6 +5,7 @@
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { useState } from 'react'
 import { Platform, Pressable, View } from 'react-native'
+import { FieldLabel } from '@/components/FieldLabel'
 import { Text } from '@/components/ui/text'
 import { formatDay, todayIso } from '../calendar'
 
@@ -18,15 +19,17 @@ type Props = {
   min?: string
   fallback: string
   error?: string
+  // A required date (New assessment's survey start): the web's red star, and no Clear.
+  required?: boolean
   disabled: boolean
   onChange(day: string): void
 }
 
-export function DateField({ label, value, min, fallback, error, disabled, onChange }: Props) {
+export function DateField({ label, value, min, fallback, error, required, disabled, onChange }: Props) {
   const [open, setOpen] = useState(false)
   return (
     <View className="gap-1">
-      <Text className="text-sm font-medium">{label}</Text>
+      <FieldLabel required={required}>{label}</FieldLabel>
       <View className="flex-row items-center gap-2">
         <Pressable
           accessibilityRole="button"
@@ -38,7 +41,7 @@ export function DateField({ label, value, min, fallback, error, disabled, onChan
         >
           <Text className={value ? '' : 'text-muted-foreground'}>{value ? formatDay(value) : 'Not set'}</Text>
         </Pressable>
-        {value !== '' && (
+        {value !== '' && !required && (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Clear ${label}`}
