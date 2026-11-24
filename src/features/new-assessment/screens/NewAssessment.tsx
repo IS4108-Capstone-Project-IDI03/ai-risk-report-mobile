@@ -22,6 +22,7 @@ import { NEW_SITE, SitePicker } from '../components/SitePicker'
 import { FieldLabel } from '@/components/FieldLabel'
 import { TypeChips } from '../components/TypeChips'
 import { BAD_COORDINATES, clientKey, mapFields, OFFLINE_CREATE, parseCoordinates, REPORT_DUE_DAYS, type FieldName } from '../format'
+import { useAddressAt } from '../useAddressAt'
 import { useClients, useClientSites } from '../useLists'
 
 type Errors = Partial<Record<FieldName, string>>
@@ -50,6 +51,8 @@ export default function NewAssessment() {
   const [site, setSite] = useState<NewSite>(BLANK_SITE)
   // The new site's Coordinates as typed. Checked and turned into numbers when Create is pressed (AC13).
   const [coords, setCoords] = useState('')
+  // Setting the Coordinates (typed, map or GPS) fills the new site's Address, never the other way round.
+  useAddressAt(coords, choice === NEW_SITE, setSite)
   const [type, setType] = useState<VisitType | null>(null)
   // As the web's form opens: the survey starts today and the report is due 14 days on.
   const [dates, setDates] = useState({ start: today, end: '', due: addDays(today, REPORT_DUE_DAYS) })
