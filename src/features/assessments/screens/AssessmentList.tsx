@@ -20,6 +20,7 @@ import { easeLayout } from '@/lib/motion'
 import { cn, readable } from '@/lib/utils'
 import { OfflineNote } from '@/features/offline/components/OfflineNote'
 import { UploadStatus } from '@/features/offline/components/UploadStatus'
+import { NewAssessmentButton } from '@/features/new-assessment/components/NewAssessmentButton'
 import { listAssessments } from '../api'
 import { AssessmentRow } from '../components/AssessmentRow'
 import { CapturingNowCard } from '../components/CapturingNowCard'
@@ -135,7 +136,8 @@ export default function AssessmentList() {
           />
         )}
         // On a tablet, the list keeps to the readable column (MB-09).
-        contentContainerClassName={cn('p-4 pb-8', readable)}
+        // Room under the last row for the round New assessment button.
+        contentContainerClassName={cn('p-4 pb-28', readable)}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
@@ -192,12 +194,13 @@ export default function AssessmentList() {
                 No assessments assigned. Assessments appear here once one is created for you on the web
                 app.
               </Text>
-              {/* MB-21: the phone can start one too. */}
-              <Text className="text-center text-muted-foreground">Or start one with New, at the top.</Text>
+              {/* MB-21: the phone can start one too, with the round + button. */}
+              <Text className="text-center text-muted-foreground">Or start one with the + button, at the bottom right.</Text>
             </View>
           )
         }
       />
+      <NewAssessmentButton />
     </View>
 
   if (!split) return list

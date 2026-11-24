@@ -20,9 +20,11 @@ export type ClientSite = {
 
 // The stored visit type: the gateway still calls a Follow-up "Follow-up visit".
 export type VisitType = 'First survey' | 'Resurvey' | 'Follow-up visit'
-export type NewSite = { name: string; address: string; jurisdiction: string; facilityType: string }
+// `coordinates` is optional (the web's Coordinates field): the site's point, sent only when filled in.
+export type NewSite = { name: string; address: string; jurisdiction: string; facilityType: string; coordinates?: { lat: number; lng: number } }
 export type NewAssessment = {
-  clientId: string
+  // A listed client's id, or a new one by name (the gateway finds a client of that name or adds it).
+  client: { id: string } | { name: string; division?: string }
   // An existing site's id, or the details of a new one.
   site: { id: string } | NewSite
   visitType: VisitType
@@ -44,7 +46,7 @@ export function createAssessment(a: NewAssessment) {
   return request<{ clientId: string; assessments: Assessment[] }>('/api/assessments', {
     method: 'POST',
     body: JSON.stringify({
-      client: { id: a.clientId },
+      client: a.client,
       sites: [
         {
           ...site,

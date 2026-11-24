@@ -1,6 +1,7 @@
-// Choosing the client's site (MB-21, web CP-17 AC4): its listed sites as single-choice rows
-// (name, address and the latest visit when there is one), and Add a new site at the end. The
-// chosen row has a navy border and a tick. Called by screens/NewAssessment.
+// Choosing the client's site (MB-21, web CP-17 AC4): Add a new site first (it was last and easy to miss,
+// Miya 24 Nov; the web's Sites card has its "+ New site" under the cards), then the listed sites as
+// single-choice rows (name, address and the latest visit when there is one). The chosen row has a navy
+// border and a tick. Called by screens/NewAssessment.
 import { Check, Plus } from 'lucide-react-native'
 import { Pressable, View } from 'react-native'
 import { Text } from '@/components/ui/text'
@@ -31,6 +32,13 @@ function Row({ on, label, onPress, children }: { on: boolean; label: string; onP
 export function SitePicker({ sites, chosen, onChoose }: Props) {
   return (
     <View className="gap-2">
+      <Text className="text-sm text-muted-foreground">Pick one of its sites, or add a new one.</Text>
+      <Row on={chosen === NEW_SITE} label="Add a new site" onPress={() => onChoose(NEW_SITE)}>
+        <View className="flex-row items-center gap-2">
+          <Plus color="#2c5488" size={18} />
+          <Text className="font-semibold text-primary">Add a new site</Text>
+        </View>
+      </Row>
       {sites.map((s) => (
         <Row key={s.id} on={chosen === s.id} label={`${s.name}${s.address ? `, ${s.address}` : ''}`} onPress={() => onChoose(s.id)}>
           <Text className="font-semibold">{s.name}</Text>
@@ -38,12 +46,6 @@ export function SitePicker({ sites, chosen, onChoose }: Props) {
           <Text className="text-sm text-muted-foreground">{s.latest ? `Last visit ${formatDate(s.latest.siteVisitDate)}` : 'No visit yet'}</Text>
         </Row>
       ))}
-      <Row on={chosen === NEW_SITE} label="Add a new site" onPress={() => onChoose(NEW_SITE)}>
-        <View className="flex-row items-center gap-2">
-          <Plus color="#2c5488" size={18} />
-          <Text className="font-semibold text-primary">Add a new site</Text>
-        </View>
-      </Row>
     </View>
   )
 }
