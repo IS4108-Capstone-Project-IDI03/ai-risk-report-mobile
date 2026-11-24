@@ -1,6 +1,7 @@
 // The four details a new site needs (each required, so each carries the star) (MB-21, web CP-23): name, address, jurisdiction (one of
 // the web's eight, as chips) and facility type (one of the gateway's nine, as chips), and its optional Coordinates (AC13, the web's
-// CP-26 field). Each shows the gateway's problem beside it. Called by screens/NewAssessment.
+// CP-26 field) with a map under it to place the pin by tap or drag (MB-26, the web's click-on-a-map). Each shows the
+// gateway's problem beside it. Called by screens/NewAssessment.
 import { MapPin } from 'lucide-react-native'
 import { useState } from 'react'
 import { ActivityIndicator, Linking, Pressable, View } from 'react-native'
@@ -11,7 +12,8 @@ import { cn } from '@/lib/utils'
 import { FieldLabel } from '@/components/FieldLabel'
 import type { NewSite } from '../api'
 import { DENIED, pinHere } from '@/features/locations/position'
-import { FACILITY_TYPES, formatCoordinates, JURISDICTIONS, type FieldName } from '../format'
+import { SiteMap } from '@/features/assessments/components/SiteMap'
+import { FACILITY_TYPES, formatCoordinates, JURISDICTIONS, parseCoordinates, type FieldName } from '../format'
 
 type Props = {
   site: NewSite
@@ -69,6 +71,13 @@ export function NewSiteFields({ site, coordinates, errors, disabled, onChange, o
     else setPinProblem('denied' in result ? result.denied : result.failed)
     setPinning(false)
   }
+  // The map reads and writes the Coordinates text, so the field and the pin can't disagree (MB-26 decision 5).
+  // A half-typed or wrong point shows no pin: Create still names it (MB-21 AC13).
+  const point = parseCoordinates(coordinates)
+  const place = (p: { lat: number; lng: number }) => {
+    setPinProblem(null)
+    onCoordinates(formatCoordinates(p))
+  }
   return (
     <View className="gap-4 rounded-md border border-border bg-card p-4">
       <Field label="Site name" error={errors.name}>
@@ -98,6 +107,20 @@ export function NewSiteFields({ site, coordinates, errors, disabled, onChange, o
             <Text>Open Settings</Text>
           </Button>
         )}
+        {/* A fixed 280pt strip, not full height, so a one-finger drag outside it still scrolls the form (MB-26 AC9). */}
+        <View className="overflow-hidden rounded-md border border-input">
+          <SiteMap
+            pins={point ? [{ row: { key: 'site', name: 'Site', point, block: false }, label: 'S' }] : []}
+            selected={null}
+            canMove={!disabled}
+            focus={null}
+            draft={null}
+            onSelect={() => {}}
+            onPlace={(p) => !disabled && place(p)}
+            onMove={(_, p) => place(p)}
+          />
+        </View>
+        <Text className="text-sm text-muted-foreground">Tap the map to place the pin.</Text>
       </Field>
       <Field label="Jurisdiction" error={errors.jurisdiction}>
         <Chips options={JURISDICTIONS} value={site.jurisdiction} disabled={disabled} onPick={(jurisdiction) => set({ jurisdiction })} />

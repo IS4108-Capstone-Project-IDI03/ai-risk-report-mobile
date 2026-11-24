@@ -222,6 +222,65 @@ describe('start it (A)', () => {
     expect(posted[0].body.sites[0].coordinates).toEqual({ lat: 1.296612, lng: 103.852034 })
   })
 
+  // MB-26: a map under Coordinates places the new site's pin (web CP-26). Jest's map is a View: a tap is a
+  // 'press' with a coordinate, a drag is the pin's 'dragEnd'.
+  const tapMap = (latitude: number, longitude: number) =>
+    fireEvent(form().getByTestId('site-map'), 'press', { nativeEvent: { coordinate: { latitude, longitude } } })
+
+  it('shows a map and its hint on a new site, and none on a listed one (MB-26 AC1, AC7)', async () => {
+    await openNewSite()
+    expect(form().getByTestId('site-map')).toBeTruthy()
+    expect(form().getByText('Tap the map to place the pin.')).toBeTruthy()
+    expect(form().queryByTestId('map-pin-site')).toBeNull()
+
+    await chooseSite(/Leeds Cold Store/)
+    expect(form().queryByTestId('site-map')).toBeNull()
+  })
+
+  it('places the pin where the map is tapped and fills Coordinates (MB-26 AC3)', async () => {
+    await openNewSite()
+    await tapMap(1.29661234, 103.85203456)
+    expect(within(form().getByTestId('map-pin-site')).getByText('S')).toBeTruthy()
+    expect(form().getByLabelText('Coordinates').props.value).toBe('1.296612, 103.852035')
+
+    // A second tap moves it: still one pin.
+    await tapMap(1.3, 103.9)
+    expect(form().getByLabelText('Coordinates').props.value).toBe('1.3, 103.9')
+    expect(form().getAllByTestId('map-pin-site')).toHaveLength(1)
+  })
+
+  it('follows a dragged pin (MB-26 AC4)', async () => {
+    await openNewSite()
+    await tapMap(1.3, 103.8)
+    await fireEvent(form().getByTestId('map-pin-site'), 'dragEnd', { nativeEvent: { coordinate: { latitude: 1.31, longitude: 103.81 } } })
+    expect(form().getByLabelText('Coordinates').props.value).toBe('1.31, 103.81')
+  })
+
+  it('shows the pin for typed Coordinates and drops it when they are cleared or not a point (MB-26 AC5)', async () => {
+    await openNewSite()
+    await fireEvent.changeText(form().getByLabelText('Coordinates'), '1.2966, 103.8520')
+    expect(form().getByTestId('map-pin-site')).toBeTruthy()
+    await fireEvent.changeText(form().getByLabelText('Coordinates'), '1.2966, abc')
+    expect(form().queryByTestId('map-pin-site')).toBeNull()
+    await fireEvent.changeText(form().getByLabelText('Coordinates'), '1.2966, 103.8520')
+    await fireEvent.changeText(form().getByLabelText('Coordinates'), '')
+    expect(form().queryByTestId('map-pin-site')).toBeNull()
+  })
+
+  it('shows the pin where Pin where I am found the phone (MB-26 AC6)', async () => {
+    await openNewSite()
+    await fireEvent.press(form().getByRole('button', { name: 'Pin where I am' }))
+    expect(await form().findByTestId('map-pin-site')).toBeTruthy()
+  })
+
+  it('sends the tapped point, and nothing when the map was not used (MB-26 AC8)', async () => {
+    await openNewSite()
+    await tapMap(1.3, 103.9)
+    await fireEvent.press(create())
+    await screen.findByTestId('workspace')
+    expect(posted[0].body.sites[0].coordinates).toEqual({ lat: 1.3, lng: 103.9 })
+  })
+
   it('says why when the GPS is off, and keeps the form as it was (AC13)', async () => {
     ;(Location.requestForegroundPermissionsAsync as jest.Mock).mockResolvedValueOnce({ granted: false, canAskAgain: false })
     await openNewSite()
