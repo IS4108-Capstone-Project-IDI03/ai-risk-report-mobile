@@ -32,8 +32,6 @@ const SOFT = '#b9c4d6' // the web sidebar's quiet text on navy
 export function ChatList({ activeId, onOpen, onNewChat, onPreferences, onDeleted }: Props) {
   const [threads, setThreads] = useState<Thread[] | null>(null)
   const [query, setQuery] = useState('')
-  // The search box sits in a dark pill, so its focus ring is on the pill (a TextInput can't style its parent).
-  const [searchFocused, setSearchFocused] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // Renaming: which chat and the name typed so far.
   const [renaming, setRenaming] = useState<{ id: string; title: string } | null>(null)
@@ -99,16 +97,12 @@ export function ChatList({ activeId, onOpen, onNewChat, onPreferences, onDeleted
   return (
     <View testID="chat-list" className="flex-1 bg-navy" style={{ paddingTop: insets.top }}>
       <Text className="px-5 pb-3 pt-3 text-2xl font-bold text-white">Chats</Text>
-      <View
-        className={`mx-4 mb-2 h-12 flex-row items-center gap-2 rounded-xl border px-3 transition-all duration-150 ${searchFocused ? 'border-white/70 bg-white/20' : 'border-transparent bg-white/10'}`}
-      >
+      <View className="mx-4 mb-2 h-12 flex-row items-center gap-2 rounded-xl bg-white/10 px-3">
         <Search color={SOFT} size={18} />
         <TextInput
           accessibilityLabel="Search chats"
           value={query}
           onChangeText={setQuery}
-          onFocus={() => setSearchFocused(true)}
-          onBlur={() => setSearchFocused(false)}
           placeholder="Search chats"
           placeholderTextColor={SOFT}
           autoCorrect={false}
@@ -139,7 +133,7 @@ export function ChatList({ activeId, onOpen, onNewChat, onPreferences, onDeleted
                 onChangeText={(title) => setRenaming({ id: item.id, title })}
                 maxLength={120}
                 autoFocus
-                className="h-12 rounded-lg border-2 border-transparent bg-white px-3 text-base text-foreground transition-all duration-150 focus:border-[#8fb0ee]"
+                className="h-12 rounded-lg bg-white px-3 text-base text-foreground"
               />
               <View className="flex-row gap-2">
                 <Button accessibilityLabel="Save name" className="flex-1 bg-white" disabled={!renaming.title.trim()} onPress={saveName}>

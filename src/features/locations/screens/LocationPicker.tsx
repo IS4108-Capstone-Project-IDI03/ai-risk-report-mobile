@@ -9,7 +9,6 @@ import { Plus } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
-  Alert,
   BackHandler,
   KeyboardAvoidingView,
   Platform,
@@ -24,7 +23,7 @@ import { cn, readable } from '@/lib/utils'
 import { SearchBar } from '@/features/assessments/components/SearchBar'
 import { OfflineNote } from '@/features/offline/components/OfflineNote'
 import { useOffline } from '@/features/offline/provider'
-import { addLocation, listLocations, locationsInUse, removeLocation } from '../api'
+import { addLocation, listLocations } from '../api'
 import { AddLocationForm, type NewLocation } from '../components/AddLocationForm'
 import { LocationList } from '../components/LocationList'
 import { useCurrentLocation } from '../current'
@@ -32,16 +31,12 @@ import type { Location } from '../locations'
 
 export default function LocationPicker() {
   const { reference } = useLocalSearchParams<{ reference: string }>()
-  const [chosen, setChosen, clearChosen] = useCurrentLocation(reference)
+  const [chosen, setChosen] = useCurrentLocation(reference)
   const [locations, setLocations] = useState<Location[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [search, setSearch] = useState('')
-  // Why a remove failed, shown above the list (the list stays, so nothing else is lost).
-  const [problem, setProblem] = useState<string | null>(null)
-  // Locations with observations, which have no Remove (AC35). Unknown until read; the gateway still guards.
-  const [inUse, setInUse] = useState<Set<string>>(new Set())
-  const { items, uploads, queueLocation, offline } = useOffline()
+  const { items, uploads, queueLocation } = useOffline()
   // False once the modal has closed, so a save that finishes late doesn't
   // navigate back a second time and pop the workspace too.
   const open = useRef(true)
@@ -59,13 +54,11 @@ export default function LocationPicker() {
       ),
     [reference],
   )
-  const loadInUse = useCallback(() => locationsInUse(reference).then(setInUse, () => {}), [reference])
   // Again after an upload, so a queued location shows as the gateway saved it
   // (MB-10).
   useEffect(() => {
     load()
-    loadInUse()
-  }, [load, loadInUse, uploads])
+  }, [load, uploads])
 
   // Android's back button leaves the form for the list rather than closing the
   // picker and losing what was typed. (iOS: swipe-down is off while adding.)
@@ -83,29 +76,6 @@ export default function LocationPicker() {
     if (open.current) router.back()
   }
 
-  // Asks first (AC36), then removes it (AC37). The gateway's refusal (observations filed there, not
-  // the assigned engineer) is shown as it words it (AC38). If the chosen location goes, none is chosen,
-  // so nothing is filed under a place that no longer exists.
-  function remove(location: Location) {
-    Alert.alert('Remove this location?', `${location.name} leaves the list. A location can only be removed while nothing is captured there.`, [
-      { text: 'Keep', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: async () => {
-          setProblem(null)
-          try {
-            await removeLocation(reference, location.id)
-            if (chosen?.id === location.id) clearChosen()
-            await Promise.all([load(), loadInUse()])
-          } catch (e) {
-            setProblem((e as Error).message)
-          }
-        },
-      },
-    ])
-  }
-
   // Errors are left to the form to show; it stays open so nothing typed is lost.
   // No signal: queued, and chosen as if saved (MB-10 AC3).
   async function save(details: NewLocation) {
@@ -120,8 +90,6 @@ export default function LocationPicker() {
   // The gateway's list, plus those still waiting to upload (MB-10 AC3).
   const queued = items.flatMap((i) => (i.kind === 'location' && i.reference === reference ? [i.location] : []))
   const all = locations && [...locations, ...queued]
-  // Also the locations that observations waiting to upload are filed at (MB-10).
-  const busy = new Set([...inUse, ...items.flatMap((i) => (i.kind === 'observation' && i.reference === reference ? [i.locationId] : []))])
   // By name, any case (AC8). The groups are kept, so a match shows its building.
   const text = search.trim().toLowerCase()
   const shown = (all ?? []).filter((l) => l.name.toLowerCase().includes(text))
@@ -171,11 +139,6 @@ export default function LocationPicker() {
                     onChange={setSearch}
                   />
                 )}
-                {problem && (
-                  <View className="rounded-md bg-destructive/10 p-3">
-                    <Text className="text-destructive">{problem}</Text>
-                  </View>
-                )}
                 {search.trim() && !shown.length ? (
                   <Text className="px-4 py-6 text-center text-muted-foreground">No location matches. Add it below.</Text>
                 ) : (
@@ -184,9 +147,6 @@ export default function LocationPicker() {
                     chosenId={chosen?.id}
                     waiting={queued.map((l) => l.id)}
                     onChoose={choose}
-                    onRemove={remove}
-                    inUse={busy}
-                    offline={offline}
                   />
                 )}
               </>

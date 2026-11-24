@@ -1,7 +1,7 @@
-// The Site pins screen (MB-02 AC19-AC24, AC40): the site, its blocks and the places elsewhere on site with their pins, Directions to
+// The Site pins screen (MB-02 AC19-AC24): the site and its blocks with their pins, Directions to
 // each (opens the maps app), and Pin here / Move here by the phone's GPS, so an engineer standing
 // at a block can set where it is. No map in the app. Opened by Site pins in the workspace's
-// band. Calls listAssessments and listLocations (cached), changePin (PUT /api/sites/:id/map, or PATCH the location).
+// band. Calls listAssessments and listLocations (cached), changePin (PUT /api/sites/:id/map).
 import { useLocalSearchParams } from 'expo-router'
 import { ChevronDown, ChevronUp, Navigation, Pencil } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
@@ -14,7 +14,6 @@ import { useSplitView } from '@/lib/device'
 import { easeLayout } from '@/lib/motion'
 import { cn, readable } from '@/lib/utils'
 import { listLocations } from '@/features/locations/api'
-import type { Location } from '@/features/locations/locations'
 import { DENIED, pinHere } from '@/features/locations/position'
 import { OfflineNote } from '@/features/offline/components/OfflineNote'
 import { useOffline } from '@/features/offline/provider'
@@ -29,7 +28,7 @@ export default function SitePins() {
   // On a wide iPad the map fills the left and the rows sit in a column on the right (AC34).
   const wide = useSplitView()
   const [site, setSite] = useState<Assessment['site'] | null>(null)
-  const [locations, setLocations] = useState<Location[]>([])
+  const [buildings, setBuildings] = useState<(string | null)[]>([])
   const [loadError, setLoadError] = useState<string | null>(null)
   // The row being saved, so only one change runs at a time (the gateway takes one each).
   const [saving, setSaving] = useState<string | null>(null)
@@ -44,17 +43,16 @@ export default function SitePins() {
   const [typed, setTyped] = useState('')
   const [typedError, setTypedError] = useState<string | null>(null)
 
-  // Reads the visit's site (with its pins) and its locations (their buildings make the blocks; those
-  // elsewhere on site are rows of their own).
+  // Reads the visit's site (with its pins) and its locations' buildings.
   const read = useCallback(async () => {
     const [all, locations] = await Promise.all([listAssessments(), listLocations(reference)])
     const found = all.find((a) => a.reference === reference)
     if (!found) throw new Error("This assessment isn't available.")
-    return { site: found.site, locations }
+    return { site: found.site, buildings: locations.map((l) => l.building) }
   }, [reference])
   const show = (d: Awaited<ReturnType<typeof read>>) => {
     setSite(d.site)
-    setLocations(d.locations)
+    setBuildings(d.buildings)
     setLoadError(null)
   }
   // Goes up to read again (Try again).
@@ -87,7 +85,7 @@ export default function SitePins() {
         }
         target = { lat: here.pinned.lat, lng: here.pinned.lng }
       }
-      await changePin(site.id, reference, row, target)
+      await changePin(site.id, row, target)
       show(await read())
       return true
     } catch (e) {
@@ -155,9 +153,9 @@ export default function SitePins() {
       </View>
     )
 
-  const rows = pinRows(site, locations)
-  // Each row's label is the web's: S for the site, 1, 2… for its blocks, then the places elsewhere on site.
-  const labelled = rows.map((row, i) => ({ row, label: row.key === 'site' ? 'S' : String(i) }))
+  const rows = pinRows(site, buildings)
+  // Each row's label is the web's: S for the site, 1, 2… for its blocks.
+  const labelled = rows.map((row, i) => ({ row, label: row.block ? String(i) : 'S' }))
   const pinned = labelled.filter((r): r is typeof r & { row: { point: NonNullable<PinRow['point']> } } => !!r.row.point)
 
   // The bar that folds the map away on a phone; the wide layout always shows the map.
@@ -240,7 +238,7 @@ export default function SitePins() {
       <ScrollView contentContainerClassName="gap-4 p-4 pb-10">
         <View className={cn('gap-4', !wide && readable)}>
           <OfflineNote />
-          <Text className="text-muted-foreground">Where the site, its blocks and places elsewhere on site are. Pins are shared by every visit to this site.</Text>
+          <Text className="text-muted-foreground">Where the site and its blocks are. Pins are shared by every visit to this site.</Text>
           {labelled.map(({ row, label }) => {
             const busy = saving === row.key
             return (
@@ -267,7 +265,6 @@ export default function SitePins() {
                   </View>
                   <View className="flex-1">
                     <Text className="text-base font-semibold">{row.name}</Text>
-                    {row.place && <Text className="text-sm text-muted-foreground">Elsewhere on site</Text>}
                     <Text className="tabular-nums text-muted-foreground">{row.point ? `${row.point.lat}, ${row.point.lng}` : 'Not pinned'}</Text>
                   </View>
                 </Pressable>

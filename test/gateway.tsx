@@ -7,14 +7,10 @@ import SitePins from '../src/app/assessment/[reference]/site-pins'
 import WalkRecording from '../src/app/assessment/[reference]/site-walk-recording'
 import WalkReview from '../src/app/assessment/[reference]/site-walk-review'
 import Scans from '../src/app/assessment/[reference]/scans'
-import Assistant from '../src/app/assessment/[reference]/assistant'
 import SiteWalks from '../src/app/assessment/[reference]/site-walks'
-import NewAssessment from '../src/app/new-assessment'
 import Preferences from '../src/app/preferences'
-import Calendar from '../src/app/(tabs)/calendar'
 import Chat from '../src/app/(tabs)/chat'
 import Home from '../src/app/(tabs)/index'
-import Inbox from '../src/app/inbox'
 import TabsLayout from '../src/app/(tabs)/_layout'
 import Profile from '../src/app/(tabs)/profile'
 import Capture from '../src/app/assessment/[reference]/capture'
@@ -55,20 +51,13 @@ export const sse = (event: object) => `data: ${JSON.stringify(event)}\n\n`
 // replies with a page that isn't JSON; `stream` replies with a body to read in
 // pieces. Unlisted routes fail the test loudly.
 export function mockGateway(
-  routes: Record<string, Reply | ((init?: RequestInit, url?: string) => Reply | Promise<Reply>)>,
+  routes: Record<string, Reply | ((init?: RequestInit, url?: string) => Reply)>,
 ) {
   const fetchMock = jest.fn(async (url: string, init?: RequestInit) => {
     const key = `${init?.method ?? 'GET'} ${new URL(url).pathname}`
-    // Every workspace asks for its Overview summary (MB-20). A test that is not about it gets
-    // 403, "not yours", which draws no card, so the other workspace tests are left as they were.
-    // Home's header asks for the Inbox count (MB-22). A test that is not about it gets none to do.
-    const route =
-      routes[key] ??
-      (key.endsWith('/assistant/summary') ? { status: 403, body: { error: 'Not yours.' } } : undefined) ??
-      (key === 'GET /api/notifications/count' ? { status: 200, body: { total: 0, unread: 0, inboxTodo: 0, newestInbox: null, newestBell: null } } : undefined)
+    const route = routes[key]
     if (!route) throw new Error(`Unexpected request: ${key}`)
-    // A route may answer later (MB-24: a test holds an upload open).
-    const reply = await (typeof route === 'function' ? route(init, url) : route)
+    const reply = typeof route === 'function' ? route(init, url) : route
     if (reply instanceof Error) throw reply
     return {
       ok: reply.status >= 200 && reply.status < 300,
@@ -132,17 +121,13 @@ export const routes = {
   'sign-in': SignIn,
   '(tabs)/_layout': TabsLayout,
   '(tabs)/index': Home,
-  '(tabs)/calendar': Calendar,
   '(tabs)/chat': Chat,
   preferences: Preferences,
-  'new-assessment': NewAssessment,
-  inbox: Inbox,
   '(tabs)/profile': Profile,
   'assessment/[reference]/index': Workspace,
   'assessment/[reference]/locations': LocationPicker,
   'assessment/[reference]/site-pins': SitePins,
   'assessment/[reference]/scans': Scans,
-  'assessment/[reference]/assistant': Assistant,
   'assessment/[reference]/site-walks': SiteWalks,
   'assessment/[reference]/site-walk-recording': WalkRecording,
   'assessment/[reference]/site-walk-review': WalkReview,

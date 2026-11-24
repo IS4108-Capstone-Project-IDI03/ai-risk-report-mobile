@@ -202,21 +202,6 @@ it('opens the form beside the checklist when Confirm is tapped (MB-05 AC22)', as
   expect(screen.queryByTestId('answer-sheet')).toBeNull()
 })
 
-// The bottom bar: location and the two buttons share one row only when the pane has
-// room (1000pt). On an 11-inch iPad's split view (about 820pt) they stack, so
-// "Choose where you are" isn't squeezed to one word a line.
-it('stacks the location above the buttons in a mid-width pane, one row when wide', async () => {
-  gateway({ 'GET /api/assessments/RPT-2026-0411/locations': { status: 200, body: [] } })
-  await renderRouter(routes)
-  await pane().findByText('Northgate Logistics')
-
-  await fireEvent(screen.getByTestId('workspace-screen'), 'layout', { nativeEvent: { layout: { width: 820, height: 800, x: 0, y: 0 } } })
-  expect(screen.getByTestId('workspace-bar-row').props.className).not.toContain('flex-row')
-
-  await fireEvent(screen.getByTestId('workspace-screen'), 'layout', { nativeEvent: { layout: { width: 1100, height: 800, x: 0, y: 0 } } })
-  expect(screen.getByTestId('workspace-bar-row').props.className).toContain('flex-row')
-})
-
 // The navy band can shrink to one line, to give the workspace the height (wide only).
 it('shrinks the band to one line and back (wide)', async () => {
   gateway()

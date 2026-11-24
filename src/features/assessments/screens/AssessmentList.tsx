@@ -20,7 +20,6 @@ import { easeLayout } from '@/lib/motion'
 import { cn, readable } from '@/lib/utils'
 import { OfflineNote } from '@/features/offline/components/OfflineNote'
 import { UploadStatus } from '@/features/offline/components/UploadStatus'
-import { NewAssessmentButton } from '@/features/new-assessment/components/NewAssessmentButton'
 import { listAssessments } from '../api'
 import { AssessmentRow } from '../components/AssessmentRow'
 import { CapturingNowCard } from '../components/CapturingNowCard'
@@ -136,8 +135,7 @@ export default function AssessmentList() {
           />
         )}
         // On a tablet, the list keeps to the readable column (MB-09).
-        // Room under the last row for the round New assessment button.
-        contentContainerClassName={cn('p-4 pb-28', readable)}
+        contentContainerClassName={cn('p-4 pb-8', readable)}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
@@ -189,18 +187,13 @@ export default function AssessmentList() {
               </Button>
             </View>
           ) : error ? undefined : (
-            <View className="mt-8 gap-2 px-4">
-              <Text className="text-center text-muted-foreground">
-                No assessments assigned. Assessments appear here once one is created for you on the web
-                app.
-              </Text>
-              {/* MB-21: the phone can start one too, with the round + button. */}
-              <Text className="text-center text-muted-foreground">Or start one with the + button, at the bottom right.</Text>
-            </View>
+            <Text className="mt-8 px-4 text-center text-muted-foreground">
+              No assessments assigned. Assessments appear here once one is created for you on the web
+              app.
+            </Text>
           )
         }
       />
-      <NewAssessmentButton />
     </View>
 
   if (!split) return list

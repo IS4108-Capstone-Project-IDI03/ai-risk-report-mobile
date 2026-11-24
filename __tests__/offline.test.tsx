@@ -4,7 +4,7 @@
 // lasts across remounts within one test only.
 import * as FileSystem from 'expo-file-system'
 import * as ImagePicker from 'expo-image-picker'
-import { act, fireEvent, renderRouter, screen, waitFor, within } from 'expo-router/testing-library'
+import { act, fireEvent, renderRouter, screen, within } from 'expo-router/testing-library'
 import { router } from 'expo-router'
 import { Alert, AppState, type AppStateStatus } from 'react-native'
 import {
@@ -72,8 +72,6 @@ function gateway(overrides: Record<string, Route> = {}) {
         assessment(LEEDS, 'capturing', { site: { id: 's3', code: 'S-003', name: 'Leeds Cold Store', address: null } }),
       ],
     },
-    // Home's Inbox icon asks for its count (MB-22); listed so it fails with the rest while offline.
-    'GET /api/notifications/count': { status: 200, body: { total: 0, unread: 0, inboxTodo: 0, newestInbox: null, newestBell: null } },
     [`GET /api/assessments/${REF}/observations`]: {
       status: 200,
       body: [observation('o1', 'l1', { note: 'Valve chained open' })],
@@ -112,12 +110,12 @@ async function chooseLocation(name: string) {
 const sheet = () => within(screen.getByTestId('capture-sheet'))
 
 // From a workspace with a location chosen: a note, a photo and a severity.
-async function captureAndSave(note: string, severity: string | null = 'High') {
+async function captureAndSave(note: string) {
   await fireEvent.press(await screen.findByRole('button', { name: 'New observation' }))
   await screen.findByTestId('capture-sheet')
   await fireEvent.changeText(sheet().getByLabelText('Note'), note)
   await fireEvent.press(sheet().getByRole('button', { name: 'Take photo' }))
-  if (severity) await fireEvent.press(sheet().getByRole('button', { name: severity }))
+  await fireEvent.press(sheet().getByRole('button', { name: 'High' }))
   await fireEvent.press(sheet().getByRole('button', { name: 'Save observation' }))
 }
 
@@ -226,26 +224,6 @@ it('uploads the location first, then its observation under the real ID (AC4)', a
   expect(JSON.parse(String(form.parts.find(([k]) => k === 'details')![1])).locationId).toBe('l9')
   // Uploaded, so its copied files are gone.
   expect([...files.keys()].some((k) => k.includes('/queue/'))).toBe(false)
-})
-
-it('uploads an observation saved with no severity as it is, with its severity empty (MB-23 AC14)', async () => {
-  const fetchMock = gateway({
-    [`POST /api/assessments/${REF}/observations`]: { status: 201, body: observation('o2', 'l1') },
-  })
-  await renderRouter(routes)
-  await openWorkspace()
-  await chooseLocation('Pump room')
-  online = false
-  await captureAndSave('Door wedged open', null)
-  expect(await screen.findByText('Waiting to upload')).toBeTruthy()
-
-  fetchMock.mockClear()
-  online = true
-  await act(async () => appState('active'))
-
-  await waitFor(() => expect(posted(fetchMock, `/api/assessments/${REF}/observations`)).toHaveLength(1))
-  const form = posted(fetchMock, `/api/assessments/${REF}/observations`)[0][1].body as unknown as RecordingFormData
-  expect(JSON.parse(String(form.parts.find(([k]) => k === 'details')![1])).severity).toBeNull()
 })
 
 it('keeps the queue through a restart, for the engineer who made it only (AC5, AC7)', async () => {

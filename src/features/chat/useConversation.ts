@@ -6,16 +6,13 @@ import * as Crypto from 'expo-crypto'
 import { useEffect, useRef, useState } from 'react'
 import { ApiError, NetworkError } from '@/lib/api'
 import { read, remove, write } from '@/lib/store'
-import { mediaUri } from '@/features/observations/format'
-import { ask, createThread, getThread, type Message, type SavedMessage, type Sent } from './api'
+import { ask, createThread, getThread, type Message, type SavedMessage } from './api'
 import { readEvents, receive, type Received } from './events'
-import { shownUri, type Taken } from './useAttachments'
 
 export type AnswerStatus = 'streaming' | 'done' | 'stopped' | 'error'
 // `mid` is the message's id on the gateway (an answer's is `received.id`).
-// A question also holds what was sent with it (MB-24): its photos and PDFs, to draw above the words.
 export type Turn =
-  | { id: number; role: 'user'; text: string; mid: string; photos?: { uri: string }[]; pdfs?: { id: string; name: string; flagged: boolean }[] }
+  | { id: number; role: 'user'; text: string; mid: string }
   | { id: number; role: 'assistant'; received: Received; status: AnswerStatus; error?: string }
 
 const fresh: Received = { search: null, program: '' }
@@ -39,14 +36,7 @@ const LAST = 'lastChat'
 const fromSaved = (messages: SavedMessage[]): Turn[] =>
   messages.map((m, i): Turn =>
     m.role === 'user'
-      ? {
-          id: i + 1,
-          role: 'user',
-          text: m.content,
-          mid: m.id,
-          ...(m.attachments?.length && { photos: m.attachments.map((a) => ({ uri: mediaUri(a.url) })) }),
-          ...(m.pdfs?.length && { pdfs: m.pdfs }),
-        }
+      ? { id: i + 1, role: 'user', text: m.content, mid: m.id }
       : { id: i + 1, role: 'assistant', received: { search: null, program: m.content, id: m.id }, status: 'done' },
   )
 
@@ -95,7 +85,7 @@ export function useConversation() {
 
   // a. Ask with the conversation so far. b. Fold in each event as it arrives.
   // c. Settle: done, stopped (keeping what was written, AC9), or failed (AC10).
-  async function run(history: Turn[], answerId: number, sent: Sent = {}) {
+  async function run(history: Turn[], answerId: number) {
     // Kept here, not read from `live` later: React runs the updates below after
     // `finally` has cleared `live`, which would mark a stopped answer done.
     const mine = { controller: new AbortController(), stopped: false } as NonNullable<typeof live.current>
@@ -108,7 +98,7 @@ export function useConversation() {
         setThread(made)
         write(LAST, made)
       }
-      mine.reader = await ask(toMessages(history), threadId.current!, mine.controller.signal, sent)
+      mine.reader = await ask(toMessages(history), threadId.current!, mine.controller.signal)
       await readEvents(mine.reader, (e) => update(answerId, (t) => ({ received: receive(t.received, e) })))
       const status = mine.stopped ? 'stopped' : 'done'
       update(answerId, () => ({ status }))
@@ -123,21 +113,14 @@ export function useConversation() {
     }
   }
 
-  function send(text: string, taken?: Taken) {
+  function send(text: string) {
     const question = text.trim()
     if (busy || !question) return
-    const user: Turn = {
-      id: nextId.current++,
-      role: 'user',
-      text: question,
-      mid: Crypto.randomUUID(),
-      ...(taken?.photos.length && { photos: taken.photos.map((p) => ({ uri: shownUri(p) })) }),
-      ...(taken?.pdfs.length && { pdfs: taken.pdfs.map(({ id, name, flagged }) => ({ id, name, flagged })) }),
-    }
+    const user: Turn = { id: nextId.current++, role: 'user', text: question, mid: Crypto.randomUUID() }
     const answer: Turn = { id: nextId.current++, role: 'assistant', received: fresh, status: 'streaming' }
     const history = [...turns, user]
     setTurns([...history, answer])
-    run(history, answer.id, taken?.sent)
+    run(history, answer.id)
   }
 
   // Cancelling the reader ends the read at once, even if the network is slow
@@ -183,8 +166,5 @@ export function useConversation() {
     remove(LAST)
   }
 
-  // The PDFs this chat holds, from the questions asked in it: the attach menu stops at the gateway's limit.
-  const pdfsHeld = new Set(turns.flatMap((t) => (t.role === 'user' ? (t.pdfs ?? []).map((f) => f.id) : []))).size
-
-  return { turns, busy, openId, pdfsHeld, send, stop, retry, reset, open, forget }
+  return { turns, busy, openId, send, stop, retry, reset, open, forget }
 }

@@ -85,10 +85,8 @@ describe('Site pins', () => {
     expect(row(pins, 'Site').getByText('1.2966, 103.852')).toBeTruthy()
     expect(row(pins, 'Block A').getByText('1.297, 103.8525')).toBeTruthy()
     expect(row(pins, 'Block B').getByText('Not pinned')).toBeTruthy()
-    // "block a" (a location's building) is Block A: no second row. "Gate" has no building, so it is a
-    // place elsewhere on site with a row of its own (AC40).
-    expect(row(pins, 'Gate').getByText('Not pinned')).toBeTruthy()
-    expect(pins.getAllByTestId(/^pin-row-/)).toHaveLength(4)
+    // "block a" (a location's building) is Block A: no second row. "Gate" has no building.
+    expect(pins.getAllByTestId(/^pin-row-/)).toHaveLength(3)
   })
 
   it('opens directions to a pin in the maps app (AC21)', async () => {
@@ -281,79 +279,5 @@ describe('the map', () => {
     await fireEvent.press(pins.getByRole('button', { name: 'Cancel editing' }))
 
     expect(pins.queryByRole('button', { name: 'Use my position' })).toBeNull()
-  })
-})
-
-// MB-02 AC40-AC42 (added 20 Nov): places elsewhere on site are on the Site pins screen and its map.
-describe('places elsewhere on site', () => {
-  // The gateway's locations, kept so a PATCH can change one's pin as the real one does.
-  function withPlaces(list: object[]) {
-    const patches: { id: string; body: { name: string; coordinates: { lat: number; lng: number } | null } }[] = []
-    let current = list as { id: string; name: string; coordinates?: object }[]
-    const patch = (id: string) => (init?: RequestInit) => {
-      const body = JSON.parse(String(init?.body))
-      patches.push({ id, body })
-      current = current.map((l) => (l.id === id ? { ...l, ...(body.coordinates ? { coordinates: body.coordinates } : { coordinates: undefined }) } : l))
-      return { status: 200, body: current.find((l) => l.id === id) }
-    }
-    const g = gateway({
-      [`GET /api/assessments/${REF}/locations`]: () => ({ status: 200, body: current }),
-      [`PATCH /api/assessments/${REF}/locations/p1`]: patch('p1'),
-      [`PATCH /api/assessments/${REF}/locations/p2`]: patch('p2'),
-    })
-    return { ...g, patches }
-  }
-  const PLACES = [
-    location('l1', 'Lobby', 'Block A', 'Level 1'),
-    location('l2', 'Lobby', 'Block A', 'Level 2'),
-    { ...location('p1', 'Carpark A'), coordinates: { lat: 1.3, lng: 103.86 } },
-    location('p2', 'Loading yard'),
-  ]
-
-  it('adds a row for each place elsewhere on site, and none for other levels of a building (AC40)', async () => {
-    withPlaces(PLACES)
-    const pins = await openSitePins()
-
-    expect(row(pins, 'Carpark A').getByText('1.3, 103.86')).toBeTruthy()
-    expect(row(pins, 'Carpark A').getByText('Elsewhere on site')).toBeTruthy()
-    expect(row(pins, 'Loading yard').getByText('Not pinned')).toBeTruthy()
-    // The site, Block A (both of its levels share it), and the two places: four rows, not five.
-    expect(pins.getAllByTestId(/^pin-row-/)).toHaveLength(4)
-  })
-
-  it('draws a marker for a pinned place, and none for an unpinned one (AC40)', async () => {
-    withPlaces(PLACES)
-    const pins = await openSitePins()
-
-    expect(pins.getByTestId('map-pin-place:p1')).toBeTruthy()
-    // Numbered after the blocks: Block A is 1, Carpark A is 2.
-    expect(within(pins.getByTestId('map-pin-place:p1')).getByText('2')).toBeTruthy()
-    expect(pins.queryByTestId('map-pin-place:p2')).toBeNull()
-  })
-
-  it('pins a place on the location itself, then shows it (AC41)', async () => {
-    const g = withPlaces(PLACES)
-    const pins = await openSitePins()
-
-    await fireEvent.press(pins.getByRole('button', { name: 'Set Loading yard pin' }))
-    await fireEvent.changeText(pins.getByLabelText('Coordinates'), '1.31, 103.87')
-    await fireEvent.press(pins.getByRole('button', { name: 'Set typed coordinates' }))
-
-    await waitFor(() => expect(row(pins, 'Loading yard').getByText('1.31, 103.87')).toBeTruthy())
-    expect(g.patches).toEqual([{ id: 'p2', body: { name: 'Loading yard', coordinates: { lat: 1.31, lng: 103.87 } } }])
-    // Not the site's map route: a place is not a block.
-    expect(g.changes).toEqual([])
-  })
-
-  it('removes a place pin by clearing the location\'s coordinates (AC42)', async () => {
-    const g = withPlaces(PLACES)
-    jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => void buttons?.find((b) => b.text === 'Remove')?.onPress?.())
-    const pins = await openSitePins()
-
-    await fireEvent.press(pins.getByRole('button', { name: 'Edit Carpark A pin' }))
-    await fireEvent.press(pins.getByRole('button', { name: 'Remove pin' }))
-
-    await waitFor(() => expect(row(pins, 'Carpark A').getByText('Not pinned')).toBeTruthy())
-    expect(g.patches).toEqual([{ id: 'p1', body: { name: 'Carpark A', coordinates: null } }])
   })
 })

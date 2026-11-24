@@ -17,12 +17,6 @@ export type Assessment = {
   reference: string
   client: string
   siteVisitDate: string | null // YYYY-MM-DD
-  // The last survey day when a survey runs over several days (web CP-60, MB-19).
-  siteVisitEndDate?: string | null
-  // First survey, Resurvey or Follow-up visit. The gateway always sends it.
-  surveyType?: string
-  siteContacts?: { name: string; role: string | null }[]
-  engineer?: { id: string; name: string } | null
   reportDueDate: string | null // YYYY-MM-DD (MB-04)
   status: AssessmentStatus
   // ISO time the current capture session started; null before any capture.

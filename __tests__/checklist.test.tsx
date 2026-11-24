@@ -105,7 +105,7 @@ async function openWorkspace({ where = false } = {}) {
   await screen.findByTestId('workspace')
   if (where) {
     await fireEvent.press(await screen.findByRole('button', { name: /Choose location|Location/ }))
-    await fireEvent.press(await screen.findByRole('button', { name: /^Staircase/ }))
+    await fireEvent.press(await screen.findByRole('button', { name: /Staircase/ }))
     await screen.findByTestId('workspace')
   }
 }

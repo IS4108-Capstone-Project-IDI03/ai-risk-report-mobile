@@ -45,7 +45,7 @@ async function openWorkspace() {
   await fireEvent.press(await screen.findByText(REF))
   await screen.findByTestId('workspace')
   await fireEvent.press(await screen.findByRole('button', { name: /Choose location|Location/ }))
-  await fireEvent.press(await screen.findByRole('button', { name: /^Staircase/ }))
+  await fireEvent.press(await screen.findByRole('button', { name: /Staircase/ }))
   await screen.findByText('Captured here · ' + live.length)
 }
 
@@ -183,7 +183,7 @@ describe('show deleted', () => {
     await fireEvent.press(await screen.findByText(REF))
     await screen.findByTestId('workspace')
     await fireEvent.press(await screen.findByRole('button', { name: /Choose location|Location/ }))
-    await fireEvent.press(await screen.findByRole('button', { name: /^Staircase/ }))
+    await fireEvent.press(await screen.findByRole('button', { name: /Staircase/ }))
     await screen.findByText('Captured here · 1')
 
     expect(screen.getByText('Connect to see deleted.')).toBeTruthy()

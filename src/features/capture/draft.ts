@@ -29,16 +29,13 @@ const hasEvidence = (d: Draft) =>
 // Anything worth asking about before it's thrown away (AC13).
 export const isBlank = (d: Draft) => !hasEvidence(d) && !d.cope.length && !d.severity
 
-// What stops Save (AC10); null when ready. The gateway refuses an observation with no evidence, so the
-// app says so first. Severity and category are not needed (MB-23 AC12): the gateway suggests what is left
-// empty after the save (the web's CP-24), so a missing severity no longer blocks it.
+// What stops Save, in the order the engineer would fix it (AC10); null when ready.
+// The gateway refuses an observation with neither, so the app says so first.
 export function missing(d: Draft) {
-  return hasEvidence(d) ? null : 'Add a note, photo, voice note or scan.'
+  if (!hasEvidence(d)) return 'Add a note, photo, voice note or scan.'
+  if (!d.severity) return 'Choose a severity to save.'
+  return null
 }
-
-// The same, and a severity too. For the forms that keep that rule: a checklist answer (MB-05 AC9) and an
-// observation added to a site walk (MB-16 AC27). Only the capture sheet lets it go (MB-23 AC12).
-export const missingRated = (d: Draft) => missing(d) ?? (d.severity ? null : 'Choose a severity to save.')
 
 // "0:42", "12:05".
 export function duration(ms: number) {

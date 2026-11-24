@@ -1,6 +1,6 @@
 // MB-17 (A and B): the Scans view of an assessment's handwritten pages, and Read again on a page that
 // was read. Real routes, gateway mocked; the page poll is shortened so the test is quick.
-import { fireEvent, renderRouter, screen, testRouter, waitFor, within } from 'expo-router/testing-library'
+import { fireEvent, renderRouter, screen, waitFor, within } from 'expo-router/testing-library'
 import { Alert } from 'react-native'
 import { assessment, location, mockGateway, observation, pointAtTestGateway, routes, signedIn, type Reply } from '../test/gateway'
 
@@ -49,14 +49,13 @@ async function openWorkspace() {
 }
 async function openScans() {
   await openWorkspace()
-  // The Scans button was taken out of the workspace band on 19 Nov (Miya); the screen is still a route.
-  await testRouter.push(`/assessment/${REF}/scans`)
+  await fireEvent.press(await screen.findByRole('button', { name: 'Scans' }))
   return within(await screen.findByTestId('scans'))
 }
 async function openDetail() {
   await openWorkspace()
   await fireEvent.press(await screen.findByRole('button', { name: /Choose location|Location/ }))
-  await fireEvent.press(await screen.findByRole('button', { name: /^Staircase/ }))
+  await fireEvent.press(await screen.findByRole('button', { name: /Staircase/ }))
   await fireEvent.press(await screen.findByText('Valve')) // o1's card
   return within(await screen.findByTestId('observation-detail'))
 }
