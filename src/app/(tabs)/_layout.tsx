@@ -1,10 +1,9 @@
-// Bottom tabs shown once signed in (MB-01): Home (assessments, with New assessment, MB-21), Calendar (MB-19),
+// Bottom tabs shown once signed in (MB-01): Home (assessments, with the Inbox icon, MB-22; New assessment, MB-21, is a round button on Home), Calendar (MB-19),
 // Chatbot and Profile. Each tab has the navy header; the tab bar is white with the
 // selected tab in ink blue, as the web app marks its active nav item.
-import { router, Tabs } from 'expo-router'
-import { CalendarDays, House, MessageCircle, Plus, UserRound } from 'lucide-react-native'
-import { Button } from '@/components/ui/button'
-import { Text } from '@/components/ui/text'
+import { Tabs } from 'expo-router'
+import { CalendarDays, House, MessageCircle, UserRound } from 'lucide-react-native'
+import { InboxButton } from '@/features/inbox/components/InboxButton'
 import { colors, headerOptions } from '@/lib/nav'
 
 export default function TabsLayout() {
@@ -24,13 +23,8 @@ export default function TabsLayout() {
         options={{
           title: 'Assessments',
           tabBarLabel: 'Home',
-          // Start an assessment (MB-21): a plus with its word, in the navy header.
-          headerRight: () => (
-            <Button variant="header" accessibilityLabel="New assessment" onPress={() => router.push('/new-assessment')} className="mr-2">
-              <Plus color="#ffffff" size={18} />
-              <Text>New</Text>
-            </Button>
-          ),
+          // The Inbox (MB-22): an icon alone at the top right. New assessment (MB-21) is the round button on Home.
+          headerRight: () => <InboxButton />,
           tabBarIcon: ({ color, size }) => <House color={color} size={size} />,
         }}
       />
