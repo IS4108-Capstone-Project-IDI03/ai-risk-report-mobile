@@ -11,10 +11,25 @@ export const listObservations = (reference: string) =>
 // What the editor can change (MB-12 AC1): a field left out stays as it is,
 // `copeDimensions: null` uncategorises it, and `note: null` removes the note.
 // PATCH /api/observations/:id in the web repo's observation.routes.ts.
-export type Changes = { severity?: Severity; copeDimensions?: Cope[] | null; note?: string | null }
+// `confirm` keeps a field's AI suggestion as it is (MB-23 AC6): the gateway then treats the value as the engineer's.
+export type Changes = {
+  severity?: Severity
+  copeDimensions?: Cope[] | null
+  note?: string | null
+  confirm?: ('category' | 'severity')[]
+}
 
 export const updateObservation = (id: string, changes: Changes) =>
   request<Observation>(`/api/observations/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(changes) })
+
+// Keeps a field's suggested value as it is (MB-23 AC6). Returns the observation as it now is.
+export const confirmField = (id: string, field: 'category' | 'severity') => updateObservation(id, { confirm: [field] })
+
+// Asks the AI for a category and severity again after a failed suggestion (MB-23 AC8). One paid call. The
+// gateway answers 202 with the observation, now reading, and works in the background (POST
+// .../suggestion/retry in the web repo's observation.routes.ts); 409 unless the suggestion failed.
+export const retrySuggestion = (id: string) =>
+  request<Observation>(`/api/observations/${encodeURIComponent(id)}/suggestion/retry`, { method: 'POST' })
 
 // A soft delete: the gateway marks it deleted and keeps it, so the web can restore it.
 export const deleteObservation = (id: string) =>

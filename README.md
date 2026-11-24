@@ -54,9 +54,14 @@ logging still apply.
   **Pin where I am** that reads the phone's GPS once, when tapped, and saves `coordinates` with the
   location (`expo-location`). Permission off or no fix says so and saving still works. A location
   queued with no signal keeps its pin.
+- **Remove a location (20 Nov):** swipe a saved location left in the picker to show **Remove**. It asks first, then sends
+  `DELETE .../locations/:id` and reads the list again. If it was the chosen location, you choose again. A location with
+  observations (deleted ones too) or waiting to upload has no Remove; if the gateway still refuses, its words are shown.
+  Online only ("Connect to remove."). Editing a location stays on the web.
 - **Site pins:** a **Site pins** button in the workspace band opens the site and its blocks, each with
   its pin or "Not pinned" (`site.coordinates` and `site.pins` from `GET /api/assessments`).
-  **Directions** opens Google Maps directions (no key). **Edit pin** (or **Set pin**) opens a panel:
+  Each place saved with no building ("Elsewhere on site") has a row and a marker too, and its pin is kept on the location; a location
+  inside a building has none (its building's pin stands for every level). **Directions** opens Google Maps directions (no key). **Edit pin** (or **Set pin**) opens a panel:
   tap the map, use the phone's position, or type `lat, lng`, then **Set** (`PUT /api/sites/:id/map`,
   one change at a time); **Remove pin** is there too. A map (`react-native-maps`, Apple Maps on
   iOS) shows a marker for each pin (S, 1, 2…), which can be dragged to move; **Hide map** folds it.
@@ -146,8 +151,9 @@ logging still apply.
 
 **MB-17: scanned pages** (branch `MB-17`, web CP-19 and CP-20; not in the backlog yet, needs adding)
 
-- **Scans:** a **Scans** button in the workspace header (beside Site pins) opens every handwritten page of the
-  assessment's live observations, newest first: thumbnail, its text or status (Reading the handwriting, Couldn't
+- **Scans:** the Scans screen (a route, `/assessment/<reference>/scans`) lists every handwritten page of the
+  assessment's live observations. **The Scans button was taken out of the workspace header on 19 Nov (Miya), so the
+  phone has no way to open it for now** (see the MB-17 spec), newest first: thumbnail, its text or status (Reading the handwriting, Couldn't
   read and why, No handwriting found), when it was captured and which observation. Tap a page to open its
   observation. Pull to refresh; pages still being read refresh every 5 seconds. Offline it shows the saved copy, and
   pages still waiting to upload say so.
@@ -167,6 +173,128 @@ logging still apply.
   `transcription.correction` field this app reads. Needs that web `main` running.
 - **Out of scope:** the web client showing corrections made on a phone, saving a correction offline, removing a page
   from the detail screen (Edit only).
+
+**MB-19: calendar** (branch `MB-19`, web CP-60; not in the backlog yet, needs adding)
+
+- **Where:** a **Calendar** tab between Home and Chatbot. It reads the same list as Home
+  (`GET /api/assessments`) and adds no endpoint. Archived assessments are left out.
+- **Phone (changed 19 Nov, Miya):** the month grid, in a rounded card, fills the tab's height, as in Apple Calendar, with
+  lines between days. Entries are bars with their site name, as on the web, and each bar opens its
+  details: a survey is one bar across all its days in its type's colour and icon (flag, repeat,
+  calendar-check), a report due is a white chip in its state's colour and icon. Tap the rest of a day and a sheet slides up with
+  its entries (a survey shows on each of its days). Late reports and No survey
+  date are under the grid, just below a screen's worth of month. **Wide window (700pt or more):**
+  the web's month grid (a survey is one bar across its days, a report due date is a white chip that
+  says late, due soon, on track or finalised), three entries a day then "+N more", and a **Week**
+  view. The two lists sit beside the grid from 1080pt, under it below that.
+- **Move and filter:** arrows, **Today**, Month / Week, Survey dates / Report due dates, and one
+  assessment type. The footer's "N reports late" opens the month of the oldest late report. The
+  view, period and filters are kept when you open an assessment and come back (the tab stays open).
+- **Details:** tap an entry for its site, client, reference, type, status, survey days, report due
+  date and site contacts, with **Open assessment** and **Reschedule**.
+- **Reschedule and Set dates** (`PUT /api/assessments/:reference`, the web's Edit details route, type
+  sent unchanged, a cleared date sent as `''`): native date picker (`@react-native-community/datetimepicker`),
+  Save dates greyed until something changes, wrong dates named beside the field before anything is sent.
+  Only the assigned engineer can; online only ("Connect to reschedule.").
+- **Gateway:** nothing of ours. Needs the web `main` with `siteVisitEndDate` on that route (CP-60, `39a8dd83`).
+- **Out of scope:** New Assessment from a day, the admin Engineer filter, dragging an entry, `.ics` export.
+
+**MB-20: next step and gaps, and MarshBot's chat** (branch `MB-20`, web AS-06; not in the backlog yet, needs adding; the chat was MB-20 until 21 Nov, when it was folded in)
+
+- **Where:** on a phone, a full-width **Overview** bar (stage, eight progress segments, one chip, the report's
+  due note, a chevron) above the Observations | Checklist switch; tapping it opens MarshBot's chat (below), whose **Summary** opens a sheet with the rest. On an
+  iPad, the card with **Hide**. Only the assigned engineer gets it (someone else's: nothing).
+- **What it shows:** the stage ("Capture · stage 3 of 8" and eight dots), the one **Next step** (a sentence and a button with a
+  verb), the open items most urgent first (Fix now, Gap, Reminder; five, then **Show all N**), the checklist areas that need
+  more as bars, and three "At a glance" tiles. Each row opens the checklist, an observation or the site walks; a row that
+  points to Generate, Review or Export is greyed and says "Continue on the web." A checklist link opens the Checklist
+  (it has no jump to one area yet).
+- **Loads** with the workspace, on coming back to it and on pull to refresh. Offline it shows the last copy.
+- **Gateway:** `GET /api/assessments/:reference/assistant/summary`, **new, in the web repo on branch `AS-06-summary`** (not merged).
+  It is read only: unlike `GET .../assistant` it records no "opened" and starts no paid AI call. The phone never calls that one.
+  Until that branch is on the gateway you run, the card shows the gateway's refusal text (a 404).
+- **Left out:** dismissing, live push, a stage on Home and the Focus list (see the spec). The chat is below.
+
+**The chat** (was MB-20; the same web story, AS-06):
+
+- **Where:** tapping the Overview bar (phone) opens the chat as its own screen, `/assessment/<reference>/assistant`. **Summary** at
+  its top goes back to the workspace with the old Overview sheet open (next step and gaps). The iPad keeps the card.
+- **What it shows:** the gateway's status pill, the stage with eight segments, three facts, then the conversation: MarshBot's
+  bubbles on the left, yours on the right, each turn as its lines then its cards. Cards drawn: To do (tasks), rows (with a button),
+  checklist and area bars. The outline, review lanes and stage-time cards show a title and "See the detail on the web."
+- **Replies:** MarshBot's buttons are pinned at the bottom (Skip for now, What else?, Add observations, That's everything, Another
+  visit with the native date picker and Confirm). One `POST .../assistant/replies` each, online only ("Connect to reply."). A reply with a
+  link (Add observations) only opens it and sends nothing, as the web does. A reply has its icon at the left, a link reply an arrow
+  at the right, and the first hint (what a stage move does) is one line under the buttons. The whole status block (pill, stage, three facts, Summary) folds away when you drag the chat away from its top, and opens again at the top. A "Try Again" row opens its observation, where the phone's own Try again is (never a paid call from a chat button).
+- **Gateway:** nothing of ours. `GET /api/assessments/:ref/assistant` **records an "open" and can start paid AI steps** (a coverage
+  check, and the AI rewording of new bot turns), so the phone reads it once when the screen opens, and again after a reply or
+  while MarshBot is writing (every 5 s, up to 2 minutes). It sends no activity beacon.
+- **Left out:** earlier sessions, the agenda, the AI-worded form of a turn (the phone draws its lines and cards, as the web does
+  when a turn has none), the outline, lanes and stage-time cards in full, push when MarshBot finishes.
+
+**MB-21: start a new assessment** (branch `MB-21`, web CP-01 and CP-23, manual form only; not in the backlog yet, needs adding)
+
+- **Where:** a **+ New** button in Home's header opens a **New assessment** screen (a modal).
+- **The form:** pick a **client** (a searchable list of the gateway's clients; the list takes the form's place while
+  you choose), then one of its **sites** or **Add a new site** (name, address, jurisdiction as two letters, and a facility
+  type), then the **visit type** (First survey, Resurvey, Follow-up) and the optional **dates**, with the calendar's native
+  date picker. A new site, or one with no visit yet, can only start with a First survey (the gateway's rule), so the
+  other two are greyed with the reason.
+- **Create assessment** sends one `POST /api/assessments` and opens the new assessment's workspace. A listed site's
+  locations are copied from its latest visit (`copyLocations`, the web's default). The gateway's problems show beside
+  their fields and the form stays filled in. Online only ("Connect to start an assessment."). Two quick taps send one request.
+- **Gateway:** nothing of ours (`POST /api/assessments`, `GET /api/clients`, `GET /api/clients/:id/sites` already exist).
+- **Left out:** a new client, contacts, several sites at once, an admin choosing the engineer, reading client documents
+  with AI (paid), and "New assessment from a day" in the calendar.
+
+**MB-24: ask about a photo or a document** (web CB-08 and CB-09; not in the backlog yet, needs adding; spec `.local-docs/specs/mvp/MB-24.md`)
+
+- **Where:** the Chatbot tab's question box is one rounded pill with a **+** at its left (read out as "Attach"), the input,
+  and Send at its right. The + opens a menu: **Take photo**, **Choose photo**, **Choose PDF**. Attached files are a row of
+  thumbnails and PDF cards above the pill, each with a round x. Attaching needs signal ("Connect to attach.").
+- **Photos:** JPG or PNG, up to 3 per question, up to 8 MB. Each goes up at once as the raw request body
+  (`POST /api/chat/photos`) and shows as a thumbnail with **Remove**. When the gateway finds faces it says "2 faces found"
+  with **Blur faces** (the default, sends the blurred copy) and **Send as is**. A photo whose faces cannot be checked is not kept.
+- **PDFs:** up to 10 MB, read by the gateway at once (`POST /api/chat/pdfs`, name in `X-File-Name`), shown as a chip with
+  its pages, with a warning when the PDF holds instructions. **Up to 3 PDFs per chat** (the gateway's limit; the web story
+  text says one, which is stale). A refusal shows the gateway's own words and nothing is attached.
+- **Asking:** Send waits for any upload to finish, then sends `attachments` and `pdfs` (ids) with the question. My question
+  shows its photos and PDF names above the words, and a saved chat reopens with them.
+- **Gateway:** nothing of ours (the routes are on the web's `main`, CB-08 and CB-09). New package: `expo-document-picker`.
+- **Real AI calls cost money:** a question with a photo or a PDF is a paid model call (and a photo is face-checked).
+- **Left out:** a PDF page viewer (a citation shows the page's text, as in MB-06), the share sheet, "Try again" on a
+  saved question, and attaching in the knowledge-base search.
+
+**MB-25: ask by voice and hear the answer** (web CB-10, core only; not in the backlog yet, needs adding; spec `.local-docs/specs/mvp/MB-25.md`)
+
+- **Ask:** with the chat box empty, a **microphone** at the right of the pill (read out as "Speak") takes Send's place.
+  Tap it to record (a red dot, the time and **Stop**), tap Stop, and the gateway turns the clip into text
+  (`POST /api/chat/transcribe`), which lands **in the box** to check and edit. Nothing is sent until you tap Send.
+  A clip under a second is not sent. Silence, a clip over about two minutes, a blocked microphone (with **Open Settings**)
+  and a failed transcription each say why.
+- **Hear:** each finished answer has **Play** (reads it with the phone's own voice, without citation numbers), then
+  **Pause / Resume** and **Stop**. One answer reads at a time; a new question or leaving the tab stops it. No voice on the
+  phone, no Play. On Android there is no Pause (Stop only).
+- **Gateway:** nothing of ours. New package: `expo-speech`. Recording reuses capture's recorder.
+- **Real AI calls cost money:** each spoken question is one transcription call (about a tenth of a cent).
+- **Left out:** hands-free mode, speaking speed and voice choice, pause while recording, the level bar.
+
+**MB-23: see and confirm the AI's suggestions on an observation** (web CP-24, the checking half; not in the backlog yet, needs adding; spec `.local-docs/specs/mvp/MB-23.md`)
+
+- **Why:** since CP-24 the gateway reads every saved observation and suggests a category and severity the
+  engineer left empty. The phone now shows that state instead of treating a suggestion as the engineer's choice.
+- **Observation screen:** a suggested field shows **Not sure** with **Confirm** (keeps it) and **Change** (opens Edit; picking
+  the same value again counts as the engineer's). While the AI reads, an empty field says "Suggesting a category". A
+  failed suggestion shows **Suggestion failed** with **Try again**. It reads again every 5 s while working, up to 2 minutes.
+- **List rows:** one small line when a row is not complete: Transcribing, Reading, Transcription failed, Reading failed or
+  To check (with "Check category" and so on). The rule is the web's `observationRowState.ts`, copied (`rowState.ts`).
+- **Capture:** severity is **optional** now (changes MB-03 AC10). Leave it empty and the AI suggests it after the save. The
+  checklist answer sheet and the site walk form keep their own severity rule.
+- **Gateway:** nothing of ours, but it must include the web's CP-24 (PR #175, `6d9b5cf4`). The local gateway must be
+  updated to the web's `main` before this can be tried.
+- **Real AI calls cost money:** every save from the phone starts the gateway's reading (a text note with no media is one
+  category call, about $0.007; each recording, page or photo adds one).
+- **Left out:** the To check filter and footer count, the photo description, recording before Save, site walk marks, push.
 
 **MB-07: site flow redesign** (branch `MB-07`)
 
@@ -284,15 +412,14 @@ logging still apply.
 
 ## What to build next
 
-The MVP order, agreed 27 Oct 2026 (MB-01 to MB-12 are all built, and so are MB-16, the site walk, and MB-17, scanned pages). Each is its own story (`MB-0n`). The web stories it
+The MVP order, agreed 27 Oct 2026 (MB-01 to MB-12 are all built, and so are MB-16, the site walk, MB-17, scanned pages, MB-19, the calendar, MB-20, next step and gaps, and MB-21, start a new assessment). Each is its own story (`MB-0n`). The web stories it
 mirrors are in the web repo's `docs/USER_STORIES.md`.
 
 | Order | Story | Mirrors | Gateway support |
 | --- | --- | --- | --- |
 | (next) | Chosen from the migration shortlist, agreed with Miya | | |
 
-Separate web story for the team: make severity optional. It's required in the gateway
-model, the save rule and `report_sections` evidence, and the web UI assumes it.
+Severity is optional on the gateway now (the web's CP-24), so the capture sheet no longer requires it (MB-23).
 
 Later, outside the MVP: editing my captures (CP-08). Completing an assessment (CP-14)
 was dropped on the web.
@@ -318,7 +445,7 @@ src/
   app/                    Expo Router routes only; each re-exports a screen
     _layout.tsx           fonts, session check, sign-in vs tabs, workspace screens
     sign-in.tsx
-    (tabs)/               bottom tabs: index (Home), chat, profile
+    (tabs)/               bottom tabs: index (Home), calendar, chat, profile
     assessment/[reference]/  index (workspace), locations (picker modal), capture (sheet)
   features/
     auth/                 session.tsx, screens/SignIn
@@ -333,6 +460,15 @@ src/
                           components/ (sections, chips), screens/CaptureSheet
     chat/                 api (incl. saved chats), library (answer format), events (stream), answer (citations),
                           useConversation, components/ (ChatList, FactRow, FactForm), screens/Chat, Preferences
+    calendar/             calendar.ts (dates and layout, copied from the web), api (Reschedule), format,
+                          components/ (Toolbar, PhoneMonth, DayEntries, MonthGrid, EntryChip, EntryRow, SideLists, EntryDetails,
+                          RescheduleSheet, DateField), screens/Calendar
+    new-assessment/       api (clients, sites, create), format (visit and facility types, field errors), useLists,
+                          components/ (ClientPicker, SitePicker, NewSiteFields, TypeChips), screens/NewAssessment
+    assistant/            api (the conversation, replies), types, poll, useThread, format, components/ (Bubble, CardView, TasksCard,
+                          RowsCard, AreaCard, PlainCard, Row, StatusLine, Replies, DateStep), screens/Assistant
+    overview/             api (the summary), format (link targets), icons, useSummary, components/ (OverviewCard,
+                          StageLine, NextStep, GapRow, AreaBar, Glance)
     profile/              screens/Profile
   components/ui/          React Native Reusables components, adjusted
   lib/                    api.ts (every gateway call), utils.ts (cn), nav.ts (header styles), motion.ts (pane ease)

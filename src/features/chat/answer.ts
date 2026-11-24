@@ -79,3 +79,14 @@ export function pagesText(start?: number, end?: number) {
   if (!start) return null
   return end && end !== start ? `Pages ${start}–${end}` : `Page ${start}`
 }
+
+// An answer as plain words to read aloud (MB-25): its statements, in order, with no citation numbers (they
+// are drawn beside the text, not in it) and no bold marks. Tables and follow-up questions are left out.
+const plain = (x: unknown) => String(x ?? '').replace(/\*\*/g, '').trim()
+const elements = (x: unknown) => (Array.isArray(x) ? x.filter(isElement) : [])
+export function spokenText(root: ElementNode | null) {
+  return elements(root?.props.blocks)
+    .map((b) => (b.typeName === 'Statement' ? plain(b.props.text) : b.typeName === 'Paragraph' ? elements(b.props.statements).map((s) => plain(s.props.text)).join(' ') : ''))
+    .filter(Boolean)
+    .join(' ')
+}

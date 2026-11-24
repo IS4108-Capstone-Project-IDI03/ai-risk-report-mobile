@@ -10,9 +10,10 @@
 // MB-05: a switch, Observations | Checklist, under the band; the checklist shows in place
 // of the observations, with the location bar and New observation still below. On a wide
 // iPad pane the two sit side by side instead, the checklist collapsible. MB-11: tapping an observation opens its detail. MB-12: swiping an uploaded one
-// left deletes it, and Show deleted below the list restores.
+// left deletes it, and Show deleted below the list restores. MB-20: the Overview (a full-width bar under the band that opens a sheet on the phone, the card on the iPad; stage, next
+// step, gaps) sits above the switch; its links open the checklist, an observation or the site walks.
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router'
-import { ChevronDown, ChevronUp, Footprints, MapPin, Plus, ScanText } from 'lucide-react-native'
+import { ChevronDown, ChevronUp, Footprints, MapPin, Plus } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Alert, FlatList, RefreshControl, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -38,21 +39,33 @@ import { useChecklist } from '@/features/checklist/useChecklist'
 import { ObservationCard } from '@/features/observations/components/ObservationCard'
 import { SwipeDelete } from '@/features/observations/components/SwipeDelete'
 import type { Observation } from '@/features/observations/format'
+import { isWorking } from '@/features/observations/rowState'
+import { POLL_LIMIT, POLL_MS } from '@/features/observations/transcriptPoll'
 import CaptureSheet from '@/features/capture/screens/CaptureSheet'
+import { OverviewSheet } from '@/features/overview/components/OverviewSheet'
+import { OverviewButton } from '@/features/overview/components/OverviewButton'
+import type { Target } from '@/features/overview/format'
+import { useSummary } from '@/features/overview/useSummary'
 import { ChecklistPane } from '../components/ChecklistPane'
 import { WorkspaceSwitch, type Side } from '../components/WorkspaceSwitch'
 import { listAssessments } from '../api'
+import { dueNote } from '../filters'
 import { formatDate, STATUS, type Assessment } from '../format'
 
 export default function Workspace() {
-  const { reference } = useLocalSearchParams<{ reference: string }>()
-  return <WorkspaceView reference={reference} />
+  // `side` and `overview` come from MarshBot's chat (MB-20): a link there lands on a side of the switch, and Summary opens the
+  // Overview sheet. `at` is a timestamp the chat adds so the same choice twice still counts as a new one.
+  const { reference, side, overview, at } = useLocalSearchParams<{ reference: string; side?: string; overview?: string; at?: string }>()
+  return <WorkspaceView reference={reference} arrival={{ side, overview, at }} />
 }
+
+// What the chat asks the workspace to show on arrival.
+type Arrival = { side?: string; overview?: string; at?: string }
 
 // `embedded`: inside Home's split view, where there's no stack header to set.
 // `leading`: a button for the band's left edge; Home passes "Show assessments"
 // there while its list is hidden (MB-09 AC7).
-export function WorkspaceView({ reference, embedded = false, leading }: { reference: string; embedded?: boolean; leading?: ReactNode }) {
+export function WorkspaceView({ reference, embedded = false, leading, arrival }: { reference: string; embedded?: boolean; leading?: ReactNode; arrival?: Arrival }) {
   const [location] = useCurrentLocation(reference)
   // undefined while loading; null once the list arrives without it.
   const [assessment, setAssessment] = useState<Assessment | null | undefined>(undefined)
@@ -62,8 +75,22 @@ export function WorkspaceView({ reference, embedded = false, leading }: { refere
   const { items, uploads, discard, offline } = useOffline()
   // Which side of the switch is shown (MB-05 AC1), and the checklist, read once for both
   // the switch's progress and the view.
-  const [side, setSide] = useState<Side>('observations')
+  const asked = (a?: Arrival) => (a?.side === 'checklist' || a?.side === 'observations' ? a.side : null)
+  const [side, setSide] = useState<Side>(asked(arrival) ?? 'observations')
   const checklist = useChecklist(reference)
+  // The next step and gaps (MB-20): read only, loaded with this screen and on pull to refresh.
+  const overview = useSummary(reference)
+  // The sheet opens from the chat's Summary button (MB-20), which comes back here with overview=1 (the iPad keeps the card).
+  const [overviewOpen, setOverviewOpen] = useState(arrival?.overview === '1')
+  // Back from the chat (MB-20) with a new ask (a new `at`): show the side or the sheet it wants. Done while rendering, the
+  // way React advises for state that follows a prop; the first ask is already in the two states above.
+  const [lastAt, setLastAt] = useState(arrival?.at)
+  if (arrival?.at !== lastAt) {
+    setLastAt(arrival?.at)
+    const next = asked(arrival)
+    if (next) setSide(next)
+    if (arrival?.overview === '1') setOverviewOpen(true)
+  }
   const list = checklist.body?.checklist
   const progress = list ? { done: list.items.filter((i) => i.check).length, total: list.items.length } : null
   // The pane's own width, measured (it is Home's right-hand side on a split view, not
@@ -71,6 +98,8 @@ export function WorkspaceView({ reference, embedded = false, leading }: { refere
   // checklist collapsible; below it the switch is used (MB-05 AC20, AC21).
   const [paneWidth, setPaneWidth] = useState(0)
   const together = paneWidth >= 760
+  // The bottom bar's location and buttons share a row only from 1000pt (see the bar below).
+  const oneRow = paneWidth >= 1000
   const [collapsed, setCollapsed] = useState(false)
   // Side by side, New observation opens its form here, in place of the observations,
   // so the checklist beside it stays on screen and scrollable (MB-09 AC4).
@@ -118,6 +147,19 @@ export function WorkspaceView({ reference, embedded = false, leading }: { refere
       load()
     }, [load]),
   )
+  // While a row is Transcribing or Reading, read the list again every few seconds so it settles without a
+  // pull to refresh (MB-23 AC16). Stops after about 2 minutes, and when this screen is covered.
+  const working = !!observations?.some(isWorking)
+  useFocusEffect(
+    useCallback(() => {
+      if (!working) return
+      let polls = 0
+      // A poll that fails is ignored (no error banner): the next one, or a pull to refresh, tries again.
+      const poll = () => listObservations(reference).then(setObservations, () => {})
+      const timer = setInterval(() => (++polls > POLL_LIMIT ? clearInterval(timer) : void poll()), POLL_MS)
+      return () => clearInterval(timer)
+    }, [working, reference]),
+  )
   // After each upload, so one that was waiting shows from the gateway (MB-10
   // AC4). Not on open: the focus effect above has that.
   const seenUploads = useRef(uploads)
@@ -163,10 +205,27 @@ export function WorkspaceView({ reference, embedded = false, leading }: { refere
     })
   }
 
+  // Where an Overview link goes: a side of the switch, an observation, the site walks. A link
+  // to a web-only tab never reaches here (its row is greyed).
+  function go(target: Target) {
+    if (target.kind === 'checklist') {
+      if (together) setCollapsed(false)
+      else setSide('checklist')
+    } else if (target.kind === 'observations') setSide('observations')
+    else if (target.kind === 'uncategorised') {
+      // The gateway's gap names no observations; the phone has them all, so open the first one with no category.
+      const first = (observations ?? []).find((o) => !o.copeDimensions)
+      if (first) router.push({ pathname: '/assessment/[reference]/observation/[id]', params: { reference, id: first.id } })
+      else setSide('observations')
+    } else if (target.kind === 'observation')
+      router.push({ pathname: '/assessment/[reference]/observation/[id]', params: { reference, id: target.id } })
+    else if (target.kind === 'walks') router.push({ pathname: '/assessment/[reference]/site-walks', params: { reference } })
+  }
+
   async function refresh() {
     setRefreshing(true)
     try {
-      await load()
+      await Promise.all([load(), overview.reload()])
     } finally {
       setRefreshing(false)
     }
@@ -187,6 +246,7 @@ export function WorkspaceView({ reference, embedded = false, leading }: { refere
     )
   }
 
+  // Only what was captured at the chosen location (AC4); the gateway sends newest first.
   // Only what was captured at the chosen location (AC4); the gateway sends newest first.
   const here = location && observations ? observations.filter((o) => o.location?.id === location.id) : []
   // Waiting to upload from here, newest first, above the gateway's (MB-10 AC2).
@@ -243,20 +303,14 @@ export function WorkspaceView({ reference, embedded = false, leading }: { refere
                 <Text className="tabular-nums text-sm text-[#b9c4d6]">{formatDate(assessment.siteVisitDate)}</Text>
               </View>
             </View>
-            {/* The scanned pages (MB-17 AC1) and the site's pins and directions (MB-02 AC19), in a row of
-                their own: beside the date, two labelled buttons covered it on a phone. */}
+            {/* The site's pins and directions (MB-02 AC19), in a row of their own: beside the date, labelled buttons
+                covered it on a phone. A light white border. The Scans button (MB-17 AC1) was taken out on 19 Nov at
+                Miya's request; the Scans screen is still a route. The Overview is a bar below the band (MB-20). */}
             <View className={cn('mt-3 flex-row gap-3', col)}>
               <Button
                 variant="header"
-                accessibilityLabel="Scans"
-                onPress={() => router.push({ pathname: '/assessment/[reference]/scans', params: { reference } })}
-              >
-                <ScanText color="#ffffff" size={18} />
-                <Text>Scans</Text>
-              </Button>
-              <Button
-                variant="header"
                 accessibilityLabel="Site pins"
+                className="border border-white/30"
                 onPress={() => router.push({ pathname: '/assessment/[reference]/site-pins', params: { reference } })}
               >
                 <MapPin color="#ffffff" size={18} />
@@ -266,7 +320,11 @@ export function WorkspaceView({ reference, embedded = false, leading }: { refere
           </View>
         )
       )}
-      <View className={cn('gap-4', pad, col)}>
+      {/* On the iPad (together) nothing else separates this from the navy band, so the bar would touch it: pt-4 and pb-2 give it room. */}
+      <View className={cn('gap-4', pad, col, together && 'pb-2 pt-4')}>
+        {/* The Overview bar, phone and iPad alike (MB-20; the iPad's inline card was dropped on 24 Nov, Miya: it was
+            370pt of an 11-inch iPad's 686pt pane and pushed the bottom bar under the tab bar). It opens MarshBot. */}
+        <OverviewButton state={overview} due={assessment ? dueNote(assessment) : null} onOpen={() => router.push({ pathname: '/assessment/[reference]/assistant', params: { reference } })} />
         {!together && <WorkspaceSwitch side={side} onChange={setSide} progress={progress} />}
         <OfflineNote />
       </View>
@@ -374,33 +432,48 @@ export function WorkspaceView({ reference, embedded = false, leading }: { refere
       {/* Embedded, the tab bar below already clears the home indicator. */}
       {!(together && capturing) && (
   <Bar edges={['bottom']} className={cn('border-t border-border bg-card pt-2', pad)}>
-          {/* Wide: the location and the button share one row, so the bar stays slim. */}
-          <View className={cn(together ? 'mb-2 flex-row items-center gap-6' : 'gap-2', col)}>
-            <View className={together ? 'flex-1' : undefined}>
+          {/* Very wide (1000pt): the location and the buttons share one row, so the bar stays
+              slim. Below that they stack: the fixed-width buttons leave "Choose where you
+              are" about 50pt on an 11-inch iPad's split view (about 820pt). */}
+          <View testID="workspace-bar-row" className={cn(oneRow ? 'mb-2 flex-row items-center gap-6' : 'gap-2', col)}>
+            <View className={oneRow ? 'flex-1' : undefined}>
               <CurrentLocationCard
                 location={location}
                 onChange={() => router.push({ pathname: '/assessment/[reference]/locations', params: { reference } })}
               />
             </View>
             {/* New observation for one thing; Site walk to record while walking round (MB-16 AC1). */}
-            <View className={together ? 'flex-row gap-3' : 'mb-2 flex-row gap-3'}>
+            <View className={oneRow ? 'flex-row gap-3' : 'mb-2 flex-row gap-3'}>
               <Button
                 size="lg"
                 variant="outline"
                 accessibilityLabel="Site walk"
                 onPress={() => router.push({ pathname: '/assessment/[reference]/site-walks', params: { reference } })}
-                className={together ? 'w-48' : 'flex-1'}
+                className={oneRow ? 'w-48' : 'flex-1'}
               >
                 <Footprints color="#1a1f26" size={20} />
                 <Text className="text-lg">Site walk</Text>
               </Button>
-              <Button size="lg" accessibilityLabel="New observation" onPress={newObservation} className={together ? 'w-72' : 'flex-[1.6]'}>
+              <Button size="lg" accessibilityLabel="New observation" onPress={newObservation} className={oneRow ? 'w-72' : 'flex-[1.6]'}>
                 <Plus color="#ffffff" size={20} />
                 <Text className="text-lg">New observation</Text>
               </Button>
             </View>
           </View>
         </Bar>
+      )}
+      {overviewOpen && (
+        <OverviewSheet
+          state={overview}
+          // The observations with no category, listed under that gap (the gateway names none).
+          uncategorised={(observations ?? []).filter((o) => !o.copeDimensions)}
+          // Close first, then go: the target may be the other side of the switch or another screen.
+          onGo={(target) => {
+            setOverviewOpen(false)
+            go(target)
+          }}
+          onClose={() => setOverviewOpen(false)}
+        />
       )}
     </View>
   )
