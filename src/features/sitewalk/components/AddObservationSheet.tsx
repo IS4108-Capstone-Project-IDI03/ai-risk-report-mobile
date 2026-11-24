@@ -13,7 +13,7 @@ import { CaptureButtons } from '@/features/capture/components/CaptureButtons'
 import { CopeChips } from '@/features/capture/components/CopeChips'
 import { EvidenceTray } from '@/features/capture/components/EvidenceTray'
 import { SeverityPicker } from '@/features/capture/components/SeverityPicker'
-import { emptyDraft, missing, type Draft } from '@/features/capture/draft'
+import { emptyDraft, missingRated, type Draft } from '@/features/capture/draft'
 import { choosePhotos, takePhoto } from '@/features/capture/media'
 import { useVoiceNote, type RecordingProblem } from '@/features/capture/useVoiceNote'
 import { locationLabel, type Location } from '@/features/locations/locations'
@@ -57,7 +57,7 @@ export function AddObservationSheet({ proposal, others, startAt, onSave, onClose
 
   async function save() {
     if (saving) return
-    const why = missing(draft) ?? (place ? null : 'Choose a location for this observation.')
+    const why = missingRated(draft) ?? (place ? null : 'Choose a location for this observation.')
     if (why) return setError(why)
     setSaving(true)
     setError(null)

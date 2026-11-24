@@ -251,7 +251,8 @@ it('stops an answer, keeping what was written (AC9)', async () => {
 
   expect(await screen.findByText('Stopped')).toBeTruthy()
   expect(screen.getAllByText(/NFPA 13 requires a density/).length).toBeGreaterThan(0)
-  expect(screen.getByRole('button', { name: 'Send' })).toBeTruthy()
+  // With the box empty, Speak takes Send's place (MB-25).
+  expect(screen.getByRole('button', { name: 'Speak' })).toBeTruthy()
 })
 
 it('says when the gateway can’t be reached, with Try again (AC10)', async () => {

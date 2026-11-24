@@ -12,6 +12,18 @@ jest.mock('expo-audio', () => ({
   setAudioModeAsync: jest.fn(),
 }))
 
+// MB-25: the phone's own voice. Does nothing here; __tests__/chat-voice.test.tsx drives it.
+jest.mock('expo-speech', () => ({
+  speak: jest.fn(),
+  stop: jest.fn(async () => {}),
+  pause: jest.fn(async () => {}),
+  resume: jest.fn(async () => {}),
+  getAvailableVoicesAsync: jest.fn(async () => [{ identifier: 'v1', name: 'Voice', language: 'en-GB' }]),
+}))
+
+// MB-24: choosing a PDF from Files.
+jest.mock('expo-document-picker', () => ({ getDocumentAsync: jest.fn() }))
+
 jest.mock('expo-image-picker', () => ({
   launchCameraAsync: jest.fn(),
   launchImageLibraryAsync: jest.fn(),
@@ -56,6 +68,10 @@ jest.mock('expo-file-system', () => {
     }
     textSync() {
       return files.get(this.uri) ?? ''
+    }
+    // MB-24: an upload sends a file's bytes as the request body.
+    async bytes() {
+      return new TextEncoder().encode(files.get(this.uri) ?? this.uri)
     }
     writeSync(text: string) {
       files.set(this.uri, text)
@@ -146,3 +162,10 @@ jest.mock('react-native-maps', () => {
 })
 // MB-16: keeping the screen on is the phone's; Jest only needs the call to exist.
 jest.mock('expo-keep-awake', () => ({ useKeepAwake: jest.fn() }))
+
+// MB-19: the phone's date picker is native. This stand-in is one element a test can drive:
+// fireEvent(getByTestId('date-picker'), 'valueChange', {}, new Date(2026, 10, 20)).
+jest.mock('@react-native-community/datetimepicker', () => ({
+  __esModule: true,
+  default: (props: object) => require('react').createElement('View', props),
+}))

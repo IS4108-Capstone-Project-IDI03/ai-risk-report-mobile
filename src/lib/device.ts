@@ -15,3 +15,9 @@ export const orientation = () => (isTablet(Dimensions.get('screen')) ? 'default'
 // narrow, and then gets the single column. 900pt: any iPad in landscape, and a
 // 13-inch in portrait.
 export const useSplitView = () => useWindowDimensions().width >= 900
+
+// The Calendar (MB-19): a month grid from 700pt of window, a day list below it, and
+// the two side lists beside the grid from 1080pt. The window, not the device, so an
+// iPad in Split View gets the list. Web: 768 CSS px and 1080 px of content.
+export const useCalendarGrid = () => useWindowDimensions().width >= 700
+export const useCalendarSideLists = () => useWindowDimensions().width >= 1080

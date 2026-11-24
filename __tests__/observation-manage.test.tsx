@@ -52,7 +52,7 @@ async function openWorkspace() {
   await fireEvent.press(await screen.findByText(REF))
   await screen.findByTestId('workspace')
   await fireEvent.press(await screen.findByRole('button', { name: /Choose location|Location/ }))
-  await fireEvent.press(await screen.findByRole('button', { name: /Staircase/ }))
+  await fireEvent.press(await screen.findByRole('button', { name: /^Staircase/ }))
 }
 
 async function openObservation() {
@@ -237,7 +237,7 @@ describe('rules', () => {
     await fireEvent.press(await screen.findByText(REF))
     await screen.findByTestId('workspace')
     await fireEvent.press(await screen.findByRole('button', { name: /Choose location|Location/ }))
-    await fireEvent.press(await screen.findByRole('button', { name: /Staircase/ }))
+    await fireEvent.press(await screen.findByRole('button', { name: /^Staircase/ }))
 
     const detail = await openObservation()
 

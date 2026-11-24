@@ -28,6 +28,9 @@ export default function ObservationEdit() {
   const [original, setOriginal] = useState<Observation | null | undefined>(undefined)
   const [severity, setSeverity] = useState<Severity | null>(null)
   const [cope, setCope] = useState<Cope[]>([])
+  // Fields the engineer picked in this screen. Picking the AI's suggested value again must still be sent:
+  // the gateway counts any sent value as the engineer's, which clears its "Not sure" mark (MB-23 AC7).
+  const [picked, setPicked] = useState({ severity: false, cope: false })
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<unknown>(null)
@@ -78,8 +81,9 @@ export default function ObservationEdit() {
   // and removes a note (a blank one is the same as none).
   const changes: Changes = {}
   if (original) {
-    if (severity && severity !== original.severity) changes.severity = severity
-    if (!sameCope(cope, original.copeDimensions ?? [])) changes.copeDimensions = cope.length ? cope : null
+    if (severity && (severity !== original.severity || (picked.severity && original.suggestion?.severity))) changes.severity = severity
+    if (!sameCope(cope, original.copeDimensions ?? []) || (picked.cope && cope.length && original.suggestion?.category))
+      changes.copeDimensions = cope.length ? cope : null
     // Spaces alone are no note, so they don't count as a change to an empty one.
     const typed = note.trim() ? note : ''
     if (typed !== (original.note ?? '')) changes.note = typed || null
@@ -166,12 +170,24 @@ export default function ObservationEdit() {
           <View className={cn('gap-6', readable)}>
             <View className="gap-2">
               <Eyebrow>Severity</Eyebrow>
-              <SeverityPicker value={severity} onChange={setSeverity} />
+              <SeverityPicker
+                value={severity}
+                onChange={(next) => {
+                  setSeverity(next)
+                  setPicked((p) => ({ ...p, severity: true }))
+                }}
+              />
               {fields.severity && <Text className="text-sm text-destructive">{fields.severity}</Text>}
             </View>
             <View className="gap-2">
               <Eyebrow>COPE categories</Eyebrow>
-              <CopeChips value={cope} onChange={setCope} />
+              <CopeChips
+                value={cope}
+                onChange={(next) => {
+                  setCope(next)
+                  setPicked((p) => ({ ...p, cope: true }))
+                }}
+              />
               {fields.copeDimensions && <Text className="text-sm text-destructive">{fields.copeDimensions}</Text>}
             </View>
             <View className="gap-2">

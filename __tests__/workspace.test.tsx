@@ -1,6 +1,7 @@
 // MB-02: the assessment workspace and choosing or adding a location. Renders the
 // real routes with the gateway mocked; each test opens the workspace from Home.
-import { act, fireEvent, renderRouter, screen, testRouter, within } from 'expo-router/testing-library'
+import { Alert } from 'react-native'
+import { act, fireEvent, renderRouter, screen, testRouter, waitFor, within } from 'expo-router/testing-library'
 import {
   assessment,
   location,
@@ -303,5 +304,119 @@ describe('adding a location', () => {
     expect(screen.getByLabelText('Level').props.editable).toBe(false)
     await fireEvent.changeText(screen.getByLabelText('Building'), 'Block A')
     expect(screen.getByLabelText('Level').props.editable).toBe(true)
+  })
+})
+
+// MB-02 AC35-AC39 (added 20 Nov): remove a saved location from the picker by swiping it left.
+// The red Remove button is laid out behind each row, so a test presses it by name.
+describe('removing a location', () => {
+  // Answers the "Remove this location?" question by pressing the button with this label.
+  const answer = (label: string) =>
+    jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => void buttons?.find((b) => b.text === label)?.onPress?.())
+  const deletes = (fetchMock: jest.Mock) => fetchMock.mock.calls.filter(([, init]) => init?.method === 'DELETE')
+
+  // The gateway keeps a list; DELETE takes one out, as the real one does. `observations` are what is filed
+  // at locations (GET .../observations, with ?include=deleted too: the mock ignores the query).
+  function withDelete(reply: Reply = { status: 204 }, observations: object[] = []) {
+    let list = [...LOCATIONS]
+    const del = (id: string) => () => {
+      if (!(reply instanceof Error) && reply.status === 204) list = list.filter((l) => l.id !== id)
+      return reply
+    }
+    return gateway({
+      [`GET /api/assessments/${REF}/locations`]: () => ({ status: 200, body: list }),
+      [`GET /api/assessments/${REF}/observations`]: { status: 200, body: observations },
+      [`DELETE /api/assessments/${REF}/locations/l3`]: del('l3'),
+      [`DELETE /api/assessments/${REF}/locations/l5`]: del('l5'),
+    })
+  }
+  async function openPicker() {
+    await openWorkspace()
+    await fireEvent.press(await workspace().findByRole('button', { name: /Choose location|Location/ }))
+    await screen.findByRole('button', { name: 'Facade' })
+  }
+
+  it('asks first, then removes it and shows the list without it (AC35, AC36, AC37)', async () => {
+    const fetchMock = withDelete()
+    const alert = answer('Remove')
+    await openPicker()
+    await fireEvent.press(await screen.findByRole('button', { name: 'Remove Facade' }))
+
+    expect(alert.mock.calls[0][0]).toBe('Remove this location?')
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Facade' })).toBeNull())
+    expect(deletes(fetchMock)).toHaveLength(1)
+    expect(screen.getByRole('button', { name: 'Pump room' })).toBeTruthy()
+  })
+
+  it('removes the one I swiped, not its neighbour (AC37)', async () => {
+    const fetchMock = withDelete()
+    answer('Remove')
+    await openPicker()
+    await fireEvent.press(await screen.findByRole('button', { name: 'Remove Lobby' }))
+
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Lobby' })).toBeNull())
+    expect(deletes(fetchMock).map(([url]) => String(url).split('/').pop())).toEqual(['l5'])
+    expect(screen.getByRole('button', { name: 'Facade' })).toBeTruthy()
+  })
+
+  it('does nothing when I choose Keep (AC36)', async () => {
+    const fetchMock = withDelete()
+    answer('Keep')
+    await openPicker()
+    await fireEvent.press(await screen.findByRole('button', { name: 'Remove Facade' }))
+
+    expect(deletes(fetchMock)).toHaveLength(0)
+    expect(screen.getByRole('button', { name: 'Facade' })).toBeTruthy()
+  })
+
+  it('has no Remove for a location that has observations, deleted ones too (AC35)', async () => {
+    // One live observation at Facade (l3), one deleted at Lobby (l5).
+    withDelete({ status: 204 }, [observation('o1', 'l3'), observation('o2', 'l5', { deleted: { at: '2026-11-19T10:00:00Z', by: { id: 'u1', name: 'Ava Tan' } } })])
+    await openPicker()
+
+    expect(await screen.findByRole('button', { name: 'Remove Pump room' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Remove Facade' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Remove Lobby' })).toBeNull()
+  })
+
+  it('asks me to choose where I am again when the chosen location is removed (AC37)', async () => {
+    withDelete()
+    answer('Remove')
+    await openWorkspace()
+    await chooseLocation('Facade')
+    await workspace().findByText('Block A · Facade')
+    await fireEvent.press(workspace().getByRole('button', { name: /Location/ }))
+    await fireEvent.press(await screen.findByRole('button', { name: 'Remove Facade' }))
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Facade' })).toBeNull())
+    await fireEvent.press(screen.getByRole('button', { name: 'Close' }))
+
+    expect(await workspace().findByRole('button', { name: 'Choose location' })).toBeTruthy()
+  })
+
+  it("shows the gateway's words when it refuses, and keeps the location (AC38)", async () => {
+    withDelete({ status: 409, body: { error: 'Facade has 1 observation. It can\'t be removed while they are saved there.' } })
+    answer('Remove')
+    await openPicker()
+    await fireEvent.press(await screen.findByRole('button', { name: 'Remove Facade' }))
+
+    expect(await screen.findByText("Facade has 1 observation. It can't be removed while they are saved there.")).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Facade' })).toBeTruthy()
+  })
+
+  it('has no swipe to remove when there is no signal, and says so (AC39)', async () => {
+    withDelete()
+    await openWorkspace()
+    globalThis.fetch = jest.fn(async () => {
+      throw new TypeError('Network request failed')
+    }) as unknown as typeof fetch
+    await screen.unmount()
+    await renderRouter(routes)
+    await fireEvent.press(await screen.findByText(REF))
+    await screen.findByTestId('workspace')
+    await fireEvent.press(await screen.findByRole('button', { name: /Choose location|Location/ }))
+    await screen.findByRole('button', { name: 'Facade' })
+
+    expect(screen.getByText('Connect to remove.')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Remove Facade' })).toBeNull()
   })
 })

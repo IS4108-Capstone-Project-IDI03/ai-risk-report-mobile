@@ -251,15 +251,11 @@ export default function CaptureSheet({ onClose, embedded = false, reference: giv
                 </View>
               </View>
               <View className={cn('gap-6', wide && 'flex-1')}>
-                {/* Severity first: it's required to save, COPE isn't. */}
+                {/* Neither severity nor COPE is needed to save (MB-23 AC12): the AI suggests what is left empty. */}
                 <View className="gap-2">
-                  <View className="flex-row items-baseline justify-between">
-                    <Eyebrow>Severity</Eyebrow>
-                    <Text className={draft.severity ? 'text-sm font-semibold text-success-foreground' : 'text-sm font-semibold text-warning-foreground'}>
-                      Required
-                    </Text>
-                  </View>
+                  <Eyebrow>Severity</Eyebrow>
                   <SeverityPicker value={draft.severity} onChange={(severity) => update({ severity })} />
+                  <Text className="text-sm text-muted-foreground">Leave one empty and the AI will suggest it.</Text>
                 </View>
 
                 <View className="gap-2">
