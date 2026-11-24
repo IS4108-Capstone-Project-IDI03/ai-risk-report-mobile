@@ -225,7 +225,7 @@ logging still apply.
 - **Replies:** MarshBot's buttons are pinned at the bottom (Skip for now, What else?, Add observations, That's everything, Another
   visit with the native date picker and Confirm). One `POST .../assistant/replies` each, online only ("Connect to reply."). A reply with a
   link (Add observations) only opens it and sends nothing, as the web does. A reply has its icon at the left, a link reply an arrow
-  at the right, and the first hint (what a stage move does) is one line under the buttons. The status block has **Hide** on its stage row (folds the segments and the three facts away; the pill, the stage line and Summary stay). A "Try Again" row opens its observation, where the phone's own Try again is (never a paid call from a chat button).
+  at the right, and the first hint (what a stage move does) is one line under the buttons. The whole status block (pill, stage, three facts, Summary) folds away when you drag the chat away from its top, and opens again at the top. A "Try Again" row opens its observation, where the phone's own Try again is (never a paid call from a chat button).
 - **Gateway:** nothing of ours. `GET /api/assessments/:ref/assistant` **records an "open" and can start paid AI steps** (a coverage
   check, and the AI rewording of new bot turns), so the phone reads it once when the screen opens, and again after a reply or
   while MarshBot is writing (every 5 s, up to 2 minutes). It sends no activity beacon.
@@ -246,6 +246,55 @@ logging still apply.
 - **Gateway:** nothing of ours (`POST /api/assessments`, `GET /api/clients`, `GET /api/clients/:id/sites` already exist).
 - **Left out:** a new client, contacts, several sites at once, an admin choosing the engineer, reading client documents
   with AI (paid), and "New assessment from a day" in the calendar.
+
+**MB-24: ask about a photo or a document** (web CB-08 and CB-09; not in the backlog yet, needs adding; spec `.local-docs/specs/mvp/MB-24.md`)
+
+- **Where:** the Chatbot tab's question box is one rounded pill with a **+** at its left (read out as "Attach"), the input,
+  and Send at its right. The + opens a menu: **Take photo**, **Choose photo**, **Choose PDF**. Attached files are a row of
+  thumbnails and PDF cards above the pill, each with a round x. Attaching needs signal ("Connect to attach.").
+- **Photos:** JPG or PNG, up to 3 per question, up to 8 MB. Each goes up at once as the raw request body
+  (`POST /api/chat/photos`) and shows as a thumbnail with **Remove**. When the gateway finds faces it says "2 faces found"
+  with **Blur faces** (the default, sends the blurred copy) and **Send as is**. A photo whose faces cannot be checked is not kept.
+- **PDFs:** up to 10 MB, read by the gateway at once (`POST /api/chat/pdfs`, name in `X-File-Name`), shown as a chip with
+  its pages, with a warning when the PDF holds instructions. **Up to 3 PDFs per chat** (the gateway's limit; the web story
+  text says one, which is stale). A refusal shows the gateway's own words and nothing is attached.
+- **Asking:** Send waits for any upload to finish, then sends `attachments` and `pdfs` (ids) with the question. My question
+  shows its photos and PDF names above the words, and a saved chat reopens with them.
+- **Gateway:** nothing of ours (the routes are on the web's `main`, CB-08 and CB-09). New package: `expo-document-picker`.
+- **Real AI calls cost money:** a question with a photo or a PDF is a paid model call (and a photo is face-checked).
+- **Left out:** a PDF page viewer (a citation shows the page's text, as in MB-06), the share sheet, "Try again" on a
+  saved question, and attaching in the knowledge-base search.
+
+**MB-25: ask by voice and hear the answer** (web CB-10, core only; not in the backlog yet, needs adding; spec `.local-docs/specs/mvp/MB-25.md`)
+
+- **Ask:** with the chat box empty, a **microphone** at the right of the pill (read out as "Speak") takes Send's place.
+  Tap it to record (a red dot, the time and **Stop**), tap Stop, and the gateway turns the clip into text
+  (`POST /api/chat/transcribe`), which lands **in the box** to check and edit. Nothing is sent until you tap Send.
+  A clip under a second is not sent. Silence, a clip over about two minutes, a blocked microphone (with **Open Settings**)
+  and a failed transcription each say why.
+- **Hear:** each finished answer has **Play** (reads it with the phone's own voice, without citation numbers), then
+  **Pause / Resume** and **Stop**. One answer reads at a time; a new question or leaving the tab stops it. No voice on the
+  phone, no Play. On Android there is no Pause (Stop only).
+- **Gateway:** nothing of ours. New package: `expo-speech`. Recording reuses capture's recorder.
+- **Real AI calls cost money:** each spoken question is one transcription call (about a tenth of a cent).
+- **Left out:** hands-free mode, speaking speed and voice choice, pause while recording, the level bar.
+
+**MB-23: see and confirm the AI's suggestions on an observation** (web CP-24, the checking half; not in the backlog yet, needs adding; spec `.local-docs/specs/mvp/MB-23.md`)
+
+- **Why:** since CP-24 the gateway reads every saved observation and suggests a category and severity the
+  engineer left empty. The phone now shows that state instead of treating a suggestion as the engineer's choice.
+- **Observation screen:** a suggested field shows **Not sure** with **Confirm** (keeps it) and **Change** (opens Edit; picking
+  the same value again counts as the engineer's). While the AI reads, an empty field says "Suggesting a category". A
+  failed suggestion shows **Suggestion failed** with **Try again**. It reads again every 5 s while working, up to 2 minutes.
+- **List rows:** one small line when a row is not complete: Transcribing, Reading, Transcription failed, Reading failed or
+  To check (with "Check category" and so on). The rule is the web's `observationRowState.ts`, copied (`rowState.ts`).
+- **Capture:** severity is **optional** now (changes MB-03 AC10). Leave it empty and the AI suggests it after the save. The
+  checklist answer sheet and the site walk form keep their own severity rule.
+- **Gateway:** nothing of ours, but it must include the web's CP-24 (PR #175, `6d9b5cf4`). The local gateway must be
+  updated to the web's `main` before this can be tried.
+- **Real AI calls cost money:** every save from the phone starts the gateway's reading (a text note with no media is one
+  category call, about $0.007; each recording, page or photo adds one).
+- **Left out:** the To check filter and footer count, the photo description, recording before Save, site walk marks, push.
 
 **MB-07: site flow redesign** (branch `MB-07`)
 
@@ -370,8 +419,7 @@ mirrors are in the web repo's `docs/USER_STORIES.md`.
 | --- | --- | --- | --- |
 | (next) | Chosen from the migration shortlist, agreed with Miya | | |
 
-Separate web story for the team: make severity optional. It's required in the gateway
-model, the save rule and `report_sections` evidence, and the web UI assumes it.
+Severity is optional on the gateway now (the web's CP-24), so the capture sheet no longer requires it (MB-23).
 
 Later, outside the MVP: editing my captures (CP-08). Completing an assessment (CP-14)
 was dropped on the web.
