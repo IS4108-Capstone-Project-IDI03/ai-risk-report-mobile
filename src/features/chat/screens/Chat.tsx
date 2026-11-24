@@ -5,7 +5,7 @@
 // phone the chat, header and all, slides aside to show the list under it; on a wide iPad the
 // list is a column beside the chat (shown at first). So the header is drawn here, not by the
 // tab bar, to move with the chat.
-import { router, Tabs } from 'expo-router'
+import { router, Tabs, useFocusEffect } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { KeyboardAvoidingView, Pressable, ScrollView, View, type ScrollViewInstance } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -20,14 +20,17 @@ import { AnswerView } from '../components/AnswerView'
 import { type OpenCitation } from '../components/CitationMarker'
 import { CitationSheet } from '../components/CitationSheet'
 import { Composer } from '../components/Composer'
+import { MyMessage } from '../components/MyMessage'
 import { Starters } from '../components/Starters'
+import type { Taken } from '../useAttachments'
 import { useConversation } from '../useConversation'
+import { stopReading } from '../useReadAloud'
 
 // The navy bar's height under the status bar.
 const HEADER = 56
 
 export default function Chat() {
-  const { turns, busy, openId, send, stop, retry, reset, open, forget } = useConversation()
+  const { turns, busy, openId, pdfsHeld, send, stop, retry, reset, open, forget } = useConversation()
   const split = useSplitView()
   // The chats list: shown from the start on a wide iPad, a panel that slides over the chat on a phone.
   const [listOpen, setListOpen] = useState(split)
@@ -54,6 +57,7 @@ export default function Chat() {
 
   // A chat picked in the list: it opens, and the panel closes on a phone.
   function openChat(id: string) {
+    stopReading()
     setProblem(null)
     open(id).then(
       () => !split && setListOpen(false),
@@ -63,8 +67,14 @@ export default function Chat() {
 
   // New chat from the list: the starter questions, and the list closes on a phone.
   function newChat() {
-    reset()
+    startOver()
     if (!split) setListOpen(false)
+  }
+
+  // The answer being read belongs to the chat on screen, so it stops with it (AC7).
+  function startOver() {
+    stopReading()
+    reset()
   }
 
   // My preferences opens over the chat; on a phone the list slides away first.
@@ -73,10 +83,14 @@ export default function Chat() {
     router.push('/preferences')
   }
 
-  function ask(question: string) {
+  // An answer being read aloud stops when I leave the chat tab, or ask something new (MB-25).
+  useFocusEffect(useCallback(() => stopReading, []))
+
+  function ask(question: string, taken?: Taken) {
+    stopReading()
     if (names.size === 0) loadNames()
     atBottom.current = true
-    send(question)
+    send(question, taken)
   }
 
   // The navy bar: the two-line button at the left (ChatGPT's mark, the lower bar shorter),
@@ -102,7 +116,7 @@ export default function Chat() {
           <Text className="text-lg font-semibold text-white">Chatbot</Text>
         </View>
         {turns.length > 0 ? (
-          <Button variant="header" accessibilityLabel="New chat" onPress={reset} className="px-3">
+          <Button variant="header" accessibilityLabel="New chat" onPress={startOver} className="px-3">
             <Text>New chat</Text>
           </Button>
         ) : (
@@ -137,10 +151,7 @@ export default function Chat() {
         ) : (
           turns.map((t) =>
             t.role === 'user' ? (
-              // A quiet bubble in Marsh light blue, as on the web (chat.css, ink-50).
-              <View key={t.id} testID="my-message" className="max-w-[85%] self-end rounded-xl bg-secondary px-3.5 py-2.5">
-                <Text className="text-base leading-6">{t.text}</Text>
-              </View>
+              <MyMessage key={t.id} turn={t} />
             ) : (
               <AnswerView
                 key={t.id}
@@ -156,7 +167,7 @@ export default function Chat() {
         )}
       </ScrollView>
       {problem && <Text className="px-4 pb-2 text-destructive">{problem}</Text>}
-      <Composer busy={busy} onSend={ask} onStop={stop} />
+      <Composer busy={busy} pdfsHeld={pdfsHeld} onSend={ask} onStop={stop} />
       <CitationSheet citation={citation} names={names} onClose={() => setCitation(null)} />
     </KeyboardAvoidingView>
   )
