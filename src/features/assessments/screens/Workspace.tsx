@@ -39,6 +39,8 @@ import { useChecklist } from '@/features/checklist/useChecklist'
 import { ObservationCard } from '@/features/observations/components/ObservationCard'
 import { SwipeDelete } from '@/features/observations/components/SwipeDelete'
 import type { Observation } from '@/features/observations/format'
+import { isWorking } from '@/features/observations/rowState'
+import { POLL_LIMIT, POLL_MS } from '@/features/observations/transcriptPoll'
 import CaptureSheet from '@/features/capture/screens/CaptureSheet'
 import { OverviewSheet } from '@/features/overview/components/OverviewSheet'
 import { OverviewButton } from '@/features/overview/components/OverviewButton'
@@ -144,6 +146,19 @@ export function WorkspaceView({ reference, embedded = false, leading, arrival }:
     useCallback(() => {
       load()
     }, [load]),
+  )
+  // While a row is Transcribing or Reading, read the list again every few seconds so it settles without a
+  // pull to refresh (MB-23 AC16). Stops after about 2 minutes, and when this screen is covered.
+  const working = !!observations?.some(isWorking)
+  useFocusEffect(
+    useCallback(() => {
+      if (!working) return
+      let polls = 0
+      // A poll that fails is ignored (no error banner): the next one, or a pull to refresh, tries again.
+      const poll = () => listObservations(reference).then(setObservations, () => {})
+      const timer = setInterval(() => (++polls > POLL_LIMIT ? clearInterval(timer) : void poll()), POLL_MS)
+      return () => clearInterval(timer)
+    }, [working, reference]),
   )
   // After each upload, so one that was waiting shows from the gateway (MB-10
   // AC4). Not on open: the focus effect above has that.

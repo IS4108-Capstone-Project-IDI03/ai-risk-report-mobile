@@ -14,7 +14,7 @@ import { Text } from '@/components/ui/text'
 import { NetworkError, errorText } from '@/lib/api'
 import { saveObservation } from '@/features/capture/api'
 import { SeverityPicker } from '@/features/capture/components/SeverityPicker'
-import { COPE, emptyDraft, missing, type Draft } from '@/features/capture/draft'
+import { COPE, emptyDraft, missingRated, type Draft } from '@/features/capture/draft'
 import { choosePhotos, takePhoto, type Picked } from '@/features/capture/media'
 import { useOffline } from '@/features/offline/provider'
 import { isLocal } from '@/features/offline/queue'
@@ -49,7 +49,7 @@ export function AnswerSheet({ item, result, reference, locationId, onClose, onSa
     cope: COPE.filter((c) => item.COPE_dimension.includes(c)),
     checklistItem: { itemId: item.id, result },
   }
-  const stops = missing(draft)
+  const stops = missingRated(draft)
 
   async function pick(choose: () => Promise<Picked>) {
     const picked = await choose()
