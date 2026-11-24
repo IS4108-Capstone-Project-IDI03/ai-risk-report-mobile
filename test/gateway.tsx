@@ -14,6 +14,7 @@ import Preferences from '../src/app/preferences'
 import Calendar from '../src/app/(tabs)/calendar'
 import Chat from '../src/app/(tabs)/chat'
 import Home from '../src/app/(tabs)/index'
+import Inbox from '../src/app/inbox'
 import TabsLayout from '../src/app/(tabs)/_layout'
 import Profile from '../src/app/(tabs)/profile'
 import Capture from '../src/app/assessment/[reference]/capture'
@@ -60,7 +61,11 @@ export function mockGateway(
     const key = `${init?.method ?? 'GET'} ${new URL(url).pathname}`
     // Every workspace asks for its Overview summary (MB-20). A test that is not about it gets
     // 403, "not yours", which draws no card, so the other workspace tests are left as they were.
-    const route = routes[key] ?? (key.endsWith('/assistant/summary') ? { status: 403, body: { error: 'Not yours.' } } : undefined)
+    // Home's header asks for the Inbox count (MB-22). A test that is not about it gets none to do.
+    const route =
+      routes[key] ??
+      (key.endsWith('/assistant/summary') ? { status: 403, body: { error: 'Not yours.' } } : undefined) ??
+      (key === 'GET /api/notifications/count' ? { status: 200, body: { total: 0, unread: 0, inboxTodo: 0, newestInbox: null, newestBell: null } } : undefined)
     if (!route) throw new Error(`Unexpected request: ${key}`)
     const reply = typeof route === 'function' ? route(init, url) : route
     if (reply instanceof Error) throw reply
@@ -130,6 +135,7 @@ export const routes = {
   '(tabs)/chat': Chat,
   preferences: Preferences,
   'new-assessment': NewAssessment,
+  inbox: Inbox,
   '(tabs)/profile': Profile,
   'assessment/[reference]/index': Workspace,
   'assessment/[reference]/locations': LocationPicker,
