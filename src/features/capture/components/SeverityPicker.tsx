@@ -1,5 +1,5 @@
 // The capture sheet's severity (MB-03 AC10): four 48px segments, each in the
-// design system's severity colour when selected. Optional (MB-23 AC12): the AI suggests it when left empty.
+// design system's severity colour when selected. Required to save.
 import { Pressable, View } from 'react-native'
 import { Text } from '@/components/ui/text'
 import { SEVERITY, type Severity } from '@/features/observations/format'

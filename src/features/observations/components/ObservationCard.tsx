@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button'
 import { Text } from '@/components/ui/text'
 import { cn } from '@/lib/utils'
 import { capturedAt, categoriesText, mediaUri, observationTitle, SEVERITY, type Observation } from '../format'
-import { rowStateOf, type RowTint } from '../rowState'
 
 type Props = {
   observation: Observation
@@ -24,20 +23,8 @@ type Props = {
   onOpen?(): void
 }
 
-// The status line's colour: blue while the AI reads, amber to check, red when it failed, grey otherwise.
-const TINT: Record<NonNullable<RowTint> | 'none', string> = {
-  reading: 'text-info-foreground',
-  unsure: 'text-warning-foreground',
-  failed: 'text-destructive',
-  none: 'text-muted-foreground',
-}
-
 export function ObservationCard({ observation, first, last, upload, onDiscard, onOpen }: Props) {
   const severity = observation.severity && SEVERITY[observation.severity]
-  // MB-23 AC4: one small line when it is not Complete. A row waiting to upload has none (AC5): it has
-  // not reached the gateway, so nothing is reading it yet.
-  const state = upload ? null : rowStateOf(observation)
-  const tint = TINT[state?.tint ?? 'none']
   return (
     <View
       testID="observation-card"
@@ -66,12 +53,6 @@ export function ObservationCard({ observation, first, last, upload, onDiscard, o
             </Text>
             <Text className="tabular-nums text-sm text-muted-foreground">{capturedAt(observation.recordedAt)}</Text>
           </View>
-          {state && state.status !== 'Complete' && (
-            <View className="flex-row flex-wrap gap-x-2">
-              <Text className={cn('text-sm font-medium', tint)}>{state.status}</Text>
-              {state.reason && <Text className={cn('text-sm', tint)}>{state.reason}</Text>}
-            </View>
-          )}
           {upload && !upload.refused && (
             <Text className="text-sm font-medium text-muted-foreground">Waiting to upload</Text>
           )}

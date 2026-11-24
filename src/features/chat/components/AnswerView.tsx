@@ -7,13 +7,12 @@ import { Pressable, ScrollView, View } from 'react-native'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Text } from '@/components/ui/text'
-import { checkOf, citationNumbers, citationState, citedDocuments, citeKey, spokenText, type Check } from '../answer'
+import { checkOf, citationNumbers, citationState, citedDocuments, citeKey, type Check } from '../answer'
 import { answerParser, type ElementNode } from '../library'
 import type { Turn } from '../useConversation'
 import { withBold } from '../bold'
 import { CitationMarker, type OpenCitation } from './CitationMarker'
 import { DotMatrixLoader } from './DotMatrixLoader'
-import { PlayButton } from './PlayButton'
 import { SearchLine } from './SearchLine'
 
 type Props = {
@@ -113,8 +112,6 @@ export function AnswerView({ turn, names, onAsk, onOpenCitation, onRetry, canRet
         turn.status === 'streaming' && !root && <DotMatrixLoader />
       )}
       {list(root?.props.blocks).map(block)}
-      {/* Read aloud (MB-25), once the answer is whole. */}
-      {turn.status === 'done' && <PlayButton id={String(turn.id)} text={spokenText(root)} />}
       <Footer turn={turn} check={check} sources={sources} onRetry={canRetry ? onRetry : undefined} />
     </Card>
   )

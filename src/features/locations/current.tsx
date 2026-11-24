@@ -11,8 +11,6 @@ type CurrentLocations = {
   set(reference: string, location: Location): void
   // A queued location got its real ID (MB-10): the engineer stays there.
   replace(reference: string, local: Location, saved: Location): void
-  // The chosen location was removed (MB-02 AC37): none is chosen, so nothing is filed under a place that is gone.
-  clear(reference: string): void
 }
 
 const Context = createContext<CurrentLocations | null>(null)
@@ -47,15 +45,7 @@ export function CurrentLocationProvider({ children }: { children: ReactNode }) {
       ),
     [],
   )
-  const clear = useCallback(
-    (reference: string) =>
-      setState((s) => {
-        const { [reference]: _gone, ...rest } = s.chosen
-        return { ...s, chosen: rest }
-      }),
-    [],
-  )
-  return <Context.Provider value={{ get, set, replace, clear }}>{children}</Context.Provider>
+  return <Context.Provider value={{ get, set, replace }}>{children}</Context.Provider>
 }
 
 // For the offline provider, which hands over a queued location's real ID.
@@ -69,5 +59,5 @@ export function useReplaceLocation() {
 export function useCurrentLocation(reference: string) {
   const context = useContext(Context)
   if (!context) throw new Error('useCurrentLocation must be used inside CurrentLocationProvider')
-  return [context.get(reference), (l: Location) => context.set(reference, l), () => context.clear(reference)] as const
+  return [context.get(reference), (l: Location) => context.set(reference, l)] as const
 }
