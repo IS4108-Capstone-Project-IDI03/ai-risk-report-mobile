@@ -19,7 +19,7 @@ let online = true
 let created: Reply
 let posted: { url: string; body: any }[] = []
 
-function gateway(overrides: Record<string, Reply | ((init?: RequestInit) => Reply)> = {}) {
+function gateway(overrides: Record<string, Reply | ((init?: RequestInit, url?: string) => Reply)> = {}) {
   return mockGateway({
     'GET /api/auth/me': signedIn,
     'GET /api/assessments': { status: 200, body: [assessment(NEW_REF, 'not_started', { client: 'Fennick Foods', site: { id: 's1', code: 'S-1', name: 'Leeds Cold Store', address: null } })] },
@@ -203,6 +203,36 @@ describe('start it (A)', () => {
     await fireEvent.press(create())
     await screen.findByTestId('workspace')
     expect(posted[0].body.sites[0].coordinates).toEqual({ lat: 1.2966, lng: 103.852 })
+  })
+
+  // Added 24 Nov (Miya): one way only. Setting the coordinates fills the Address; the Address never sets a pin.
+  it('fills the Address from the Coordinates, once the typing stops, and never the reverse', async () => {
+    await openNewSite()
+    const asked: string[] = []
+    gateway({
+      'GET /api/sites/address': (_init, url) => {
+        asked.push(String(url))
+        return { status: 200, body: { address: '1 Marina Blvd, Singapore' } }
+      },
+    })
+    // Typing an address alone sets no coordinates and asks nothing.
+    expect(form().getByLabelText('Coordinates').props.value).toBe('')
+    expect(asked).toEqual([])
+
+    await fireEvent.changeText(form().getByLabelText('Coordinates'), '1.2966, 103.8520')
+    await waitFor(() => expect(form().getByLabelText('Address').props.value).toBe('1 Marina Blvd, Singapore'), { timeout: 3000 })
+    expect(asked).toHaveLength(1)
+    expect(asked[0]).toContain('lat=1.2966')
+    expect(asked[0]).toContain('lng=103.852')
+  })
+
+  it('keeps the typed Address when no address is found for the point', async () => {
+    await openNewSite()
+    let asked = 0
+    gateway({ 'GET /api/sites/address': () => (asked++, { status: 200, body: { address: null } }) })
+    await fireEvent.changeText(form().getByLabelText('Coordinates'), '1.2966, 103.8520')
+    await waitFor(() => expect(asked).toBe(1), { timeout: 3000 })
+    expect(form().getByLabelText('Address').props.value).toBe('9 Tuas Road')
   })
 
   it('takes a space between the two numbers, and a negative one (AC13)', async () => {

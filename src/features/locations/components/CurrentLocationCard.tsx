@@ -13,13 +13,13 @@ type Props = { location: Location | undefined; onChange(): void }
 export function CurrentLocationCard({ location, onChange }: Props) {
   if (!location) {
     return (
-      <View className="min-h-14 flex-row items-center gap-3 py-1">
+      <View className="min-h-12 flex-row items-center gap-3">
         <MapPin color="#2c5488" size={20} />
         <View className="flex-1">
-          <Text className="font-semibold">Choose where you are</Text>
-          <Text className="text-sm text-muted-foreground">Observations are filed by location.</Text>
+          <Text numberOfLines={1} className="font-semibold">Choose where you are</Text>
+          <Text numberOfLines={1} className="text-sm text-muted-foreground">Observations are filed by location.</Text>
         </View>
-        <Button variant="secondary" accessibilityLabel="Choose location" onPress={onChange} className="px-4">
+        <Button variant="secondary" accessibilityLabel="Choose location" onPress={onChange} className="h-11 px-3">
           <Text>Choose location</Text>
         </Button>
       </View>

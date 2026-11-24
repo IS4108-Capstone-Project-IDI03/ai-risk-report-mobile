@@ -37,6 +37,10 @@ export type NewAssessment = {
 export const listClients = () => request<Client[]>('/api/clients')
 export const listClientSites = (clientId: string) => request<ClientSite[]>(`/api/clients/${encodeURIComponent(clientId)}/sites`)
 
+/** The street address nearest a point, or null when Google has none (gateway routes/site.routes.ts). */
+export const addressAt = (p: { lat: number; lng: number }) =>
+  request<{ address: string | null }>(`/api/sites/address?lat=${p.lat}&lng=${p.lng}`)
+
 /** Sends one client's one site with one assessment; returns the created assessments (201). */
 export function createAssessment(a: NewAssessment) {
   const site = 'id' in a.site
