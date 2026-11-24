@@ -40,7 +40,6 @@ import { ObservationCard } from '@/features/observations/components/ObservationC
 import { SwipeDelete } from '@/features/observations/components/SwipeDelete'
 import type { Observation } from '@/features/observations/format'
 import CaptureSheet from '@/features/capture/screens/CaptureSheet'
-import { OverviewCard } from '@/features/overview/components/OverviewCard'
 import { OverviewSheet } from '@/features/overview/components/OverviewSheet'
 import { OverviewButton } from '@/features/overview/components/OverviewButton'
 import type { Target } from '@/features/overview/format'
@@ -97,6 +96,8 @@ export function WorkspaceView({ reference, embedded = false, leading, arrival }:
   // checklist collapsible; below it the switch is used (MB-05 AC20, AC21).
   const [paneWidth, setPaneWidth] = useState(0)
   const together = paneWidth >= 760
+  // The bottom bar's location and buttons share a row only from 1000pt (see the bar below).
+  const oneRow = paneWidth >= 1000
   const [collapsed, setCollapsed] = useState(false)
   // Side by side, New observation opens its form here, in place of the observations,
   // so the checklist beside it stays on screen and scrollable (MB-09 AC4).
@@ -304,11 +305,11 @@ export function WorkspaceView({ reference, embedded = false, leading, arrival }:
           </View>
         )
       )}
-      {/* On the iPad (together) nothing else separates this from the navy band, so the card would touch it: pt-4 and pb-2 give it room. */}
+      {/* On the iPad (together) nothing else separates this from the navy band, so the bar would touch it: pt-4 and pb-2 give it room. */}
       <View className={cn('gap-4', pad, col, together && 'pb-2 pt-4')}>
-        {/* iPad: the card (MB-20). The phone has the Overview bar instead: one compact row above the switch. */}
-        {together && <OverviewCard state={overview} onGo={go} />}
-        {!together && <OverviewButton state={overview} due={assessment ? dueNote(assessment) : null} onOpen={() => router.push({ pathname: '/assessment/[reference]/assistant', params: { reference } })} />}
+        {/* The Overview bar, phone and iPad alike (MB-20; the iPad's inline card was dropped on 24 Nov, Miya: it was
+            370pt of an 11-inch iPad's 686pt pane and pushed the bottom bar under the tab bar). It opens MarshBot. */}
+        <OverviewButton state={overview} due={assessment ? dueNote(assessment) : null} onOpen={() => router.push({ pathname: '/assessment/[reference]/assistant', params: { reference } })} />
         {!together && <WorkspaceSwitch side={side} onChange={setSide} progress={progress} />}
         <OfflineNote />
       </View>
@@ -416,27 +417,29 @@ export function WorkspaceView({ reference, embedded = false, leading, arrival }:
       {/* Embedded, the tab bar below already clears the home indicator. */}
       {!(together && capturing) && (
   <Bar edges={['bottom']} className={cn('border-t border-border bg-card pt-2', pad)}>
-          {/* Wide: the location and the button share one row, so the bar stays slim. */}
-          <View className={cn(together ? 'mb-2 flex-row items-center gap-6' : 'gap-2', col)}>
-            <View className={together ? 'flex-1' : undefined}>
+          {/* Very wide (1000pt): the location and the buttons share one row, so the bar stays
+              slim. Below that they stack: the fixed-width buttons leave "Choose where you
+              are" about 50pt on an 11-inch iPad's split view (about 820pt). */}
+          <View testID="workspace-bar-row" className={cn(oneRow ? 'mb-2 flex-row items-center gap-6' : 'gap-2', col)}>
+            <View className={oneRow ? 'flex-1' : undefined}>
               <CurrentLocationCard
                 location={location}
                 onChange={() => router.push({ pathname: '/assessment/[reference]/locations', params: { reference } })}
               />
             </View>
             {/* New observation for one thing; Site walk to record while walking round (MB-16 AC1). */}
-            <View className={together ? 'flex-row gap-3' : 'mb-2 flex-row gap-3'}>
+            <View className={oneRow ? 'flex-row gap-3' : 'mb-2 flex-row gap-3'}>
               <Button
                 size="lg"
                 variant="outline"
                 accessibilityLabel="Site walk"
                 onPress={() => router.push({ pathname: '/assessment/[reference]/site-walks', params: { reference } })}
-                className={together ? 'w-48' : 'flex-1'}
+                className={oneRow ? 'w-48' : 'flex-1'}
               >
                 <Footprints color="#1a1f26" size={20} />
                 <Text className="text-lg">Site walk</Text>
               </Button>
-              <Button size="lg" accessibilityLabel="New observation" onPress={newObservation} className={together ? 'w-72' : 'flex-[1.6]'}>
+              <Button size="lg" accessibilityLabel="New observation" onPress={newObservation} className={oneRow ? 'w-72' : 'flex-[1.6]'}>
                 <Plus color="#ffffff" size={20} />
                 <Text className="text-lg">New observation</Text>
               </Button>
@@ -444,7 +447,7 @@ export function WorkspaceView({ reference, embedded = false, leading, arrival }:
           </View>
         </Bar>
       )}
-      {!together && overviewOpen && (
+      {overviewOpen && (
         <OverviewSheet
           state={overview}
           // The observations with no category, listed under that gap (the gateway names none).

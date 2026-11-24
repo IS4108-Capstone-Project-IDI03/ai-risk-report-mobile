@@ -1,5 +1,5 @@
 // "At a glance" (MB-20, web AS-06): the gateway's three facts as small tiles, each with an icon,
-// a label and a value tinted amber, red or green as the gateway says. Called by OverviewCard.
+// a label and a value tinted amber, red or green as the gateway says. Called by the assistant's StatusLine.
 import { View } from 'react-native'
 import { Text } from '@/components/ui/text'
 import type { Summary } from '../api'

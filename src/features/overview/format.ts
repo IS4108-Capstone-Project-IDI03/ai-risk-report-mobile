@@ -1,6 +1,6 @@
 // What a gateway link means on the phone (MB-20). The gateway names a web tab; the phone has
 // the checklist, the observations, one observation and the site walks, and nothing for
-// Generate, Review, Export or the web's chat Overview. Called by components/OverviewCard.
+// Generate, Review, Export or the web's chat Overview. Called by components/OverviewSheet.
 import type { ItemLink, Summary, SummaryItem } from './api'
 
 export type Target =
