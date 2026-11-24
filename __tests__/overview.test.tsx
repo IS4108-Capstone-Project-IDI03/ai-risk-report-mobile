@@ -1,5 +1,5 @@
 // MB-20 (web AS-06): the Overview of an assessment's workspace: an Overview button in the band that
-// opens a sheet on the phone, the card at the top on the iPad (a wide pane). Real routes, gateway mocked. It reads
+// opens the MarshBot screen, and from there the Overview sheet, on the phone and the iPad alike. Real routes, gateway mocked. It reads
 // GET .../assistant/summary, which is read only; the web's GET .../assistant (records an open,
 // can start paid AI) is never called.
 import { act, fireEvent, renderRouter, screen, testRouter, waitFor, within } from 'expo-router/testing-library'
@@ -77,8 +77,7 @@ async function openWorkspace(wide = false) {
   await screen.findByTestId('workspace')
   if (wide) await fireEvent(screen.getByTestId('workspace-screen'), 'layout', { nativeEvent: { layout: { width: 996, height: 800, x: 0, y: 0 } } })
 }
-// The iPad's card, and the phone's Overview button (in the band, beside Site pins) and its sheet.
-const card = async () => within(await screen.findByTestId('overview-card'))
+// The Overview bar (phone and iPad) and its sheet.
 const overviewButton = (name: RegExp | string = /^Overview/) => screen.findByRole('button', { name })
 // The sheet opens from the chat's Summary button (MB-20): tap the bar, then Summary in the chat, which comes back here.
 async function sheet() {
@@ -282,189 +281,31 @@ describe('the Overview button: fresh and honest (C)', () => {
   })
 })
 
-describe('the card on the iPad (A)', () => {
-  it('shows the stage, the next step, the gaps most urgent first and the three facts (AC1-AC6)', async () => {
-    gateway()
-    await openWorkspace(true)
-    const c = await card()
-
-    expect(await c.findByText('Capture · stage 3 of 8')).toBeTruthy()
-    expect(within(c.getByTestId('next-step')).getByText('A recording could not be transcribed.')).toBeTruthy()
-    expect(c.getByRole('button', { name: 'Open observations' })).toBeTruthy()
-    // Rows in the order the gateway sent: Fix now before the gap.
-    const labels = c.getAllByRole('button').map((b) => b.props.accessibilityLabel).filter((l: string) => /^(Fix now|Gap)/.test(l ?? ''))
-    expect(labels).toEqual(['Fix now, Title fix1, Detail fix1', 'Gap, Title gap1, Detail gap1'])
-    // The area that needs more, as "covered of total".
-    expect(c.getByText('Security')).toBeTruthy()
-    expect(c.getByText('1 of 4')).toBeTruthy()
-    // The three facts, as the gateway worded them.
-    for (const [label, value] of [['Observations', '3'], ['Checklist', '0 of 44'], ['Report Due', '19 Nov']])
-      expect(c.getByLabelText(`${label}, ${value}`)).toBeTruthy()
-  })
-
-  it('shows five gaps, then "Show all N" for the rest (AC4)', async () => {
-    const items = Array.from({ length: 7 }, (_, i) => row(`g${i}`, 'gap', { tab: 'checklist' }))
-    reply = { status: 200, body: summary({ items }) }
-    gateway()
-    await openWorkspace(true)
-    const c = await card()
-
-    expect(await c.findAllByRole('button', { name: /^Gap, / })).toHaveLength(5)
-    await fireEvent.press(c.getByRole('button', { name: 'Show all 7' }))
-    expect(c.getAllByRole('button', { name: /^Gap, / })).toHaveLength(7)
-  })
-
-  it('says so when nothing is open, and has no button for a stage with no move left (AC7)', async () => {
-    reply = { status: 200, body: summary({ items: [], areas: [], next: { text: 'The report is exported. Nothing more to do.', link: null, label: null } }) }
-    gateway()
-    await openWorkspace(true)
-    const c = await card()
-
-    expect(await c.findByText('Nothing needs you right now.')).toBeTruthy()
-    expect(c.queryByRole('button', { name: /^Open / })).toBeNull()
-    expect(c.queryByText('Continue on the web.')).toBeNull()
-  })
-
-  it('folds away with Hide and comes back with Show', async () => {
-    gateway()
-    await openWorkspace(true)
-    const c = await card()
-    await c.findByText('Capture · stage 3 of 8')
-
-    await fireEvent.press(c.getByRole('button', { name: 'Hide next step' }))
-    expect(c.queryByText('Capture · stage 3 of 8')).toBeNull()
-    await fireEvent.press(c.getByRole('button', { name: 'Show next step' }))
-    expect(c.getByText('Capture · stage 3 of 8')).toBeTruthy()
-  })
-})
-
-describe('the iPad card: going straight to it (B)', () => {
-  it('opens the Checklist from a checklist link (AC8)', async () => {
-    reply = { status: 200, body: summary({ next: { text: 'Read the checklist.', link: { tab: 'checklist' }, label: 'Open checklist' } }) }
-    gateway()
-    await openWorkspace(true)
-    const c = await card()
-
-    // Side by side there is no switch: the link opens the checklist pane, which was folded away.
-    await fireEvent.press(await screen.findByRole('button', { name: 'Collapse checklist' }))
-    expect(screen.queryByTestId('checklist-pane')).toBeNull()
-    await fireEvent.press(await c.findByRole('button', { name: 'Open checklist' }))
-
-    expect(await screen.findByTestId('checklist-pane')).toBeTruthy()
-  })
-
-  it('opens the observation a row points at (AC9)', async () => {
-    gateway()
-    await openWorkspace(true)
-    const c = await card()
-
-    await fireEvent.press(await c.findByRole('button', { name: /^Fix now, Title fix1/ }))
-
-    await waitFor(() => expect(screen).toHavePathname(`/assessment/${REF}/observation/o9`))
-  })
-
-  it('opens the site walks from a walk link (AC9)', async () => {
-    reply = { status: 200, body: summary({ items: [row('w1', 'gap', { tab: 'observations', params: { walk: 'w1' } })] }) }
-    gateway()
-    await openWorkspace(true)
-    const c = await card()
-
-    await fireEvent.press(await c.findByRole('button', { name: /^Gap, Title w1/ }))
-
-    await waitFor(() => expect(screen).toHavePathname(`/assessment/${REF}/site-walks`))
-  })
-
-  it('greys a link to Generate, Review or Export and says to continue on the web (AC10)', async () => {
-    reply = {
-      status: 200,
-      body: summary({
-        stage: 'review',
-        stageLabel: 'Review',
-        stageIndex: 5,
-        next: { text: "Review each section's findings.", link: { tab: 'review' }, label: 'Open Review' },
-        items: [row('r1', 'gap', { tab: 'generate' })],
-      }),
-    }
-    gateway()
-    await openWorkspace(true)
-    const c = await card()
-
-    const rowButton = await c.findByRole('button', { name: /^Gap, Title r1/ })
-    expect(rowButton.props.accessibilityState.disabled).toBe(true)
-    // The next step has no button either, only the words.
-    expect(c.queryByRole('button', { name: 'Open Review' })).toBeNull()
-    expect(c.getAllByText(/Continue on the web\./).length).toBeGreaterThan(0)
-    await fireEvent.press(rowButton)
-    expect(screen).toHavePathname(`/assessment/${REF}`)
-  })
-})
-
-describe('the iPad card: fresh and honest (C)', () => {
-  it('loads when the workspace opens and again on pull to refresh (AC11)', async () => {
-    const fetchMock = gateway()
-    await openWorkspace(true)
-    await card()
-    const summaries = () => fetchMock.mock.calls.filter(([url]) => String(url).endsWith('/assistant/summary')).length
-    expect(summaries()).toBe(1)
-
-    reply = { status: 200, body: summary({ next: { text: 'A newer next step.', link: null, label: null } }) }
-    const list = screen.getByTestId('workspace')
-    await act(async () => {
-      await list.props.refreshControl.props.onRefresh()
-    })
-
-    expect(await (await card()).findByText('A newer next step.')).toBeTruthy()
-    expect(summaries()).toBe(2)
-  })
-
-  it('shows the last copy with no signal, and says so with no copy (AC12)', async () => {
-    gateway()
-    await openWorkspace(true)
-    await (await card()).findByText('Capture · stage 3 of 8')
-
-    // Back to Home, the signal drops, and the workspace opens again from the saved copy.
-    await testRouter.back()
-    online = false
-    await fireEvent.press(await screen.findByText(REF))
-    await screen.findByTestId('workspace')
-    // A new mount starts narrow: widen it again.
-    await fireEvent(screen.getByTestId('workspace-screen'), 'layout', { nativeEvent: { layout: { width: 996, height: 800, x: 0, y: 0 } } })
-    expect(await (await card()).findByText('Capture · stage 3 of 8')).toBeTruthy()
-  })
-
-  it('says so when there is no signal and no copy (AC12)', async () => {
-    online = false
+// Changed 24 Nov (Miya): the iPad uses the phone's Overview bar, which opens the MarshBot screen, and the same sheet
+// from its Summary button. The inline card is gone: it filled 370pt of an 11-inch iPad's 686pt pane and pushed the
+// bottom bar under the tab bar. The sheet's own content is tested above (it is the same component).
+describe('the Overview bar on the iPad (A)', () => {
+  it('shows the bar, not a card, and opens the MarshBot screen from it', async () => {
     gateway()
     await openWorkspace(true)
 
-    expect(await (await card()).findByText("Can't show the next step. Connect, then pull down to try again.")).toBeTruthy()
+    const button = await overviewButton('Overview, 1 to fix, 2 gaps')
+    expect(within(button).getByText('Capture · stage 3 of 8')).toBeTruthy()
+    expect(screen.queryByTestId('overview-card')).toBeNull()
+
+    await fireEvent.press(button)
+    expect(await screen.findByRole('button', { name: 'Summary' })).toBeTruthy()
   })
 
-  it("draws no card on someone else's assessment (403)", async () => {
-    reply = { status: 403, body: { error: 'Only the assigned engineer can open this.' } }
+  it('opens the Overview sheet from Summary, in a wide pane too', async () => {
     gateway()
     await openWorkspace(true)
+    await fireEvent.press(await overviewButton())
+    await fireEvent.press(await screen.findByRole('button', { name: 'Summary' }))
+    // Coming back may mount the workspace again, which starts narrow: widen it again.
+    await fireEvent(await screen.findByTestId('workspace-screen'), 'layout', { nativeEvent: { layout: { width: 996, height: 800, x: 0, y: 0 } } })
 
-    await waitFor(() => expect(screen.queryByTestId('overview-card')).toBeNull())
-    expect(screen.queryByText(/Only the assigned engineer/)).toBeNull()
-  })
-
-  it('says an archived assessment is archived, with no gaps (409)', async () => {
-    reply = { status: 409, body: { error: `Assessment ${REF} is archived.` } }
-    gateway()
-    await openWorkspace(true)
-
-    const c = await card()
-    expect(await c.findByText('This assessment is archived.')).toBeTruthy()
-    expect(c.queryByText('Nothing needs you right now.')).toBeNull()
-  })
-
-  it("shows the gateway's own words for any other failure", async () => {
-    reply = { status: 500, body: { error: 'The brief could not be read. Try again in a minute.' } }
-    gateway()
-    await openWorkspace(true)
-
-    expect(await (await card()).findByText('The brief could not be read. Try again in a minute.')).toBeTruthy()
+    expect(await screen.findByTestId('overview-sheet')).toBeTruthy()
   })
 })
 

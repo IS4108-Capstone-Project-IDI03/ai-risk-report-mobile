@@ -1,9 +1,7 @@
 // The top of MarshBot's chat (MB-20): the status pill (an icon and a few words, red / amber / green / blue as the
 // gateway says), a Summary button (the Overview sheet), the stage with its eight segments, and the three facts.
-// Hide folds the segments and the facts away (they take a quarter of a phone's height); the pill, the stage and Summary
-// stay. Called by screens/Assistant.
-import { ChevronDown, ChevronUp } from 'lucide-react-native'
-import { useState } from 'react'
+// It takes a quarter of a phone's height, so the screen drops all of it while the reader scrolls the chat (`hidden`).
+// Called by screens/Assistant.
 import { Pressable, View } from 'react-native'
 import { Text } from '@/components/ui/text'
 import { Glance } from '@/features/overview/components/Glance'
@@ -22,12 +20,12 @@ export function SummaryButton({ onPress }: { onPress(): void }) {
   )
 }
 
-type Props = { thread: Thread; onSummary(): void }
+type Props = { thread: Thread; hidden: boolean; onSummary(): void }
 
-export function StatusLine({ thread, onSummary }: Props) {
+export function StatusLine({ thread, hidden, onSummary }: Props) {
+  if (hidden) return null
   const pill = PILL[thread.status.tone] ?? PILL.blue
   const index = stageIndex(thread.stage)
-  const [hidden, setHidden] = useState(false)
   return (
     <View className="gap-3 border-b border-border bg-card px-4 pb-3 pt-3">
       <View className="flex-row items-center justify-between gap-3">
@@ -38,23 +36,10 @@ export function StatusLine({ thread, onSummary }: Props) {
         <SummaryButton onPress={onSummary} />
       </View>
       <View className="gap-2">
-        <View className="flex-row items-center justify-between">
-          <Text className="font-semibold">{`${stageLabel(thread.stage)} · stage ${index + 1} of 8`}</Text>
-          {/* hitSlop makes the 48px target without making the row taller. */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={hidden ? 'Show stage details' : 'Hide stage details'}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 8 }}
-            onPress={() => setHidden(!hidden)}
-            className="flex-row items-center gap-1 active:opacity-70"
-          >
-            <Text className="font-semibold text-primary">{hidden ? 'Show' : 'Hide'}</Text>
-            {hidden ? <ChevronDown color="#2c5488" size={18} /> : <ChevronUp color="#2c5488" size={18} />}
-          </Pressable>
-        </View>
-        {!hidden && <Segments index={index} />}
+        <Text className="font-semibold">{`${stageLabel(thread.stage)} · stage ${index + 1} of 8`}</Text>
+        <Segments index={index} />
       </View>
-      {!hidden && <Glance facts={thread.glance} />}
+      <Glance facts={thread.glance} />
     </View>
   )
 }

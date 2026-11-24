@@ -28,6 +28,8 @@ export default function Assistant() {
   // The "Another visit" reply waiting for its day, if any.
   const [picking, setPicking] = useState<Reply | null>(null)
   const scroll = useRef<ScrollViewInstance>(null)
+  // Whether the status block is folded away. Scrolling the chat sets it (see the ScrollView).
+  const [hidden, setHidden] = useState(false)
 
   // Back to the workspace on a side of its switch (or with the Overview sheet open): the workspace is already under
   // this screen, so dismissTo goes back to it and hands it the choice as a param.
@@ -57,7 +59,7 @@ export default function Assistant() {
   return (
     <View testID="assistant" className="flex-1 bg-background">
       {thread ? (
-        <StatusLine thread={thread} onSummary={() => toWorkspace({ overview: '1' })} />
+        <StatusLine thread={thread} hidden={hidden} onSummary={() => toWorkspace({ overview: '1' })} />
       ) : (
         !loading && (
           <View className="items-end border-b border-border bg-card px-4">
@@ -67,10 +69,17 @@ export default function Assistant() {
       )}
       <ScrollView
         ref={scroll}
+        testID="chat-scroll"
         className="flex-1"
         contentContainerClassName="gap-4 p-4"
         // Follow the conversation to its newest turn as it grows.
         onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}
+        // Fold the whole status block when the reader drags the chat away from its top, and open it again back at the top.
+        // Only drags count, not the scrollToEnd above: otherwise the block would fold every time the chat opened.
+        // A drag at the top (short chat, nothing to scroll) leaves it alone, so it can't flicker.
+        onScrollBeginDrag={(e) => e.nativeEvent.contentOffset.y > 0 && setHidden(true)}
+        onScrollEndDrag={(e) => e.nativeEvent.contentOffset.y <= 0 && setHidden(false)}
+        onMomentumScrollEnd={(e) => e.nativeEvent.contentOffset.y <= 0 && setHidden(false)}
       >
         <OfflineNote />
         {loading && <ActivityIndicator accessibilityLabel="Loading" />}

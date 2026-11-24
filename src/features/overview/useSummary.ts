@@ -1,4 +1,4 @@
-// Loads an assessment's summary for the Overview card (MB-20). On open, on coming back to the
+// Loads an assessment's summary for the Overview bar and sheet (MB-20). On open, on coming back to the
 // screen and on a pull to refresh (the workspace calls reload); the newest load wins, so a slow
 // earlier one can't bring back old gaps. Called by screens/Workspace. Calls api.ts.
 import { useFocusEffect } from 'expo-router'
