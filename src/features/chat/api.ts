@@ -1,18 +1,52 @@
 // The gateway's chat routes (MB-06): asking (a stream), one cited passage, and
 // the knowledge documents for citation names. MB-14: saved chats. Shapes match the web
 // repo's server/src/routes/chat.routes.ts and client/src/features/chat/.
+import { File } from 'expo-file-system'
 import { cached, request, stream } from '@/lib/api'
 
 // `id` is how the gateway links a question under the message before it (chat-save.service.ts
 // `lastQuestion`): without ids, every follow-up would be saved as a new root.
 export type Message = { id?: string; role: 'user' | 'assistant'; content: string }
 
+// What goes with the last question (MB-24): the ids of its photos (`attachments`, up to 3) and of the
+// PDFs of this chat (`pdfs`), as the gateway's POST /api/chat reads them. Left out when there are none.
+export type Sent = { attachments?: string[]; pdfs?: string[] }
+
 // Asks the last question with the conversation so far, inside a saved chat. Each answer is a
 // paid model call on the gateway. Returns a reader for the event stream.
-export async function ask(messages: Message[], threadId: string, signal: AbortSignal) {
-  const response = await stream('/api/chat', { method: 'POST', body: JSON.stringify({ messages, threadId }), signal })
+export async function ask(messages: Message[], threadId: string, signal: AbortSignal, sent: Sent = {}) {
+  const response = await stream('/api/chat', { method: 'POST', body: JSON.stringify({ messages, threadId, ...sent }), signal })
   return response.body!.getReader()
 }
+
+// A photo or a PDF for a question (MB-24, web CB-08 and CB-09): the gateway takes the file itself as the
+// request body (not a form), checks it at once and answers with an id to send with the question.
+// Photo: `faces` found, and `blurredId`, the copy with them blurred (null when there are none).
+export type PhotoUpload = { id: string; faces: number; blurredId: string | null }
+export type PdfUpload = { id: string; name: string; pages: number; flagged: boolean }
+
+export async function uploadPhoto(uri: string) {
+  const type = /\.png$/i.test(uri) ? 'image/png' : 'image/jpeg'
+  return request<PhotoUpload>('/api/chat/photos', { method: 'POST', headers: { 'Content-Type': type }, body: await new File(uri).bytes() })
+}
+export const removePhoto = (id: string) => request<void>(`/api/chat/photos/${encodeURIComponent(id)}`, { method: 'DELETE' })
+
+// The name travels in a header, URL-encoded (the gateway decodes it).
+export async function uploadPdf(uri: string, name: string) {
+  return request<PdfUpload>('/api/chat/pdfs', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/pdf', 'X-File-Name': encodeURIComponent(name) },
+    body: await new File(uri).bytes(),
+  })
+}
+// A spoken question as text (MB-25, web CB-10): the clip is the request body. The gateway says why when it
+// cannot (no speech, too long, speech service down). The text goes into the box, never straight to the chat.
+export async function transcribe(uri: string) {
+  const { text } = await request<{ text: string }>('/api/chat/transcribe', { method: 'POST', headers: { 'Content-Type': 'audio/m4a' }, body: await new File(uri).bytes() })
+  return text
+}
+
+export const removePdf = (id: string) => request<void>(`/api/chat/pdfs/${encodeURIComponent(id)}`, { method: 'DELETE' })
 
 export type Thread = { id: string; title: string; createdAt: string }
 
@@ -34,7 +68,14 @@ export const renameThread = (id: string, title: string) =>
 export const deleteThread = (id: string) =>
   request<void>(`/api/chat/conversations/${encodeURIComponent(id)}`, { method: 'DELETE' })
 
-export type SavedMessage = { id: string; role: 'user' | 'assistant'; content: string }
+// A question's photos (`url` is a gateway path, shown behind the session cookie) and PDFs (MB-24).
+export type SavedMessage = {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  attachments?: { id: string; url: string }[]
+  pdfs?: { id: string; name: string; flagged: boolean }[]
+}
 
 // One saved chat's messages, in order. Kept on the phone, so it opens offline (MB-14 AC9).
 export const getThread = (id: string) =>

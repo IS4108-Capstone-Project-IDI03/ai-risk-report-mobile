@@ -55,7 +55,7 @@ export const sse = (event: object) => `data: ${JSON.stringify(event)}\n\n`
 // replies with a page that isn't JSON; `stream` replies with a body to read in
 // pieces. Unlisted routes fail the test loudly.
 export function mockGateway(
-  routes: Record<string, Reply | ((init?: RequestInit, url?: string) => Reply)>,
+  routes: Record<string, Reply | ((init?: RequestInit, url?: string) => Reply | Promise<Reply>)>,
 ) {
   const fetchMock = jest.fn(async (url: string, init?: RequestInit) => {
     const key = `${init?.method ?? 'GET'} ${new URL(url).pathname}`
@@ -67,7 +67,8 @@ export function mockGateway(
       (key.endsWith('/assistant/summary') ? { status: 403, body: { error: 'Not yours.' } } : undefined) ??
       (key === 'GET /api/notifications/count' ? { status: 200, body: { total: 0, unread: 0, inboxTodo: 0, newestInbox: null, newestBell: null } } : undefined)
     if (!route) throw new Error(`Unexpected request: ${key}`)
-    const reply = typeof route === 'function' ? route(init, url) : route
+    // A route may answer later (MB-24: a test holds an upload open).
+    const reply = await (typeof route === 'function' ? route(init, url) : route)
     if (reply instanceof Error) throw reply
     return {
       ok: reply.status >= 200 && reply.status < 300,
