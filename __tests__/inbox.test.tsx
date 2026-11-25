@@ -295,26 +295,47 @@ describe('act on a row (B)', () => {
     expect(tab(/^To do/).props.accessibilityLabel).toBe('To do, 3')
   })
 
-  it('asks before removing a Done row, sends nothing on Keep, and has no Remove on To do (AC8)', async () => {
+  it('asks before removing a To do row, lowers the count, and has no Remove on Done (AC8)', async () => {
     gateway()
     const i = await openInbox()
     await i.findByText('Marina Point')
-    expect(i.queryByRole('button', { name: /^Remove/ })).toBeNull()
-    await fireEvent.press(tab(/^Done/))
-    const remove = await i.findByRole('button', { name: 'Remove: New assessment Leeds Cold Store' })
+    const remove = i.getByRole('button', { name: 'Remove: New assessment Marina Point' })
 
     // Cancel: nothing is sent and the row stays.
     const asked = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => buttons?.find((b) => b.text === 'Cancel')?.onPress?.())
     await fireEvent.press(remove)
     expect(asked.mock.calls[0][0]).toBe('Remove from your Inbox?')
     expect(calls).toEqual([])
-    expect(i.getByText('Leeds Cold Store')).toBeTruthy()
+    expect(i.getByText('Marina Point')).toBeTruthy()
 
     // Remove: one dismiss, and the row is gone.
     asked.mockImplementation((_t, _m, buttons) => buttons?.find((b) => b.text === 'Remove')?.onPress?.())
     await fireEvent.press(remove)
-    await waitFor(() => expect(i.queryByText('Leeds Cold Store')).toBeNull())
-    expect(sent('dismiss n4')).toHaveLength(1)
+    await waitFor(() => expect(i.queryByText('Marina Point')).toBeNull())
+    expect(sent('dismiss n1')).toHaveLength(1)
+    expect(tab(/^To do/).props.accessibilityLabel).toBe('To do, 2')
+
+    // A Done row cannot be removed.
+    await fireEvent.press(tab(/^Done/))
+    await i.findByText('Leeds Cold Store')
+    expect(i.queryByRole('button', { name: /^Remove/ })).toBeNull()
+  })
+
+  it('shows the tick before the row leaves (AC7)', async () => {
+    gateway()
+    const i = await openInbox()
+    await i.findByText('Marina Point')
+
+    await fireEvent.press(i.getByRole('button', { name: 'Mark done: New assessment Marina Point' }))
+
+    // Straight after the tap the row is still there, ticked, while the animation plays.
+    expect(i.getByTestId('inbox-ticked')).toBeTruthy()
+    // The fade takes the Remove button behind the row with it, or it shows through the fading row.
+    const remove = { name: 'Remove: New assessment Marina Point' }
+    expect(i.getAllByTestId('inbox-fade').some((row) => within(row).queryByRole('button', remove))).toBe(true)
+    expect(i.getByText('Marina Point')).toBeTruthy()
+    await waitFor(() => expect(i.queryByText('Marina Point')).toBeNull(), { timeout: 3000 })
+    expect(sent('done n1')).toHaveLength(1)
   })
 
   it('does not bring a row back when a slow read, begun before it was ticked, answers after (AC7)', async () => {
@@ -375,8 +396,9 @@ describe('honest about the signal (C)', () => {
     expect(await inbox().findByText('Connect to change your Inbox.', {}, { timeout: 5000 })).toBeTruthy()
     expect(inbox().getByText('Marina Point')).toBeTruthy()
     expect(inbox().getByRole('button', { name: 'Mark done: New assessment Marina Point' }).props.accessibilityState.disabled).toBe(true)
+    // Offline a To do row cannot be swiped either, so there is no Remove to press.
+    expect(inbox().queryByRole('button', { name: /^Remove/ })).toBeNull()
     await fireEvent.press(tab(/^Done/))
-    // Offline a Done row cannot be swiped, so there is no Remove to press (changed 24 Nov with AC8).
     await inbox().findByText('Leeds Cold Store')
     expect(inbox().queryByRole('button', { name: /^Remove/ })).toBeNull()
   })
@@ -413,15 +435,14 @@ describe('honest about the signal (C)', () => {
   it('sends one dismiss for two quick taps on Remove (AC12)', async () => {
     gateway()
     const i = await openInbox()
-    await fireEvent.press(tab(/^Done/))
-    const remove = await i.findByRole('button', { name: 'Remove: New assessment Leeds Cold Store' })
+    const remove = await i.findByRole('button', { name: 'Remove: New assessment Marina Point' })
     jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => buttons?.find((b) => b.text === 'Remove')?.onPress?.())
 
     await fireEvent.press(remove)
     await fireEvent.press(remove)
 
-    await waitFor(() => expect(i.queryByText('Leeds Cold Store')).toBeNull())
-    expect(sent('dismiss n4')).toHaveLength(1)
+    await waitFor(() => expect(i.queryByText('Marina Point')).toBeNull())
+    expect(sent('dismiss n1')).toHaveLength(1)
   })
 
   it('sends one read for two quick taps on a row (AC12)', async () => {
