@@ -8,6 +8,7 @@ import { ActivityIndicator, ScrollView, View, type ScrollViewInstance } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Text } from '@/components/ui/text'
 import { OfflineNote } from '@/features/offline/components/OfflineNote'
+import { listObservations } from '@/features/observations/api'
 import { useOffline } from '@/features/offline/provider'
 import { targetOf, type Target } from '@/features/overview/format'
 import { Bubble } from '../components/Bubble'
@@ -40,9 +41,18 @@ export default function Assistant() {
   // Where a link goes: the same places as the Overview's links. A link to a web-only tab never reaches here (greyed).
   function go(target: Target) {
     if (target.kind === 'checklist') toWorkspace({ side: 'checklist' })
-    else if (target.kind === 'observations' || target.kind === 'uncategorised') toWorkspace({ side: 'observations' })
+    else if (target.kind === 'uncategorised') openUncategorised()
+    else if (target.kind === 'observations') toWorkspace({ side: 'observations' })
     else if (target.kind === 'observation') router.push({ pathname: '/assessment/[reference]/observation/[id]', params: { reference, id: target.id } })
     else if (target.kind === 'walks') router.push({ pathname: '/assessment/[reference]/site-walks', params: { reference } })
+  }
+
+  // The gateway's link names no observation, so open the first with no category, as the Overview does (Workspace.tsx).
+  // None left, or none to be read: the Observations list.
+  async function openUncategorised() {
+    const first = (await listObservations(reference).catch(() => [])).find((o) => !o.copeDimensions)
+    if (first) router.push({ pathname: '/assessment/[reference]/observation/[id]', params: { reference, id: first.id } })
+    else toWorkspace({ side: 'observations' })
   }
 
   // A reply with a link (e.g. "Add observations") only opens it, as on the web (client MarshBotOverview.tsx). Sending it
