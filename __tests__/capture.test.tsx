@@ -206,7 +206,7 @@ describe('in the sheet', () => {
 
     expect(save()).toBeDisabled()
     expect(sheet().getByText('Add a note, photo, voice note or scan.')).toBeTruthy()
-    expect(sheet().getByText('Leave one empty and the AI will suggest it.')).toBeTruthy()
+    expect(sheet().getByText('Leave severity or category empty and the AI will suggest it.')).toBeTruthy()
     await fireEvent.changeText(sheet().getByLabelText('Note'), 'Fire door wedged open')
     expect(sheet().queryByText('Choose a severity to save.')).toBeNull()
     expect(save()).toBeEnabled()
