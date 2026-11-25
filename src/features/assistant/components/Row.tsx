@@ -20,7 +20,7 @@ export function Row({ row, onGo }: Props) {
   const { end } = row
   // Only a button or a link points anywhere; a status or a tick is just drawn.
   const label = end.type === 'button' || end.type === 'open' ? end.label : null
-  const target = end.type === 'button' || end.type === 'open' ? targetOf(end.link) : null
+  const target = end.type === 'button' || end.type === 'open' ? targetOf(end.link, row.id) : null
   const web = target?.kind === 'web'
   const go = target && !web ? () => onGo(target) : undefined
   return (

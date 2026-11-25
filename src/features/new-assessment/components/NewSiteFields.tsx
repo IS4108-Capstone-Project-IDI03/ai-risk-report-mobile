@@ -81,10 +81,10 @@ export function NewSiteFields({ site, coordinates, errors, disabled, onChange, o
   return (
     <View className="gap-4 rounded-md border border-border bg-card p-4">
       <Field label="Site name" error={errors.name}>
-        <Input accessibilityLabel="Site name" value={site.name} editable={!disabled} onChangeText={(name) => set({ name })} />
+        <Input accessibilityLabel="Site name" placeholder="e.g. Tuas Cold Store" value={site.name} editable={!disabled} onChangeText={(name) => set({ name })} />
       </Field>
       <Field label="Address" error={errors.address}>
-        <Input accessibilityLabel="Address" value={site.address} editable={!disabled} onChangeText={(address) => set({ address })} />
+        <Input accessibilityLabel="Address" placeholder="Street and postcode" value={site.address} editable={!disabled} onChangeText={(address) => set({ address })} />
       </Field>
       <Field label="Coordinates" optional error={errors.coordinates ?? pinProblem ?? undefined} hint="Optional. For example 1.2966, 103.8520.">
         <Input

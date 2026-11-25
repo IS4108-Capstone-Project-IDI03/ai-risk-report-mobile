@@ -319,11 +319,10 @@ describe('the cards (B)', () => {
     expect(card.queryByText('Open in Observations')).toBeNull()
     expect(card.getByText('Open')).toBeTruthy()
     expect(card.getByRole('button', { name: 'Open in Observations' })).toBeTruthy()
-    // Pressing the title (anywhere on the row) opens it, as on the web.
+    // Pressing the title (anywhere on the row) opens the first observation with no category (o7), as the Overview does.
     await fireEvent.press(card.getByText('Uncategorised Observations'))
 
-    await waitFor(() => expect(screen).toHavePathname(`/assessment/${REF}`))
-    expect(await screen.findByRole('tab', { name: 'Observations', selected: true })).toBeTruthy()
+    await waitFor(() => expect(screen).toHavePathname(`/assessment/${REF}/observation/o7`))
   })
 })
 

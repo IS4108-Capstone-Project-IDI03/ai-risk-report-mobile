@@ -26,7 +26,7 @@ export function NewClientFields({ name, division, match, error, disabled, onName
     <View className="gap-4 rounded-md border border-border bg-card p-4">
       <View className="gap-1">
         <FieldLabel required>Client name</FieldLabel>
-        <Input accessibilityLabel="Client name" value={name} editable={!disabled} onChangeText={onName} />
+        <Input accessibilityLabel="Client name" placeholder="e.g. Harbourline Properties" value={name} editable={!disabled} onChangeText={onName} />
         {match ? (
           <View className="gap-2">
             <Text className="text-sm text-destructive">{`${match.name} is already a client.`}</Text>
@@ -40,7 +40,7 @@ export function NewClientFields({ name, division, match, error, disabled, onName
       </View>
       <View className="gap-1">
         <FieldLabel>Division</FieldLabel>
-        <Input accessibilityLabel="Division" value={division} editable={!disabled} onChangeText={onDivision} />
+        <Input accessibilityLabel="Division" placeholder="e.g. Logistics" value={division} editable={!disabled} onChangeText={onDivision} />
       </View>
     </View>
   )

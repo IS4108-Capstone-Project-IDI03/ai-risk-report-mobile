@@ -255,13 +255,13 @@ export default function CaptureSheet({ onClose, embedded = false, reference: giv
                 <View className="gap-2">
                   <Eyebrow>Severity</Eyebrow>
                   <SeverityPicker value={draft.severity} onChange={(severity) => update({ severity })} />
-                  <Text className="text-sm text-muted-foreground">Leave one empty and the AI will suggest it.</Text>
+                  <Text className="text-sm text-muted-foreground">Leave severity or category empty and the AI will suggest it.</Text>
                 </View>
 
                 <View className="gap-2">
                   <View className="flex-row items-baseline justify-between">
                     <Eyebrow>COPE category</Eyebrow>
-                    <Text className="text-sm text-muted-foreground">Optional, any number</Text>
+                    <Text className="text-sm text-muted-foreground">Optional, pick all that apply</Text>
                   </View>
                   <CopeChips value={draft.cope} onChange={(cope) => update({ cope })} />
                 </View>

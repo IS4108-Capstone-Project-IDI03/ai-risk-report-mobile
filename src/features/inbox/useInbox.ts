@@ -103,7 +103,8 @@ export function useInbox() {
   const remove = (n: Notification) =>
     Alert.alert('Remove from your Inbox?', "It leaves your Inbox only. Nobody else's list changes.", [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => void change(n, binItem, 0) },
+      // Only a To do row has Remove, so the count drops by one.
+      { text: 'Remove', style: 'destructive', onPress: () => void change(n, binItem, -1) },
     ])
 
   // Opening a To do row moves it to Done first (as the web does), then goes to its page. If that call
