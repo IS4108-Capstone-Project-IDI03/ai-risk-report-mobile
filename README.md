@@ -515,8 +515,7 @@ There's no CI yet, so run all four before committing.
 
 - **Add packages with `npx expo install <pkg>`**, not `npm install`, so versions match
   the SDK. Expo changes every SDK, so check the versioned docs
-  (`docs.expo.dev/versions/v58.0.0/`) before using an Expo or React Native API. See
-  `AGENTS.md`.
+  (`docs.expo.dev/versions/v58.0.0/`) before using an Expo or React Native API.
 - **UI:** add a component by copying it from React Native Reusables into
   `src/components/ui/`, then adjust it. Use the colour names in `tailwind.config.js`.
   Touch targets are at least 48px. Copy follows the web design system: sentence case,
